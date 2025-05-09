@@ -21,7 +21,7 @@ def perform(source: str, config: Dict[str, Any]) -> Dict[str, Any]:
     # Generate plots
     plots = {
         "time_series": plot_time_series(
-            results["general"], 
+            results["general"],
             "count",
             "Time Series Analysis"
         )
