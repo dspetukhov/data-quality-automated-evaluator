@@ -1,2 +1,4 @@
 # dq-pda
-Preliminary data quality analysis using Polars library focused on data for binary classifications problems
+
+Preliminary data quality analysis using Polars library. Designed to data for machine learning binary classifications problems.
+
