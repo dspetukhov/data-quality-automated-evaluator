@@ -1,34 +1,72 @@
-import matplotlib.pyplot as plt
-from pathlib import Path
 import polars as pl
 import polars.selectors as cs
 from typing import Dict, Any, Union
+import logging
 
 
 def make(config: Dict[str, Any]) -> Dict[str, Any]:
     """
     Perform preliminary analysis of data quality using Polars.
     """
-    df = pl.read_excel(config['data_source'])
-    print(df.head(), df.shape, df.dtypes)
-    # print(df.select(cs.categorical()).columns)
-    date_column = config.get(
-        'target_column',
-        df.select(
-            cs.date() | cs.datetime()
-        ).columns[0]
-    )
-    print(date_column)
+    df = pl.read_excel(config['data_source']).lazy()
+    schema = df.collect_schema()
     target_column = config.get('target_column')
-
+    date_column = config.get('date_column')
+    if not date_column:
+        dc_candidates = cs.expand_selector(
+            schema,
+            cs.date() | cs.datetime()
+        )
+        if dc_candidates:
+            date_column = dc_candidates[0]
+        else:
+            logging.error(
+                'no date columns for temporal data distribution analysis'
+            )
+            return
+    logging.info(f'base date column: {date_column}')
+    aggs = []
+    aggs.append(
+        pl.count().alias('count'),
+    )
+    if target_column:
+        aggs.append(
+            pl.col(target_column).mean().alias('balance')
+        )
+    for col in schema.names():
+        print(col)
+        if col == date_column or col == target_column:
+            continue
+        aggs.extend([
+            pl.col(col).n_unique().alias(f'{col}_uniq'),
+            pl.col(col).is_null().mean().alias(f'{col}_null_ratio'),
+        ])
+    for col in cs.expand_selector(schema, cs.numeric()):
+        print(col)
+        aggs.extend([
+            pl.col(col).min().alias(f"{col}_min"),
+            pl.col(col).max().alias(f"{col}_max"),
+            pl.col(col).mean().alias(f"{col}_mean"),
+            pl.col(col).median().alias(f"{col}_median"),
+            pl.col(col).std().alias(f"{col}_std"),
+        ])
+    output = {}
     # print(df.select(~(cs.numeric() | cs.duration() | cs.date() | cs.datetime())).columns)
     # Run analysis
-    output = {
-        'general': make_general(df, date_column, target_column),
-        # 'detailed': make_detailed(df),
-        # 'detailed_numeric': make_detailed_numeric(df)
-    }
+    # aggs = []
+    # output = {
+        # 'general': make_general(df, date_column, target_column, agg),
+    #     'detailed': make_detailed(df, date_column, target_column),
+    #     'detailed_numeric': make_detailed_numeric(df, date_column, target_column)
+    # }
 
+    output = (
+        df.group_by(pl.col(date_column).dt.date().alias('ymd'))
+        .agg(aggs)
+        .sort('ymd')
+    ).collect()
+    print(output)
+    print(type(output))
     # Generate plots
     # plots = {
     #     "time_series": plot_time_series(
@@ -37,61 +75,63 @@ def make(config: Dict[str, Any]) -> Dict[str, Any]:
     #         "Time Series Analysis"
     #     )
     # }
-    print(output)
+    # print(output)
 
-    return {'results': output}  #, "plots": plots}
+    return output.to_dict(as_series=True)
 
 
 def make_general(
-        df: pl.DataFrame,
+        df: pl.LazyFrame,
         date_column: str,
-        target_column: Union[str, None]
-) -> pl.DataFrame:
+        target_column: Union[str, None],
+        agg: list
+) -> list:
     """
     Perform general analysis on the dataframe by days.
     """
-    return df.sql("""
-        select
-            {date_column}::date as ymd,
-            count(*) as total{target_column}
-        from self
-        group by {date_column}::date
-        order by ymd
-    """.format(
-        date_column=date_column,
-        target_column=f', avg({target_column})' if target_column else '')
+    agg.append(
+        pl.count().alias('total'),
     )
-    #.collect_async()
-    # return df.group_by('InvoiceDate').agg([
-    #     pl.col("value").count().alias("count"),
-    #     pl.col("value").mean().alias("mean")
-    # ])
+    if target_column:
+        agg.append(
+            pl.col(target_column).mean().alias('balance')
+        )
+    return agg
 
 
 def make_detailed(
-        df: pl.DataFrame,
+        df: pl.LazyFrame,
         date_column: str,
-        target_column: Union[str, None]
-) -> pl.DataFrame:
+        target_column: Union[str, None],
+        agg: list
+) -> Dict[str, pl.LazyFrame]:
     """Perform analysis of categorical columns by days:
         - count of uniq values
         - ratio of null values
     """
-    output = {}
-    # column['is_numeric'] = True
-    df.sql("""
-        select
-            {date_column}::date as ymd,
-            count(distinct InvoiceNo) as uniq,
-            avg(InvoiceNo is null) as avg
-        from self
-        group by {date_column}::date
-        order by ymd
-    """.format(
-        date_column=date_column,
-        target_column=f', avg({target_column})' if target_column else '')
-    )
-    return output
+    for col in df.select(cs.numeric()).columns:
+        if col == date_column or col == target_column:
+            continue
+        agg.extend([
+            pl.col(col).n_unique().alias(f'{col}_uniq'),
+            pl.col(col).is_null().mean().alias(f'{col}_ratio')
+        ])
+    return agg
+    # output = {}
+    # # pass through each column excluding date and target columns, collect stats, and save each into dict output
+    # # column['is_numeric'] = True
+    # for column_name in df.columns:
+    #     if column_name == date_column or column_name == target_column:
+    #         continue
+    #     output[column_name] = df.sql(f"""
+    #         select
+    #             {date_column}::date as ymd,
+    #             count(distinct {column_name}) as uniq,
+    #             avg({column_name} is null) as ratio
+    #         from self
+    #         order by ymd
+    #     """)
+    # return output
     #.collect_async()
     # return df.select([
     #     pl.col("category").n_unique().alias("distinct_count"),
@@ -100,7 +140,12 @@ def make_detailed(
     # ])
 
 
-def make_detailed_numerics(df: pl.DataFrame) -> Dict[str, pl.DataFrame]:
+def make_detailed_numeric(
+        df: pl.LazyFrame,
+        date_column: str,
+        target_column: Union[str, None],
+        agg: list
+) -> Dict[str, pl.LazyFrame]:
     """Perform analysis of numerical columns by days:
         - max value
         - median value
@@ -108,7 +153,32 @@ def make_detailed_numerics(df: pl.DataFrame) -> Dict[str, pl.DataFrame]:
         - average value
         - std_dev of value
     """
-    output = {}
+    for col in df.select(cs.numeric()).columns:
+        agg.extend([
+            pl.col(col).min().alias(f"{col}_min"),
+            pl.col(col).max().alias(f"{col}_max"),
+            pl.col(col).mean().alias(f"{col}_mean"),
+            pl.col(col).median().alias(f"{col}_median"),
+            pl.col(col).std().alias(f"{col}_std"),
+        ])
+    return agg
+    # output = {}
+    # for column_name in df.select(cs.numeric()).columns:
+    #     if column_name == date_column or column_name == target_column:
+    #         continue
+    #     output[column_name] = df.sql(f"""
+    #         select
+    #             {date_column}::date as ymd,
+    #             min({column_name}) as min,
+    #             max({column_name}) as max,
+    #             avg({column_name}) as average,
+    #             median({column_name}) as median,
+    #             stddev_samp({column_name}) as stddev
+    #         from self
+    #         order by ymd
+    #     """)
+    # return output
+    # df.select(~(cs.numeric() | cs.duration() | cs.date() | cs.datetime())).columns
     # Filter numerical columns
     # numeric_cols = df.select(cs.numeric())
 
@@ -120,16 +190,16 @@ def make_detailed_numerics(df: pl.DataFrame) -> Dict[str, pl.DataFrame]:
     #     pl.all().std().alias("stddev")
     # ])
 
-    df.sql("""
-        select
-            InvoiceDate::date as ymd,
-            count(distinct Quantity) as uniq,
-            avg(Quantity is null) as avg
-        from self
-        group by InvoiceDate::date
-        order by ymd
-    """)
-    return output
+    # df.sql("""
+    #     select
+    #         InvoiceDate::date as ymd,
+    #         count(distinct Quantity) as uniq,
+    #         avg(Quantity is null) as avg
+    #     from self
+    #     group by InvoiceDate::date
+    #     order by ymd
+    # """)
+    # return output
 
     # Time-based statistics
     # time_stats = numeric_cols.groupby("date").agg([

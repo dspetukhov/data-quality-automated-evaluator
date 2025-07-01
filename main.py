@@ -11,8 +11,8 @@ config = {
 }
 
 # Run analysis
-results = make_analysis('../datasets/online-retail.xlsx', config)
-# make_report(results)
+results = make_analysis(config)
+make_report(results)
 # Access results
 # general_stats = results["results"]["general"]
 # categorical_analysis = results["results"]["categorical"]
