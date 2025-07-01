@@ -1,20 +1,32 @@
 import matplotlib.pyplot as plt
 from pathlib import Path
 import polars as pl
-from typing import Dict, Any
+import polars.selectors as cs
+from typing import Dict, Any, Union
 
 
-def make(source: str, config: Dict[str, Any]) -> Dict[str, Any]:
-    """Perform preliminary analysis of data quality using Polars.
+def make(config: Dict[str, Any]) -> Dict[str, Any]:
     """
-    df = pl.read_excel(source)  # or other appropriate reader
+    Perform preliminary analysis of data quality using Polars.
+    """
+    df = pl.read_excel(config['data_source'])
     print(df.head(), df.shape, df.dtypes)
-    print(df.select(pl.selectors.categorical()))
-    # Run analyses
-    results = {
-        'general': make_general(df),
-        'categorical': make_categorical(df),
-        'numerical': make_numerical(df)
+    # print(df.select(cs.categorical()).columns)
+    date_column = config.get(
+        'target_column',
+        df.select(
+            cs.date() | cs.datetime()
+        ).columns[0]
+    )
+    print(date_column)
+    target_column = config.get('target_column')
+
+    # print(df.select(~(cs.numeric() | cs.duration() | cs.date() | cs.datetime())).columns)
+    # Run analysis
+    output = {
+        'general': make_general(df, date_column, target_column),
+        # 'detailed': make_detailed(df),
+        # 'detailed_numeric': make_detailed_numeric(df)
     }
 
     # Generate plots
@@ -25,40 +37,62 @@ def make(source: str, config: Dict[str, Any]) -> Dict[str, Any]:
     #         "Time Series Analysis"
     #     )
     # }
+    print(output)
 
-    return {'results': results}  #, "plots": plots}
+    return {'results': output}  #, "plots": plots}
 
 
-def make_general(df: pl.DataFrame) -> pl.DataFrame:
-    """Perform general analysis on the dataframe by days.
+def make_general(
+        df: pl.DataFrame,
+        date_column: str,
+        target_column: Union[str, None]
+) -> pl.DataFrame:
+    """
+    Perform general analysis on the dataframe by days.
     """
     return df.sql("""
         select
-            InvoiceDate::date as ymd,
-            count(*) as total
+            {date_column}::date as ymd,
+            count(*) as total{target_column}
         from self
-        group by InvoiceDate::date
+        group by {date_column}::date
         order by ymd
-    """)#.collect_async()
+    """.format(
+        date_column=date_column,
+        target_column=f', avg({target_column})' if target_column else '')
+    )
+    #.collect_async()
     # return df.group_by('InvoiceDate').agg([
     #     pl.col("value").count().alias("count"),
     #     pl.col("value").mean().alias("mean")
     # ])
 
 
-def make_categorical(df: pl.DataFrame) -> pl.DataFrame:
+def make_detailed(
+        df: pl.DataFrame,
+        date_column: str,
+        target_column: Union[str, None]
+) -> pl.DataFrame:
     """Perform analysis of categorical columns by days:
         - count of uniq values
         - ratio of null values
     """
-    return df.sql("""
+    output = {}
+    # column['is_numeric'] = True
+    df.sql("""
         select
-            InvoiceDate::date as ymd,
-            distinct(InvoiceNo) as uniq
+            {date_column}::date as ymd,
+            count(distinct InvoiceNo) as uniq,
+            avg(InvoiceNo is null) as avg
         from self
-        group by InvoiceDate::date
+        group by {date_column}::date
         order by ymd
-    """)#.collect_async()
+    """.format(
+        date_column=date_column,
+        target_column=f', avg({target_column})' if target_column else '')
+    )
+    return output
+    #.collect_async()
     # return df.select([
     #     pl.col("category").n_unique().alias("distinct_count"),
     #     (pl.col("category").is_null().sum() / pl.len()).alias("null_ratio"),
@@ -66,7 +100,7 @@ def make_categorical(df: pl.DataFrame) -> pl.DataFrame:
     # ])
 
 
-def make_numerical(df: pl.DataFrame) -> Dict[str, pl.DataFrame]:
+def make_detailed_numerics(df: pl.DataFrame) -> Dict[str, pl.DataFrame]:
     """Perform analysis of numerical columns by days:
         - max value
         - median value
@@ -74,26 +108,38 @@ def make_numerical(df: pl.DataFrame) -> Dict[str, pl.DataFrame]:
         - average value
         - std_dev of value
     """
+    output = {}
     # Filter numerical columns
-    numeric_cols = df.select(pl.col(pl.NUMERIC_DTYPES))
+    # numeric_cols = df.select(cs.numeric())
 
-    # Overall statistics
-    stats = numeric_cols.select([
-        pl.all().min().alias("min"),
-        pl.all().max().alias("max"),
-        pl.all().median().alias("median"),
-        pl.all().std().alias("stddev")
-    ])
+    # # Overall statistics
+    # stats = numeric_cols.select([
+    #     pl.all().min().alias("min"),
+    #     pl.all().max().alias("max"),
+    #     pl.all().median().alias("median"),
+    #     pl.all().std().alias("stddev")
+    # ])
+
+    df.sql("""
+        select
+            InvoiceDate::date as ymd,
+            count(distinct Quantity) as uniq,
+            avg(Quantity is null) as avg
+        from self
+        group by InvoiceDate::date
+        order by ymd
+    """)
+    return output
 
     # Time-based statistics
-    time_stats = numeric_cols.groupby("date").agg([
-        pl.all().min().suffix("_min"),
-        pl.all().max().suffix("_max"),
-        pl.all().median().suffix("_median"),
-        pl.all().std().suffix("_std")
-    ])
+    # time_stats = numeric_cols.groupby("date").agg([
+    #     pl.all().min().suffix("_min"),
+    #     pl.all().max().suffix("_max"),
+    #     pl.all().median().suffix("_median"),
+    #     pl.all().std().suffix("_std")
+    # ])
 
-    return {"overall": stats, "time_based": time_stats}
+    # return {"overall": stats, "time_based": time_stats}
 
 
 # def make(
