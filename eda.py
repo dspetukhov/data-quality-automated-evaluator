@@ -1,14 +1,14 @@
 import polars as pl
 import polars.selectors as cs
 from typing import Dict, Any, Union
-import logging
+from utils import logging
 
 
 def make(config: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Perform preliminary analysis of data quality using Polars.
+    Perform preliminary analysis using Polars.
     """
-    df = pl.read_excel(config['data_source']).lazy()
+    df = pl.read_excel(config['source']).lazy()
     schema = df.collect_schema()
     target_column = config.get('target_column')
     date_column = config.get('date_column')
@@ -21,7 +21,7 @@ def make(config: Dict[str, Any]) -> Dict[str, Any]:
             date_column = dc_candidates[0]
         else:
             logging.error(
-                'no date columns for temporal data distribution analysis'
+                "There are no date columns for temporal data distribution analysis."
             )
             return
     logging.info(f'base date column: {date_column}')
@@ -34,7 +34,6 @@ def make(config: Dict[str, Any]) -> Dict[str, Any]:
             pl.col(target_column).mean().alias('balance')
         )
     for col in schema.names():
-        print(col)
         if col == date_column or col == target_column:
             continue
         aggs.extend([
@@ -42,7 +41,6 @@ def make(config: Dict[str, Any]) -> Dict[str, Any]:
             pl.col(col).is_null().mean().alias(f'{col}_null_ratio'),
         ])
     for col in cs.expand_selector(schema, cs.numeric()):
-        print(col)
         aggs.extend([
             pl.col(col).min().alias(f"{col}_min"),
             pl.col(col).max().alias(f"{col}_max"),
@@ -50,7 +48,7 @@ def make(config: Dict[str, Any]) -> Dict[str, Any]:
             pl.col(col).median().alias(f"{col}_median"),
             pl.col(col).std().alias(f"{col}_std"),
         ])
-    output = {}
+    # output = {}
     # print(df.select(~(cs.numeric() | cs.duration() | cs.date() | cs.datetime())).columns)
     # Run analysis
     # aggs = []
@@ -65,7 +63,7 @@ def make(config: Dict[str, Any]) -> Dict[str, Any]:
         .agg(aggs)
         .sort('ymd')
     ).collect()
-    print(output)
+    # print(output)
     print(type(output))
     # Generate plots
     # plots = {
@@ -77,7 +75,7 @@ def make(config: Dict[str, Any]) -> Dict[str, Any]:
     # }
     # print(output)
 
-    return output.to_dict(as_series=True)
+    return output  #.to_dict(as_series=True)
 
 
 def make_general(
@@ -284,16 +282,16 @@ def make_detailed_numeric(
 #             file.write(f'![{key}]({key}.png)\n')
 #             top = True
 #             #
-#             _, axes = plt.subplots(nrows=1, ncols=2, figsize=(10, 4))
-#             df.plot(x='dt', y='uniq_count', c='cornflowerblue', ls='--', marker='o', ms=6, mfc='white', ax=axes[0])
-#             df.plot(x='dt', y='null_ratio', c='cornflowerblue', ls='--', marker='o', ms=6, mfc='white', ax=axes[1])
-#             axes[0].grid(True, alpha=0.3, aa=True, ls=':', lw=1.1)
-#             axes[1].grid(True, alpha=0.3, aa=True, ls=':', lw=1.1)
-#             axes[0].set_title(value)
-#             axes[1].set_title(value)
-#             plt.tight_layout()
-#             plt.savefig(f'{path}/{key}.png', dpi=100)
-#             plt.close()
+            # _, axes = plt.subplots(nrows=1, ncols=2, figsize=(10, 4))
+            # df.plot(x='dt', y='uniq_count', c='cornflowerblue', ls='--', marker='o', ms=6, mfc='white', ax=axes[0])
+            # df.plot(x='dt', y='null_ratio', c='cornflowerblue', ls='--', marker='o', ms=6, mfc='white', ax=axes[1])
+            # axes[0].grid(True, alpha=0.3, aa=True, ls=':', lw=1.1)
+            # axes[1].grid(True, alpha=0.3, aa=True, ls=':', lw=1.1)
+            # axes[0].set_title(value)
+            # axes[1].set_title(value)
+            # plt.tight_layout()
+            # plt.savefig(f'{path}/{key}.png', dpi=100)
+            # plt.close()
 #             #
 #             file.write('\n[Back to categorical top](#categorical-top)\n\n')
 
@@ -329,21 +327,21 @@ def make_detailed_numeric(
 #             file.write(f'![{key}]({key}.png)\n')
 #             top = True
 #             #
-#             _, axes = plt.subplots(nrows=1, ncols=4, figsize=(20, 4))
-#             df.plot(x='dt', y='min_value', c='cornflowerblue', ls='--', marker='o', ms=6, mfc='white', label='min', ax=axes[0])
-#             df.plot(x='dt', y='max_value', c='cornflowerblue', ls='--', marker='o', ms=6, mfc='white', label='max', ax=axes[1])
-#             df.plot(x='dt', y='median_value', c='cornflowerblue', ls='--', marker='o', ms=6, mfc='white', label='median', ax=axes[2])
-#             df.plot(x='dt', y='std_value', c='cornflowerblue', ls='--', marker='o', ms=6, mfc='white', label='stddev', ax=axes[3])
-#             axes[0].grid(True, alpha=0.3, aa=True, ls=':', lw=1.1)
-#             axes[1].grid(True, alpha=0.3, aa=True, ls=':', lw=1.1)
-#             axes[2].grid(True, alpha=0.3, aa=True, ls=':', lw=1.1)
-#             axes[3].grid(True, alpha=0.3, aa=True, ls=':', lw=1.1)
-#             axes[0].set_title(value)
-#             axes[1].set_title(value)
-#             axes[2].set_title(value)
-#             axes[3].set_title(value)
-#             plt.tight_layout()
-#             plt.savefig(f'{path}/{key}.png', dpi=100)
-#             plt.close()
+            # _, axes = plt.subplots(nrows=1, ncols=4, figsize=(20, 4))
+            # df.plot(x='dt', y='min_value', c='cornflowerblue', ls='--', marker='o', ms=6, mfc='white', label='min', ax=axes[0])
+            # df.plot(x='dt', y='max_value', c='cornflowerblue', ls='--', marker='o', ms=6, mfc='white', label='max', ax=axes[1])
+            # df.plot(x='dt', y='median_value', c='cornflowerblue', ls='--', marker='o', ms=6, mfc='white', label='median', ax=axes[2])
+            # df.plot(x='dt', y='std_value', c='cornflowerblue', ls='--', marker='o', ms=6, mfc='white', label='stddev', ax=axes[3])
+            # axes[0].grid(True, alpha=0.3, aa=True, ls=':', lw=1.1)
+            # axes[1].grid(True, alpha=0.3, aa=True, ls=':', lw=1.1)
+            # axes[2].grid(True, alpha=0.3, aa=True, ls=':', lw=1.1)
+            # axes[3].grid(True, alpha=0.3, aa=True, ls=':', lw=1.1)
+            # axes[0].set_title(value)
+            # axes[1].set_title(value)
+            # axes[2].set_title(value)
+            # axes[3].set_title(value)
+            # plt.tight_layout()
+            # plt.savefig(f'{path}/{key}.png', dpi=100)
+            # plt.close()
 #             #
 #             file.write('\n[Back to numerical top](#numerical-top)\n')
