@@ -18,8 +18,8 @@ if __name__ == "__main__":
     if os.path.exists("config.json"):
         with open("config.json") as file:
             config = json.load(file)
-        results = make_analysis(config)
-        make_report(results, config)
+        df, metadata = make_analysis(config)
+        make_report(df, metadata, config)
     else:
         logging.warning("Config file wasn't found.")
 

@@ -25,57 +25,37 @@ def make(config: Dict[str, Any]) -> Dict[str, Any]:
             )
             return
     logging.info(f'base date column: {date_column}')
-    aggs = []
-    aggs.append(
-        pl.count().alias('count'),
-    )
+    #
+    metadata = {}
+    aggs = [pl.count().alias('__count')]
     if target_column:
         aggs.append(
-            pl.col(target_column).mean().alias('balance')
+            pl.col(target_column).mean().alias('__balance')
         )
     for col in schema.names():
-        if col == date_column or col == target_column:
+        if col in (date_column, target_column):
             continue
         aggs.extend([
-            pl.col(col).n_unique().alias(f'{col}_uniq'),
-            pl.col(col).is_null().mean().alias(f'{col}_null_ratio'),
+            pl.col(col).n_unique().alias(f"{col}_uniq"),
+            pl.col(col).is_null().mean().alias(f"{col}_null_ratio"),
         ])
-    for col in cs.expand_selector(schema, cs.numeric()):
-        aggs.extend([
-            pl.col(col).min().alias(f"{col}_min"),
-            pl.col(col).max().alias(f"{col}_max"),
-            pl.col(col).mean().alias(f"{col}_mean"),
-            pl.col(col).median().alias(f"{col}_median"),
-            pl.col(col).std().alias(f"{col}_std"),
-        ])
-    # output = {}
-    # print(df.select(~(cs.numeric() | cs.duration() | cs.date() | cs.datetime())).columns)
-    # Run analysis
-    # aggs = []
-    # output = {
-        # 'general': make_general(df, date_column, target_column, agg),
-    #     'detailed': make_detailed(df, date_column, target_column),
-    #     'detailed_numeric': make_detailed_numeric(df, date_column, target_column)
-    # }
-
+        metadata[col] = {"common": ("uniq", "null_ratio")}
+        if col in cs.expand_selector(schema, cs.numeric()):
+            aggs.extend([
+                pl.col(col).min().alias(f"{col}_min"),
+                pl.col(col).max().alias(f"{col}_max"),
+                pl.col(col).mean().alias(f"{col}_mean"),
+                pl.col(col).median().alias(f"{col}_median"),
+                pl.col(col).std().alias(f"{col}_std"),
+            ])
+            metadata[col]["numeric"] = ("min", "max", "mean", "median", "std")
+    # Perform aggregations
     output = (
-        df.group_by(pl.col(date_column).dt.date().alias('ymd'))
+        df.group_by(pl.col(date_column).dt.date().alias('__date'))
         .agg(aggs)
-        .sort('ymd')
+        .sort('__date')
     ).collect()
-    # print(output)
-    print(type(output))
-    # Generate plots
-    # plots = {
-    #     "time_series": plot_time_series(
-    #         results["general"],
-    #         "count",
-    #         "Time Series Analysis"
-    #     )
-    # }
-    # print(output)
-
-    return output  #.to_dict(as_series=True)
+    return output, metadata
 
 
 def make_general(
