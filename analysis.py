@@ -1,6 +1,6 @@
 import polars as pl
 import polars.selectors as cs
-from typing import Dict, Any, Union
+from typing import Dict, Any
 from utils import logging
 
 
@@ -49,12 +49,14 @@ def make(config: Dict[str, Any]) -> Dict[str, Any]:
             return
     logging.info(f'base date column: {date_column}')
     #
-    metadata = {}
-    aggs = [pl.count().alias('__count')]
+    aggs = [pl.count().alias("__count")]
     if target_column:
         aggs.append(
-            pl.col(target_column).mean().alias('__balance')
+            pl.col(target_column).mean().alias("__balance")
         )
+        metadata = {"__balance": True}
+    else:
+        metadata = {}
     for col in schema.names():
         if col in (date_column, target_column):
             continue
