@@ -1,7 +1,7 @@
 import os
 import json
 from utils import logging
-from eda import make as make_analysis
+from analysis import make as make_analysis
 from report import make as make_report
 
 # Configuration

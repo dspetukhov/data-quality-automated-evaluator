@@ -1,145 +1,141 @@
 from plotly.subplots import make_subplots
 from plotly.graph_objs import Scatter
 from pathlib import Path
+from typing import Dict, List
+import polars as pl
+import plotly.io as pio
 
 
-def make(df, config: dict):
+pio.templates.default = "plotly_white"
+
+
+def make(df: pl.LazyFrame, metadata: Dict[str, List[str]], config: Dict[Dict, str]) -> None:
     """
     Aggregate data analysis results as markdown file with plots.
     """
-    print(df.sample())
-    print(type(df), df.columns)
     output = config.get("output", "").rstrip('/')
     path = output if output else "output"
     Path(path).mkdir(exist_ok=True)
-    # schema = df.collect_schema()
     #
-    fig = make_subplots(
-        rows=1, cols=2,
-        # horizontal_spacing=0.10
-    )
-    fig.add_trace(
-        Scatter(
-            x=df['ymd'], y=df['count'],
-            mode="lines+markers",
-            line=dict(color="darkgrey", dash="dash", width=1.5),
-            marker=dict(
-                size=8, symbol="circle",
-                color="white", line=dict(width=2, color="darkgrey")
-            )
-        ),
-        row=1, col=1,
-    )
+    # make overview
+    # fig = make_subplots(
+    #     rows=1, cols=2,
+    # )
+    # fig.add_trace(
+    #     Scatter(
+    #         x=df['__date'], y=df['__count'],
+    #         mode="lines+markers",
+    #         line=dict(color="darkgrey", dash="dash", width=1.5),
+    #         marker=dict(
+    #             size=8, symbol="circle",
+    #             color="white", line=dict(width=2, color="darkgrey")
+    #         )
+    #     ),
+    #     row=1, col=1,
+    # )
+    # #
+    # fig.update_xaxes(
+    #     showgrid=True, gridcolor="lightgray", gridwidth=1, griddash="dot", title_text="Date"
+    # )
+    # fig.update_yaxes(
+    #     showgrid=True, gridcolor="lightgray", gridwidth=1, griddash="dot", title_text="Count"
+    # )
+    # # Layout adjustments
+    # fig.update_layout(
+    #     font=dict(size=13),
+    #     margin=dict(l=0, r=0, t=0, b=0)
+    # )
+    # fig.write_image(f"{path}/__overview.png", width=1024, height=368)
     #
-    fig.update_xaxes(
-        showgrid=True, gridcolor="lightgray", gridwidth=1, griddash="dot", title_text="Date"
-    )
-    fig.update_yaxes(
-        showgrid=True, gridcolor="lightgray", gridwidth=1, griddash="dot", title_text="Count"
-    )
-    # Layout adjustments
-    fig.update_layout(
-        font=dict(size=13),
-        margin=dict(l=0, r=0, t=0, b=0)
-    )
-    fig.write_image(f"{path}/general.png", width=1024)
-    # plt.tight_layout()
-    # plt.savefig(f'{path}/general.png', dpi=100)
-    # plt.close()
     with open(f"{output}.md", "w") as file:
-        file.write('# General overview\n\n')
-        file.write(f"![general]({path}/general.png)\n\n")
-    #
-    # make categorical
-    for col in df.columns:
-        if col not in ['ymd', 'count'] and (col.endswith('uniq') or col.endswith('null_ratio')):
-            print(col, df[col].dtype)
-            fig = make_subplots(
-                rows=1, cols=2,
-                # horizontal_spacing=0.10
-            )
-            fig.add_trace(
-                Scatter(
-                    x=df['ymd'], y=df[f"{col}"],
-                    mode="lines+markers",
-                    line=dict(color="darkgrey", dash="dash", width=1.5),
-                    marker=dict(
-                        size=8, symbol="circle",
-                        color="white", line=dict(width=2, color="darkgrey")
-                    )
-                ),
-                row=1, col=1,
-            )
-            fig.add_trace(
-                Scatter(
-                    x=df['ymd'], y=df[f"{col}"],
-                    mode="lines+markers",
-                    line=dict(color="darkgrey", dash="dash", width=1.5),
-                    marker=dict(
-                        size=8, symbol="circle",
-                        color="white", line=dict(width=2, color="darkgrey")
-                    )
-                ),
-                row=1, col=2,
-            )
-            #
-            fig.update_xaxes(
-                showgrid=True, gridcolor="lightgray", gridwidth=1, griddash="dot", title_text="Date"
-            )
-            fig.update_yaxes(
-                showgrid=True, gridcolor="lightgray", gridwidth=1, griddash="dot", title_text="Count"
-            )
-            # Layout adjustments
-            fig.update_layout(
-                font=dict(size=13),
-                margin=dict(l=0, r=0, t=0, b=0)
-            )
-            fig.write_image(f"{path}/{col}_categorical.png", width=1024)
-    # make numerical
-    for col in df.columns:
-        if col not in ['ymd', 'count'] and (col.endswith('min') or col.endswith('max') or col.endswith("mean") or col.endswith('median') or col.endswith('std')):
-            print(col, df[col].dtype)
-            fig = make_subplots(
-                rows=1, cols=2,
-                # horizontal_spacing=0.10
-            )
-            fig.add_trace(
-                Scatter(
-                    x=df['ymd'], y=df[f"{col}"],
-                    mode="lines+markers",
-                    line=dict(color="darkgrey", dash="dash", width=1.5),
-                    marker=dict(
-                        size=8, symbol="circle",
-                        color="white", line=dict(width=2, color="darkgrey")
-                    )
-                ),
-                row=1, col=1,
-            )
-            fig.add_trace(
-                Scatter(
-                    x=df['ymd'], y=df[f"{col}"],
-                    mode="lines+markers",
-                    line=dict(color="darkgrey", dash="dash", width=1.5),
-                    marker=dict(
-                        size=8, symbol="circle",
-                        color="white", line=dict(width=2, color="darkgrey")
-                    )
-                ),
-                row=1, col=2,
-            )
-            #
-            fig.update_xaxes(
-                showgrid=True, gridcolor="lightgray", gridwidth=1, griddash="dot", title_text="Date"
-            )
-            fig.update_yaxes(
-                showgrid=True, gridcolor="lightgray", gridwidth=1, griddash="dot", title_text="Count"
-            )
-            # Layout adjustments
-            fig.update_layout(
-                font=dict(size=13),
-                margin=dict(l=0, r=0, t=0, b=0)
-            )
-            fig.write_image(f"{path}/{col}_numerical.png", width=1024)
+        file.write('# Overview\n\n')
+        file.write(f"![overview]({path}/__overview.png)\n\n")
+        for col in metadata:
+            file.write(f"# {col}\n\n")
+            file.write(f"![{col}]({path}/{col}.png)\n\n")
+        # fig = make_subplots(rows=1, cols=2)
+        # fig.add_trace(
+        #     Scatter(
+        #         x=df['__date'], y=df[col + '_' + metadata[col]["common"][0]],
+        #         mode="lines+markers",
+        #         line=dict(color="darkgrey", dash="dash", width=1.5),
+        #         marker=dict(
+        #             size=8, symbol="circle",
+        #             color="white", line=dict(width=2, color="darkgrey")
+        #         )
+        #     ),
+        #     row=1, col=1,
+        # )
+        # fig.add_trace(
+        #     Scatter(
+        #         x=df['__date'], y=df[col + '_' + metadata[col]["common"][1]],
+        #         mode="lines+markers",
+        #         line=dict(color="lightskyblue", dash="dash", width=1.5),
+        #         marker=dict(
+        #             size=8, symbol="circle",
+        #             color="white", line=dict(width=2, color="darkgrey")
+        #         )
+        #     ),
+        #     row=1, col=2,
+        # )
+        # #
+        # fig.update_xaxes(
+        #     showgrid=True, gridcolor="lightgray", gridwidth=1, griddash="dot", title_text="Date"
+        # )
+        # fig.update_yaxes(
+        #     showgrid=True, gridcolor="lightgray", gridwidth=1, griddash="dot", title_text="Count"
+        # )
+        # # Layout adjustments
+        # fig.update_layout(
+        #     font=dict(size=13),
+        #     margin=dict(l=0, r=0, t=0, b=0)
+        # )
+        # fig.write_image(f"{path}/{col}.png", width=1024, height=368)
+        #
+            if metadata[col].get("numeric"):
+                file.write("## \n\n")
+                file.write(f"![{col}]({path}/{col}__numeric.png)\n\n")
+                # fig = make_subplots(rows=1, cols=2)
+                # fig.add_trace(
+                #     Scatter(
+                #         x=df['__date'], y=df[col + '_' + metadata[col]["numeric"][1]],
+                #         mode="lines+markers",
+                #         line=dict(color="darkgrey", dash="dash", width=1.5),
+                #         marker=dict(
+                #             size=8, symbol="circle",
+                #             color="white", line=dict(width=2, color="darkgrey")
+                #         )
+                #     ),
+                #     row=1, col=1,
+                # )
+                # fig.add_trace(
+                #     Scatter(
+                #         x=df['__date'], y=df[col + '_' + metadata[col]["numeric"][1]],
+                #         mode="lines+markers",
+                #         line=dict(color="darkgrey", dash="dash", width=1.5),
+                #         marker=dict(
+                #             size=8, symbol="circle",
+                #             color="white", line=dict(width=2, color="darkgrey")
+                #         )
+                #     ),
+                #     row=1, col=2,
+                # )
+                # #
+                # fig.update_xaxes(
+                #     showgrid=True, gridcolor="lightgray", gridwidth=1, griddash="dot", title_text="Date"
+                # )
+                # fig.update_yaxes(
+                #     showgrid=True, gridcolor="lightgray", gridwidth=1, griddash="dot", title_text="Count"
+                # )
+                # # Layout adjustments
+                # fig.update_layout(
+                #     font=dict(size=13),
+                #     margin=dict(l=0, r=0, t=0, b=0)
+                # )
+                # fig.write_image(f"{path}/{col}__numeric.png", width=1024, height=368)
+        # with open(f"{output}.md", "a") as file:
+            # file.write('# Overview\n\n')
+            # file.write(f"![overview]({path}/__overview.png)\n\n")
     return
 
 

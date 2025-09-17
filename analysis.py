@@ -7,6 +7,29 @@ from utils import logging
 def make(config: Dict[str, Any]) -> Dict[str, Any]:
     """
     Perform preliminary analysis using Polars.
+    Perform general analysis on the dataframe by days.
+    Perform analysis of categorical columns by days:
+        - count of uniq values
+        - ratio of null values
+    Perform analysis of numerical columns by days:
+        - max value
+        - median value
+        - min value
+        - average value
+        - std_dev of value
+    ------------------------------------------------------------------------------
+    config: {
+        "source": str,  # path to the source file (Excel)
+        "date_column": str | None,  # name of the date column (if None, auto-detect)
+        "target_column": str | None,  # name of the target column (if any)
+        "output": str | None,  # path to the output directory
+    }
+    ------------------------------------------------------------------------------
+    returns: {
+        "results": pl.DataFrame,  # dataframe with aggregated results
+        "metadata": dict,  # metadata about the analysis
+    }
+    ------------------------------------------------------------------------------
     """
     df = pl.read_excel(config['source']).lazy()
     schema = df.collect_schema()
@@ -56,154 +79,6 @@ def make(config: Dict[str, Any]) -> Dict[str, Any]:
         .sort('__date')
     ).collect()
     return output, metadata
-
-
-def make_general(
-        df: pl.LazyFrame,
-        date_column: str,
-        target_column: Union[str, None],
-        agg: list
-) -> list:
-    """
-    Perform general analysis on the dataframe by days.
-    """
-    agg.append(
-        pl.count().alias('total'),
-    )
-    if target_column:
-        agg.append(
-            pl.col(target_column).mean().alias('balance')
-        )
-    return agg
-
-
-def make_detailed(
-        df: pl.LazyFrame,
-        date_column: str,
-        target_column: Union[str, None],
-        agg: list
-) -> Dict[str, pl.LazyFrame]:
-    """Perform analysis of categorical columns by days:
-        - count of uniq values
-        - ratio of null values
-    """
-    for col in df.select(cs.numeric()).columns:
-        if col == date_column or col == target_column:
-            continue
-        agg.extend([
-            pl.col(col).n_unique().alias(f'{col}_uniq'),
-            pl.col(col).is_null().mean().alias(f'{col}_ratio')
-        ])
-    return agg
-    # output = {}
-    # # pass through each column excluding date and target columns, collect stats, and save each into dict output
-    # # column['is_numeric'] = True
-    # for column_name in df.columns:
-    #     if column_name == date_column or column_name == target_column:
-    #         continue
-    #     output[column_name] = df.sql(f"""
-    #         select
-    #             {date_column}::date as ymd,
-    #             count(distinct {column_name}) as uniq,
-    #             avg({column_name} is null) as ratio
-    #         from self
-    #         order by ymd
-    #     """)
-    # return output
-    #.collect_async()
-    # return df.select([
-    #     pl.col("category").n_unique().alias("distinct_count"),
-    #     (pl.col("category").is_null().sum() / pl.len()).alias("null_ratio"),
-    #     pl.col("category").dtype.alias("data_type")
-    # ])
-
-
-def make_detailed_numeric(
-        df: pl.LazyFrame,
-        date_column: str,
-        target_column: Union[str, None],
-        agg: list
-) -> Dict[str, pl.LazyFrame]:
-    """Perform analysis of numerical columns by days:
-        - max value
-        - median value
-        - min value
-        - average value
-        - std_dev of value
-    """
-    for col in df.select(cs.numeric()).columns:
-        agg.extend([
-            pl.col(col).min().alias(f"{col}_min"),
-            pl.col(col).max().alias(f"{col}_max"),
-            pl.col(col).mean().alias(f"{col}_mean"),
-            pl.col(col).median().alias(f"{col}_median"),
-            pl.col(col).std().alias(f"{col}_std"),
-        ])
-    return agg
-    # output = {}
-    # for column_name in df.select(cs.numeric()).columns:
-    #     if column_name == date_column or column_name == target_column:
-    #         continue
-    #     output[column_name] = df.sql(f"""
-    #         select
-    #             {date_column}::date as ymd,
-    #             min({column_name}) as min,
-    #             max({column_name}) as max,
-    #             avg({column_name}) as average,
-    #             median({column_name}) as median,
-    #             stddev_samp({column_name}) as stddev
-    #         from self
-    #         order by ymd
-    #     """)
-    # return output
-    # df.select(~(cs.numeric() | cs.duration() | cs.date() | cs.datetime())).columns
-    # Filter numerical columns
-    # numeric_cols = df.select(cs.numeric())
-
-    # # Overall statistics
-    # stats = numeric_cols.select([
-    #     pl.all().min().alias("min"),
-    #     pl.all().max().alias("max"),
-    #     pl.all().median().alias("median"),
-    #     pl.all().std().alias("stddev")
-    # ])
-
-    # df.sql("""
-    #     select
-    #         InvoiceDate::date as ymd,
-    #         count(distinct Quantity) as uniq,
-    #         avg(Quantity is null) as avg
-    #     from self
-    #     group by InvoiceDate::date
-    #     order by ymd
-    # """)
-    # return output
-
-    # Time-based statistics
-    # time_stats = numeric_cols.groupby("date").agg([
-    #     pl.all().min().suffix("_min"),
-    #     pl.all().max().suffix("_max"),
-    #     pl.all().median().suffix("_median"),
-    #     pl.all().std().suffix("_std")
-    # ])
-
-    # return {"overall": stats, "time_based": time_stats}
-
-
-# def make(
-#     db, source: str,
-#     target: str, dt: str,
-#     path: str,
-#     helpers: dict,
-#     filter: str = '',
-# ):
-#     """Entry point into exploratory data analysis."""
-#     path = path.rstrip('/')
-#     Path(path).mkdir(exist_ok=True)
-#     #
-#     make_general(db, source, target, dt, path, filter)
-#     make_categorical(db, source, dt, path, filter, helpers)
-#     make_numerical(db, source, dt, path, filter, helpers)
 
 
 # def make_general(db, source: str, target: str, dt: str, path: str, filter: str = None):
