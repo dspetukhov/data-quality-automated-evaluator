@@ -4,7 +4,7 @@ from typing import Dict, Any
 from utils import logging
 
 
-def make(config: Dict[str, Any]) -> Dict[str, Any]:
+def make_analysis(config: Dict[str, Any]) -> Dict[str, Any]:
     """
     Perform preliminary analysis using Polars.
     Perform general analysis on the dataframe by days.

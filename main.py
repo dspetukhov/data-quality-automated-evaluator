@@ -1,8 +1,8 @@
 import os
 import json
 from utils import logging
-from analysis import make as make_analysis
-from report import make as make_report
+from analysis import make_analysis
+from report import make_report
 
 
 if __name__ == "__main__":
