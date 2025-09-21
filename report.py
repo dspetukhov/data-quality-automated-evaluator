@@ -1,63 +1,78 @@
+import os
+import logging
 from pathlib import Path
 from typing import Dict, List, Union, Any
 from polars import LazyFrame
-from utils import plot_data, write_to_file
+from utils import plot_data
 
 
-def make(
+def make_report(
         df: LazyFrame,
         metadata: Dict[str, Union[List[str], str]],
         config: Dict[str, Any]
 ) -> None:
     """
-    Aggregate data analysis results as markdown file with plots.
-    """
-    import os
+    Generate a Markdown report with plots.
 
+    Args:
+        df (LazyFrame): The aggregated data.
+        metadata (dict): Metainfo about aggregated data.
+        config (dict): Configuration dictionary for making analysis and report.
+    """
     output = config.get("output", "output")
     Path(output).mkdir(exist_ok=True)
 
-    with open(os.path.join(output, "README.md"), "w") as file:
-        col = "__overview"
-        plot_data(
-            df["__date"],
-            df["__count"],
-            df["__balance"] if metadata.get("__balance") else None,
-            file_path=f"{output}/{col}", config=config.get("plotly", {}))
-        file.write("# <a name='overview'></a> Overview\n\n")
-        file.write(f"![{col}]({col}.png)\n\n")
+    md_toc, md_content = [], []
+    col = "__overview"
+    plot_data(
+        df["__date"],
+        df["__count"],
+        df["__balance"] if metadata.get("__balance") else None,
+        file_path=f"{output}/{col}", config=config.get("plotly", {}))
 
-        for col in metadata:
+    md_toc.append(("Overview", col))
+    md_content.append(f"## <a name='{col}'></a> Overview\n")
+    md_content.append(f"![{col}]({col}.png)\n\n")
+
+    for col in metadata:
+        plot_data(
+            df['__date'],
+            df[col + '_' + metadata[col]["common"][0]],
+            df[col + '_' + metadata[col]["common"][1]],
+            file_path=f"{output}/{col}",
+            config=config.get("plotly", {}))
+        md_toc.append((col, col))
+        md_content.append(f"## <a name='{col}'></a> {col}\n")
+        md_content.append(f"![{col}]({col}.png)\n")  # TODO: add [numeric] for this datatype
+
+        # Numeric datatypes if present
+        if metadata[col].get("numeric"):
             plot_data(
                 df['__date'],
-                df[col + '_' + metadata[col]["common"][0]],
-                df[col + '_' + metadata[col]["common"][1]],
-                file_path=f"{output}/{col}",
+                df[col + '_' + metadata[col]["numeric"][0]],
+                df[col + '_' + metadata[col]["numeric"][1]],
+                df[col + '_' + metadata[col]["numeric"][2]],
+                df[col + '_' + metadata[col]["numeric"][3]],
+                df[col + '_' + metadata[col]["numeric"][4]],
+                file_path=f"{output}/{col}__numeric",
                 config=config.get("plotly", {}))
-            file.write(f"# <a name='{col}'></a> {col}\n\n")
-            file.write(f"![{col}]({col}.png)\n\n")
+            md_content.append("---\n")
+            md_content.append(f"![{col}]({col}__numeric.png)\n")
+        md_content.append('\n[Back to the `TOC`](#toc)\n\n')
 
-            if metadata[col].get("numeric"):
-                plot_data(
-                    df['__date'],
-                    df[col + '_' + metadata[col]["numeric"][0]],
-                    df[col + '_' + metadata[col]["numeric"][1]],
-                    df[col + '_' + metadata[col]["numeric"][2]],
-                    df[col + '_' + metadata[col]["numeric"][3]],
-                    df[col + '_' + metadata[col]["numeric"][4]],
-                    file_path=f"{output}/{col}__numeric",
-                    config=config.get("plotly", {}))
-                file.write("---\n\n")
-                file.write(f"![{col}]({col}__numeric.png)\n\n")
-            file.write('[Back to the table of contents](#toc)\n\n')
-
-
-def make_toc():
-    """
-    Make table of contents for the report.
-    """
-    output = ["Table of contents"]
-    return output
+    # Make `Table of Contents`
+    md_toc = "".join([
+        f"- [{section}](#{anchor})\n"
+        for section, anchor in md_toc
+    ])
+    try:
+        with open(os.path.join(output, "README.md"), "w") as f:
+            f.write(
+                "# Preliminary analysis for **`{}`**\n\n".format(config["source"]) +
+                "<a name='toc'></a>\n" + "".join(md_toc) + "\n" +
+                "".join(md_content))
+    except IOError as e:
+        logging.error(f"Failed to write file: {e}")
 
 
 # def make_categorical(db, source: str, dt: str, path: str, filter: str, helpers: dict):
