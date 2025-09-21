@@ -1,4 +1,26 @@
 {
     "source": "../datasets/online-retail.xlsx",
-    "output": "online-retail"
+    "output": "online-retail",
+    "plotly": {
+        "plot": {
+            "mode": "lines+markers",
+            "line": {
+                "color": "cornflowerblue",
+                "dash": "dash",
+                "width": 0.8
+            },
+            "marker": {
+                "size": 6,
+                "symbol": "circle",
+                "color": "white",
+                "line": {
+                    "color": "cornflowerblue",
+                    "width": 0.5
+                }
+            }
+        },
+        "layout": {
+            "margin": { "l": 20, "r": 20, "t": 20, "b": 20 }
+        }
+    }
 }
