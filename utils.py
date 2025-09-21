@@ -9,20 +9,6 @@ logging.basicConfig(level=logging.INFO)
 pio.templates.default = "plotly_white"
 
 
-def write_to_file(path: str, content: str) -> None:
-    """Writes content to a file, handling IO errors.
-
-    Args:
-        path (str): The path to the output file.
-        content (str): The content to write to the file.
-    """
-    try:
-        with open(path, "w") as f:
-            f.write(content)
-    except IOError as e:
-        logging.error(f"Failed to write file: {e}")
-
-
 def plot_data(
     x: Sequence[Any],
     *data: Sequence[Any],
