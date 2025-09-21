@@ -1,54 +1,63 @@
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Union, Any
 from polars import LazyFrame
-from utils import plot
+from utils import plot_data, write_to_file
 
 
-def make(df: LazyFrame, metadata: Dict[str, List[str]], config: Dict[Dict, str]) -> None:
+def make(
+        df: LazyFrame,
+        metadata: Dict[str, Union[List[str], str]],
+        config: Dict[str, Any]
+) -> None:
     """
     Aggregate data analysis results as markdown file with plots.
     """
-    output = config.get("output", "").rstrip('/')
-    path = output if output else "output"
-    Path(path).mkdir(exist_ok=True)
+    import os
 
-    with open(f"{output}.md", "w") as file:
+    output = config.get("output", "output")
+    Path(output).mkdir(exist_ok=True)
+
+    with open(os.path.join(output, "README.md"), "w") as file:
         col = "__overview"
-        plot(
+        plot_data(
             df["__date"],
             df["__count"],
-            df["__balance"] if metadata.get("__balance") else None
-        ).write_image(f"{path}/{col}.png", width=1024, height=368)
-        file.write('# Overview\n\n')
-        file.write(f"![{col}]({path}/{col}.png)\n\n")
+            df["__balance"] if metadata.get("__balance") else None,
+            file_path=f"{output}/{col}", config=config.get("plotly", {}))
+        file.write("# <a name='overview'></a> Overview\n\n")
+        file.write(f"![{col}]({col}.png)\n\n")
 
         for col in metadata:
-            plot(
+            plot_data(
                 df['__date'],
                 df[col + '_' + metadata[col]["common"][0]],
-                df[col + '_' + metadata[col]["common"][1]]
-            ).write_image(f"{path}/{col}.png", width=1024, height=368)
-            file.write(f"# {col}\n\n")
-            file.write(f"![{col}]({path}/{col}.png)\n\n")
-        #
-        # Layout adjustments
-        # fig.update_layout(
-        #     font=dict(size=13),
-        #     margin=dict(l=0, r=0, t=0, b=0)
-        # )
+                df[col + '_' + metadata[col]["common"][1]],
+                file_path=f"{output}/{col}",
+                config=config.get("plotly", {}))
+            file.write(f"# <a name='{col}'></a> {col}\n\n")
+            file.write(f"![{col}]({col}.png)\n\n")
+
             if metadata[col].get("numeric"):
-                plot(
+                plot_data(
                     df['__date'],
                     df[col + '_' + metadata[col]["numeric"][0]],
                     df[col + '_' + metadata[col]["numeric"][1]],
                     df[col + '_' + metadata[col]["numeric"][2]],
                     df[col + '_' + metadata[col]["numeric"][3]],
                     df[col + '_' + metadata[col]["numeric"][4]],
-                ).write_image(f"{path}/{col}__numeric.png", width=1024, height=368)
-                file.write("##\n\n")
-                file.write(f"![{col}]({path}/{col}__numeric.png)\n\n")
-    return
+                    file_path=f"{output}/{col}__numeric",
+                    config=config.get("plotly", {}))
+                file.write("---\n\n")
+                file.write(f"![{col}]({col}__numeric.png)\n\n")
+            file.write('[Back to the table of contents](#toc)\n\n')
 
+
+def make_toc():
+    """
+    Make table of contents for the report.
+    """
+    output = ["Table of contents"]
+    return output
 
 
 # def make_categorical(db, source: str, dt: str, path: str, filter: str, helpers: dict):
