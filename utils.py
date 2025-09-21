@@ -1,4 +1,5 @@
 import logging
+from typing import Sequence, Any
 from plotly.subplots import make_subplots
 from plotly.graph_objs import Scatter
 import plotly.io as pio
@@ -8,56 +9,49 @@ logging.basicConfig(level=logging.INFO)
 pio.templates.default = "plotly_white"
 
 
-def plot(x, *data):
+def write_to_file(path: str, content: str) -> None:
+    """Writes content to a file, handling IO errors.
+
+    Args:
+        path (str): The path to the output file.
+        content (str): The content to write to the file.
     """
-    Plot data using Plotly.
+    try:
+        with open(path, "w") as f:
+            f.write(content)
+    except IOError as e:
+        logging.error(f"Failed to write file: {e}")
+
+
+def plot_data(
+    x: Sequence[Any],
+    *data: Sequence[Any],
+    file_path: str,
+    config: dict
+) -> None:
+    """Plots data using Plotly.
+    Each y-series in `*data` will be plotted in a separate subplot.
+    Style and layout are specified by the `config` dictionary.
+
+    Args:
+        x (list): The x-axis data.
+        *data (list): A collection of y-axis data.
+        config (dict): Plot and layout settings.
+
+    Returns:
+        None
     """
-    # print(x, len(x))
-    # print(data)
-    # print(len(data), len(x))
     fig = make_subplots(rows=1, cols=len(data))
     for i in range(len(data)):
         fig.add_trace(
-            Scatter(
-                x=x, y=data[i],
-                mode="lines+markers",
-                line=dict(color="dodgerblue", dash="dash", width=.75),
-                marker=dict(
-                    size=7, symbol="circle",
-                    color="white", line=dict(width=.5, color="dodgerblue")
-                )
-            ),
+            Scatter(x=x, y=data[i], **config.get("plot", {})),
             row=1, col=i + 1,
         )
-        fig.update_xaxes(
-            showgrid=True, gridcolor="lightgray", gridwidth=1, griddash="dot", title_text="Date"
-        )
-        fig.update_yaxes(
-            showgrid=True, gridcolor="lightgray", gridwidth=1, griddash="dot", title_text=""
-        )
-    # fig.add_trace(
-    #     Scatter(
-    #         x=df['__date'], y=df['__count'],
-    #         mode="lines+markers",
-    #         line=dict(color="darkgrey", dash="dash", width=1.5),
-    #         marker=dict(
-    #             size=8, symbol="circle",
-    #             color="white", line=dict(width=2, color="darkgrey")
-    #         )
-    #     ),
-    #     row=1, col=1,
-    # )
-    # #
-    # fig.update_xaxes(
-    #     showgrid=True, gridcolor="lightgray", gridwidth=1, griddash="dot", title_text="Date"
-    # )
-    # fig.update_yaxes(
-    #     showgrid=True, gridcolor="lightgray", gridwidth=1, griddash="dot", title_text="Count"
-    # )
-    # # Layout adjustments
-    # fig.update_layout(
-    #     font=dict(size=13),
-    #     margin=dict(l=0, r=0, t=0, b=0)
-    # )
-    return fig
-    # 
+    fig.update_layout(**config.get("layout", {}))
+    fig.update_xaxes(automargin=True)
+    try:
+        fig.write_image(f"{file_path}.png", width=1024, height=368)
+    except ValueError as e:
+        logging.error(f"Failed to represent image: {e}")
+    except IOError as e:
+        logging.error(f"Failed to save image: {e}")
