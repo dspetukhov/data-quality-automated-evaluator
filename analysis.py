@@ -34,21 +34,14 @@ def make(config: Dict[str, Any]) -> Dict[str, Any]:
     df = pl.read_excel(config['source']).lazy()
     schema = df.collect_schema()
     target_column = config.get('target_column')
-    date_column = config.get('date_column')
+    date_column = config.get('date_column', get_date_column(schema))
     if not date_column:
-        dc_candidates = cs.expand_selector(
-            schema,
-            cs.date() | cs.datetime()
-        )
-        if dc_candidates:
-            date_column = dc_candidates[0]
-        else:
-            logging.error(
-                "There are no date columns for temporal data distribution analysis."
-            )
-            return
+        logging.error(
+            "There are no date columns"
+            "for temporal data distribution analysis.")
+        return
     logging.info(f'base date column: {date_column}')
-    #
+
     aggs = [pl.count().alias("__count")]
     if target_column:
         aggs.append(
@@ -81,6 +74,16 @@ def make(config: Dict[str, Any]) -> Dict[str, Any]:
         .sort('__date')
     ).collect()
     return output, metadata
+
+
+def get_date_column(schema: pl.LazyFrame.schema) -> str:
+    """Get the name of the date column in the dataframe."""
+    candidates = cs.expand_selector(
+        schema,
+        cs.date() | cs.datetime()
+    )
+    if candidates:
+        return candidates[0]
 
 
 # def make_general(db, source: str, target: str, dt: str, path: str, filter: str = None):
