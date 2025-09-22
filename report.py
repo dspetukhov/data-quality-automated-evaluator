@@ -28,8 +28,8 @@ def make_report(
         df["__date"],
         df["__count"],
         df["__balance"] if metadata.get("__balance") else None,
-        file_path=f"{output}/{col}", config=config.get("plotly", {}))
-
+        file_path=f"{output}/{col}", config=config.get("plotly", {}),
+        titles=("__count", metadata.get("__balance")))
     md_toc.append(("Overview", col))
     md_content.append(f"## <a name='{col}'></a> Overview\n")
     md_content.append(f"![{col}]({col}.png)\n\n")
@@ -37,26 +37,29 @@ def make_report(
     for col in metadata:
         plot_data(
             df['__date'],
-            df[col + '_' + metadata[col]["common"][0]],
-            df[col + '_' + metadata[col]["common"][1]],
+            *[
+                df[col + '_' + metadata[col]["common"][i]]
+                for i in range(len(metadata[col]["common"]))
+            ],
             file_path=f"{output}/{col}",
-            config=config.get("plotly", {}))
+            config=config.get("plotly", {}),
+            titles=metadata[col]["common"])
         md_toc.append((col, col))
         md_content.append(f"## <a name='{col}'></a> {col}\n")
-        md_content.append(f"![{col}]({col}.png)\n")  # TODO: add [numeric] for this datatype
+        md_content.append(f"![{col}]({col}.png)\n")
 
         # Numeric datatypes if present
         if metadata[col].get("numeric"):
             plot_data(
                 df['__date'],
-                df[col + '_' + metadata[col]["numeric"][0]],
-                df[col + '_' + metadata[col]["numeric"][1]],
-                df[col + '_' + metadata[col]["numeric"][2]],
-                df[col + '_' + metadata[col]["numeric"][3]],
-                df[col + '_' + metadata[col]["numeric"][4]],
+                *[
+                    df[col + '_' + metadata[col]["numeric"][i]]
+                    for i in range(len(metadata[col]["numeric"]))
+                ],
                 file_path=f"{output}/{col}__numeric",
-                config=config.get("plotly", {}))
-            md_content.append("---\n")
+                config=config.get("plotly", {}),
+                titles=metadata[col]["numeric"])
+            md_content.append(f"### <a name='{col}'></a> {col} [numeric]\n")
             md_content.append(f"![{col}]({col}__numeric.png)\n")
         md_content.append('\n[Back to the `TOC`](#toc)\n\n')
 
