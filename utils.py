@@ -5,7 +5,7 @@ from plotly.graph_objs import Scatter
 import plotly.io as pio
 
 
-logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO)
 pio.templates.default = "plotly_white"
 
 
@@ -13,7 +13,8 @@ def plot_data(
     x: Sequence[Any],
     *data: Sequence[Any],
     file_path: str,
-    config: dict
+    config: dict,
+    titles: Sequence[str] = None,
 ) -> None:
     """Plots data using Plotly.
     Each y-series in `*data` will be plotted in a separate subplot.
@@ -27,16 +28,41 @@ def plot_data(
     Returns:
         None
     """
-    fig = make_subplots(rows=1, cols=len(data))
-    for i in range(len(data)):
+    n_subplots = len(data)
+    fig = make_subplots(
+        rows=1,
+        cols=n_subplots,
+        subplot_titles=[
+            config.get("titles", {}).get(el, el).capitalize()
+            if el else "" for el in titles]
+    )
+    for i in range(n_subplots):
+        if data[i] is None:
+            continue
         fig.add_trace(
             Scatter(x=x, y=data[i], **config.get("plot", {})),
-            row=1, col=i + 1,
+            row=1, col=i + 1
         )
-    fig.update_layout(**config.get("layout", {}))
-    fig.update_xaxes(automargin=True)
+    width = config.get("layout", {}).get("height", 1024)
+    width *= config.get("misc", {}).get("width_scale_factor", 1)
+    width *= n_subplots
+    fig.update_layout(
+        **config.get("layout", {}),
+        width=width)
+    fig.update_xaxes(
+        tickformat="%Y-%m-%d", **config.get("grid", {}))
+    fig.update_yaxes(**config.get("grid", {}))
+    # Left-align subplot titles
+    for i, annotation in enumerate(fig.layout.annotations):
+        print(annotation)
+        annotation.update(
+            x=annotation.x + (1 / n_subplots) / 2,
+            y=annotation.y + 0.01,
+            xanchor="right", yanchor="bottom", font={"weight": "normal"})
     try:
-        fig.write_image(f"{file_path}.png", width=1024, height=368)
+        fig.write_image(
+            f"{file_path}.png",
+            scale=config.get("misc", {}).get("scale", 1))
     except ValueError as e:
         logging.error(f"Failed to represent image: {e}")
     except IOError as e:
