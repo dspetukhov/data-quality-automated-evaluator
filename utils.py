@@ -5,7 +5,6 @@ from plotly.graph_objs import Scatter
 import plotly.io as pio
 
 
-# logging.basicConfig(level=logging.INFO)
 pio.templates.default = "plotly_white"
 
 
