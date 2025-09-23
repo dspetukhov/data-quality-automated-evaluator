@@ -1,5 +1,5 @@
 import logging
-from typing import Sequence, Any
+from typing import Sequence, Any, Tuple
 from plotly.subplots import make_subplots
 from plotly.graph_objs import Scatter
 import plotly.io as pio
@@ -9,11 +9,11 @@ pio.templates.default = "plotly_white"
 
 
 def plot_data(
-    x: Sequence[Any],
+    x: list,
     *data: Sequence[Any],
-    file_path: str,
     config: dict,
-    titles: Sequence[str] = None,
+    file_path: str,
+    titles: tuple = None,
 ) -> None:
     """Plots data using Plotly.
     Each y-series in `*data` will be plotted in a separate subplot.
@@ -23,6 +23,8 @@ def plot_data(
         x (list): The x-axis data.
         *data (list): A collection of y-axis data.
         config (dict): Plot and layout settings.
+        file_path (str): Path to save the plot image (without extension).
+        titles (tuple, optional): Titles for each subplot.
 
     Returns:
         None

@@ -1,7 +1,7 @@
 import os
 import logging
 from pathlib import Path
-from typing import Dict, List, Union, Any
+from typing import Dict, List, Union, Any, Tuple
 from polars import LazyFrame
 from utils import plot_data
 
@@ -18,6 +18,9 @@ def make_report(
         df (LazyFrame): The aggregated data.
         metadata (dict): Metainfo about aggregated data.
         config (dict): Configuration dictionary for making analysis and report.
+
+    Returns:
+        None
     """
     output = config.get("output", "output")
     Path(output).mkdir(exist_ok=True)
@@ -28,7 +31,8 @@ def make_report(
         df["__date"],
         df["__count"],
         df["__balance"] if metadata.get("__balance") else None,
-        file_path=f"{output}/{col}", config=config.get("plotly", {}),
+        config=config.get("plotly", {}),
+        file_path=f"{output}/{col}",
         titles=("__count", metadata.get("__balance")))
     md_toc.append(("Overview", col))
     md_content.append(f"## <a name='{col}'></a> Overview\n")
@@ -41,8 +45,8 @@ def make_report(
                 df[col + '_' + metadata[col]["common"][i]]
                 for i in range(len(metadata[col]["common"]))
             ],
-            file_path=f"{output}/{col}",
             config=config.get("plotly", {}),
+            file_path=f"{output}/{col}",
             titles=metadata[col]["common"])
         md_toc.append((col, col))
         md_content.append(f"## <a name='{col}'></a> {col}\n")
@@ -56,8 +60,8 @@ def make_report(
                     df[col + '_' + metadata[col]["numeric"][i]]
                     for i in range(len(metadata[col]["numeric"]))
                 ],
-                file_path=f"{output}/{col}__numeric",
                 config=config.get("plotly", {}),
+                file_path=f"{output}/{col}__numeric",
                 titles=metadata[col]["numeric"])
             md_content.append(f"### <a name='{col}'></a> {col} [numeric]\n")
             md_content.append(f"![{col}]({col}__numeric.png)\n")
@@ -66,13 +70,22 @@ def make_report(
 
 
 def make_md(
-        toc: List[str],
+        toc: List[Tuple[str, str]],
         content: List[str],
         output: str,
         source: str
 ) -> None:
     """
-    Make a markdown file with table of contents and content.
+    Make and write a markdown file with table of contents and content.
+
+    Args:
+        toc (list): List of tuples (section name, anchor).
+        content (list): List of markdown content strings.
+        output (str): Output directory path.
+        source (str): Source file path.
+
+    Returns:
+        None
     """
     toc = "".join([
         f"- [{section}](#{anchor})\n"

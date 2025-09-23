@@ -1,35 +1,35 @@
 import polars as pl
 import polars.selectors as cs
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 from utils import logging
 
 
-def make_analysis(config: Dict[str, Any]) -> Dict[str, Any]:
+def make_analysis(
+        config: Dict[str, Any]
+) -> Tuple[pl.LazyFrame, Dict[str, Tuple[str]]]:
     """
-    Perform preliminary analysis using Polars.
-    Perform general analysis on the dataframe by days.
-    Perform analysis of categorical columns by days:
-        - count of uniq values
-        - ratio of null values
-    Perform analysis of numerical columns by days:
-        - max value
-        - median value
-        - min value
-        - average value
-        - std_dev of value
-    ------------------------------------------------------------------------------
-    config: {
-        "source": str,  # path to the source file (Excel)
-        "date_column": str | None,  # name of the date column (if None, auto-detect)
-        "target_column": str | None,  # name of the target column (if any)
-        "output": str | None,  # path to the output directory
-    }
-    ------------------------------------------------------------------------------
-    returns: {
-        "results": pl.DataFrame,  # dataframe with aggregated results
-        "metadata": dict,  # metadata about the analysis
-    }
-    ------------------------------------------------------------------------------
+    Perform data analysis using Polars
+    by aggregating column values over dates.
+    It includes:
+    1. General statistics:
+        - number of records per day in dataframe
+        - class balance, i.e. average of the target column per day (if present)
+    2. Statistics for each column:
+        - number of unique values per day
+        - ratio of null values per day
+    3. Statistic for numerical columns (according to pl.LazyFrame.schema):
+        - min value per day
+        - max value per day
+        - mean value per day
+        - median value per day
+        - standard deviation per day
+
+    Args:
+        config (dict): Configuration dictionary for making analysis and report.
+
+    Returns:
+        LazyFrame: Dataframe with aggregated data.
+        dict: Metainfo about aggregated data.
     """
     df = pl.read_excel(config['source']).lazy()
     schema = df.collect_schema()
@@ -77,7 +77,15 @@ def make_analysis(config: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def get_date_column(schema: pl.LazyFrame.schema) -> str:
-    """Get the name of the date column in the dataframe."""
+    """
+    Get the name of the date column in the dataframe.
+
+    Args:
+        schema (polars.LazyFrame.schema): The schema of the dataframe.
+
+    Returns:
+        str: The name of the first date column, or None if not found.
+    """
     candidates = cs.expand_selector(
         schema,
         cs.date() | cs.datetime()
