@@ -15,6 +15,7 @@ if __name__ == "__main__":
                 conifg = None
         if config and os.path.exists(config.get("source")):
             df, metadata = make_analysis(config)
-            make_report(df, metadata, config)
+            if df is not None:
+                make_report(df, metadata, config)
     else:
         logging.warning("Configuration file wasn't found.")
