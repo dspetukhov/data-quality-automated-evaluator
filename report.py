@@ -27,7 +27,7 @@ def make_report(
 
     md_toc, md_content = [], []
     col = "__overview"
-    plot_data(
+    stats = plot_data(
         df["__date"],
         df["__count"],
         df["__balance"] if metadata.get("__balance") else None,
@@ -37,9 +37,10 @@ def make_report(
     md_toc.append(("Overview", col))
     md_content.append(f"## <a name='{col}'></a> Overview\n")
     md_content.append(f"![{col}]({col}.png)\n\n")
+    md_content.append(make_md_table(stats))
 
     for col in metadata:
-        plot_data(
+        stats = plot_data(
             df['__date'],
             *[
                 df[col + '_' + metadata[col]["common"][i]]
@@ -53,6 +54,7 @@ def make_report(
         # Predictive power if present
         # md_content.append(f"### <a name='{col}'></a> {col} [common]\n")
         md_content.append(f"![{col}]({col}.png)\n")
+        md_content.append(make_md_table(stats))
 
         # Numeric datatypes if present
         if metadata[col].get("numeric"):
@@ -102,3 +104,39 @@ def make_md(
                 "".join(content))
     except IOError as e:
         logging.error(f"Failed to write file: {e}")
+
+
+def make_md_table(data) -> str:
+    """
+    Make a markdown table from a dictionary.
+
+    Args:
+        data (dict): Dictionary with data to be converted to a table.
+
+    Returns:
+        str: Markdown table as an HTML code.
+    """
+    header, content = [], []
+    for key in data.keys():
+        header.append(f"<th>{key}</th>")
+        for k, v in data[key].items():
+            if k == "Range":
+                v = f"{k}: {v['Max'] - v['Min']} | Min: {v['Min']} | Max: {v['Max']}"
+            elif k == "IQR":
+                v = f"{k}: {v['Q3'] - v['Q1']} | Q1: {v['Q1']} | Q3: {v['Q3']}"
+            content.append(f"<tr><td>{v}</td></tr>\n")
+    output = """
+        <table style="width:100%; table-layout:fixed; border-collapse:collapse; border-bottom: 1px solid black;">
+        <colgroup>
+            <col style="width:50%; border:5px solid transparent">
+            <col style="width:50%">
+        </colgroup>
+        <tr>{header}</tr>
+        {content}
+        </table>
+    """.format(
+        header="".join(header),
+        content="".join(content))
+    return "".join([
+        line.lstrip() for line in output.splitlines()
+    ]) + "\n\n"
