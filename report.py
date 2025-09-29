@@ -8,7 +8,7 @@ from utils import plot_data
 
 def make_report(
         df: LazyFrame,
-        metadata: Dict[str, Union[List[str], str]],
+        metadata: Dict[str, Union[Tuple[str], str]],
         config: Dict[str, Any]
 ) -> None:
     """
@@ -49,7 +49,9 @@ def make_report(
             file_path=f"{output}/{col}",
             titles=metadata[col]["common"])
         md_toc.append((col, col))
-        md_content.append(f"## <a name='{col}'></a> {col}\n")
+        md_content.append(f"## <a name='{col}'></a> `{col}`\n")
+        # Predictive power if present
+        # md_content.append(f"### <a name='{col}'></a> {col} [common]\n")
         md_content.append(f"![{col}]({col}.png)\n")
 
         # Numeric datatypes if present
@@ -63,9 +65,10 @@ def make_report(
                 config=config.get("plotly", {}),
                 file_path=f"{output}/{col}__numeric",
                 titles=metadata[col]["numeric"])
-            md_content.append(f"### <a name='{col}'></a> {col} [numeric]\n")
+            md_content.append(
+                f"### <a name='{col}'></a> [{metadata[col]['dtype']}]\n")
             md_content.append(f"![{col}]({col}__numeric.png)\n")
-        md_content.append('\n[Back to the `TOC`](#toc)\n\n')
+        md_content.append('\n[Back to the TOC](#toc)\n\n')
     make_md(md_toc, md_content, output, config["source"])
 
 
