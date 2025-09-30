@@ -1,6 +1,11 @@
 {
-    "source": "../datasets/online-retail.xlsx",
-    "output": "online-retail",
+    "source": "../datasets/metaverse_transactions_dataset.csv",
+    "date_column": "timestamp",
+    "output": "metaverse_transactions_dataset",
+    "anomalies": {
+        "multiplier": 1.5,
+        "threshold": 3.0
+    },
     "plotly": {
         "titles": {
             "std": "Standard deviation",
@@ -26,7 +31,7 @@
             }
         },
         "layout": {
-            "margin": { "l": 20, "r": 20, "t": 20, "b": 20 },
+            "margin": { "l": 20, "r": 20, "t": 30, "b": 20 },
             "showlegend": false,
             "height": 384
         },
@@ -37,8 +42,13 @@
             "gridwidth": 0.5
         },
         "misc": {
+            "height_scale_factor": 0.95,
             "width_scale_factor": 1.3,
             "scale": 2
+        },
+        "subplots": {
+            "horizontal_spacing": 0.05,
+            "vertical_spacing": 0.065
         }
     }
 }

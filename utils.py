@@ -1,10 +1,8 @@
 import logging
-import numpy as np
-from typing import Sequence, Any, Tuple, List
+from typing import Sequence, Any, Dict
 from plotly.subplots import make_subplots
 from plotly.graph_objs import Scatter
 import plotly.io as pio
-# from polars import Series
 
 
 pio.templates.default = "plotly_white"
@@ -15,7 +13,7 @@ def plot_data(
     *data: Sequence[Any],
     config: dict,
     file_path: str,
-    titles: tuple = None,
+    titles: tuple,
 ) -> None:
     """Plots data using Plotly.
     Each y-series in `*data` will be plotted in a separate subplot.
@@ -32,50 +30,46 @@ def plot_data(
         None
     """
     n_subplots = len(data)
+    n_cols = 2
+    n_rows = n_cols * (n_subplots % 2) + 1
     fig = make_subplots(
-        rows=2 * (n_subplots % 2) + 1,
-        cols=2,
+        rows=n_rows, cols=n_cols,
         horizontal_spacing=config.get("subplots", {})
         .get("horizontal_spacing", 0.1),
-        # vertical_spacing=0.05,
+        vertical_spacing=config.get("subplots", {})
+        .get("vertical_spacing", 0.1),
         subplot_titles=[
             config.get("titles", {}).get(el, el).capitalize()
-            if el else "" for el in titles]
+            if el else "" for el in (titles or [""] * n_subplots)]
     )
     output = {}
     for i in range(n_subplots):
         if data[i] is None:
             continue
-        output[fig.layout.annotations[i].text] = {
-            "mean_std": f"μ±σ: {data[i].mean():.2f}±{data[i].std():.2f}",
-            "Range": {
-                "Min": data[i].min(),
-                "Max": data[i].max()},
-            "IQR": {
-                "Q1": data[i].quantile(0.25),
-                "Q3": data[i].quantile(0.75)},
-            # TODO: calculate anomalies according to Z-score and IQR
-            # "iqr_anomalies": f"Q1: {np.percentile(data[i], 25):.2f}, Q3: {np.percentile(data[i], 75):.2f}",
-            # "zscore_anomalies": detect_anomalies_zscore(data[i])
-        }
         fig.add_trace(
             Scatter(x=x, y=data[i], **config.get("plot", {})),
-            row=i // 2 + 1, col=i % 2 + 1
+            row=(i // n_cols) + 1, col=(i % n_cols) + 1
         )
-    width = config.get("layout", {}).get("height", 512)
-    width *= config.get("misc", {}).get("width_scale_factor", 1)
-    width *= n_subplots
-    fig.update_layout(
-        **config.get("layout", {}),
-        width=width)
+        output[fig.layout.annotations[i].text] = get_extra_stats(data[i], config)
+
+    layout = config.get("layout", {}).copy()
+    height = layout.get("height", 512)
+    layout.update({
+        "width": height * n_cols *
+        config.get("misc", {}).get("width_scale_factor", 1),
+        "height": height * n_rows *
+        config.get("misc", {}).get("height_scale_factor", 1)
+        if n_rows > 1 else height
+    })
+    fig.update_layout(layout)
     fig.update_xaxes(
         tickformat="%Y-%m-%d", **config.get("grid", {}))
     fig.update_yaxes(**config.get("grid", {}))
     # Left-align subplot titles
     for i, annotation in enumerate(fig.layout.annotations):
         annotation.update(
-            x=annotation.x + (1 / n_subplots) / 2.05,
-            y=annotation.y + 0.01,
+            x=annotation.x + (1 / n_cols) / 2.005,
+            y=annotation.y + 0.005,
             xanchor="right", yanchor="bottom", font={"weight": "normal"})
     try:
         fig.write_image(
@@ -88,70 +82,46 @@ def plot_data(
     return output
 
 
-def detect_anomalies_zscore(data: Sequence[float], threshold: float = 3.0) -> List[str]:
+def get_extra_stats(
+        data: Sequence[float],
+        config: Dict[str, float]
+) -> Dict[str, float]:
     """
-    Detect anomalies using z-score method.
+    Detect anomalies in the series of data using the IQR and Z-score methods.
 
     Args:
-        data (Sequence[float]): Time series data values.
-        threshold (float, optional): Z-score threshold for anomaly detection. Defaults to 3.0.
+        data (pl.Series): Series of data aggregated over dates.
+        config (dict): Values for
+            - IQR multiplier (default 1.5),
+            - Z-score threshold for anomaly detection (default 3.0).
 
     Returns:
-        List[str]: Colors for each point ('green', 'yellow', 'red').
+        dict: Dictionary with descriptive statistics.
     """
-    # data = np.array(data)
-    print(type(data), data.shape)
+    # IQR
+    q1 = data.quantile(0.25)
+    q3 = data.quantile(0.75)
+    lower_bound = q1 - config.get("multiplier", 1.5) * (q3 - q1)
+    upper_bound = q3 + config.get("multiplier", 1.5) * (q3 - q1)
+    anomalies_iqr = (
+        (data < lower_bound) | (data > upper_bound)
+    ).sum()
+    # Z-score
     mean, std = data.mean(), data.std()
-    # mean, std = np.mean(data), np.std(data)
     if std == 0:
-        return ['green'] * data.shape[0]
-    z_scores = np.abs((data - mean) / std)
-    return [
-        'green' if z < threshold * 0.5 else
-        'yellow' if z < threshold else
-        'red'
-        for z in z_scores
-    ]
+        anomalies_zscore = 0
+    else:
+        anomalies_zscore = (
+            ((data - mean) / std).abs() > config.get("threshold", 3.0)
+        ).sum()
 
-
-# def calculate_statistics(data: Series) -> str:
-#     """
-#     Calculate mean and std for a series.
-
-#     Args:
-#         data (Sequence[float]): Data series.
-
-#     Returns:
-#         str: Formatted statistics string.
-#     """
-#     print(type(data), data.mean(), data.std())
-#     mean, std = np.mean(data), np.std(data)
-#     return f"μ±σ: {mean:.2f}±{std:.2f}"
-
-
-# def estimate_predictive_power(
-#     x: list,
-#     y: list,
-#     threshold: float = 3.0
-# ) -> Tuple[float, List[str]]:
-#     """
-#     Estimate predictive power of x for y using z-score anomaly detection.
-
-#     Args:
-#         x (list): Predictor variable data.
-#         y (list): Target variable data.
-#         threshold (float, optional): Z-score threshold for anomaly detection. Defaults to 3.0.
-
-#     Returns:
-#         Tuple[float, List[str]]: Predictive power score and colors for each point.
-#     """
-#     if len(x) != len(y) or len(x) < 2:
-#         return 0.0, ['green'] * len(x)
-#     x_anomalies = detect_anomalies_zscore(x, threshold)
-#     y_anomalies = detect_anomalies_zscore(y, threshold)
-#     matches = sum(
-#         1 for xa, ya in zip(x_anomalies, y_anomalies)
-#         if (xa == 'red' and ya == 'red') or (xa != 'red' and ya != 'red')
-#     )
-#     score = matches / len(x)
-#     return score, x_anomalies
+    return {
+        "mean_std": f"μ±σ: {mean:.2f}±{std:.2f}",
+        "Range": {
+            "Min": data.min(), "Max": data.max()},
+        "IQR": {"Q1": q1, "Q3": q3},
+        "Anomalies": {
+            "IQR": 100 * anomalies_iqr / len(data),
+            "Z-score": 100 * anomalies_zscore / len(data)
+        }
+    }
