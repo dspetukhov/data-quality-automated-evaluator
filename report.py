@@ -58,7 +58,7 @@ def make_report(
 
         # Numeric datatypes if present
         if metadata[col].get("numeric"):
-            plot_data(
+            stats = plot_data(
                 df['__date'],
                 *[
                     df[col + '_' + metadata[col]["numeric"][i]]
@@ -70,6 +70,7 @@ def make_report(
             md_content.append(
                 f"### <a name='{col}'></a> [{metadata[col]['dtype']}]\n")
             md_content.append(f"![{col}]({col}__numeric.png)\n")
+            md_content.append(make_md_table(stats))
         md_content.append('\n[Back to the TOC](#toc)\n\n')
     make_md(md_toc, md_content, output, config["source"])
 
@@ -124,6 +125,8 @@ def make_md_table(data) -> str:
                 v = f"{k}: {v['Max'] - v['Min']} | Min: {v['Min']} | Max: {v['Max']}"
             elif k == "IQR":
                 v = f"{k}: {v['Q3'] - v['Q1']} | Q1: {v['Q1']} | Q3: {v['Q3']}"
+            elif k == "Anomalies":
+                v = f"{k} (%): IQR: {v['IQR']:.2f} | Z-score: {v['Z-score']:.2f}"
             content.append(f"<tr><td>{v}</td></tr>\n")
     output = """
         <table style="width:100%; table-layout:fixed; border-collapse:collapse; border-bottom: 1px solid black;">
