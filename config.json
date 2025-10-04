@@ -2,17 +2,20 @@
     "source": "../datasets/metaverse_transactions_dataset.csv",
     "date_column": "timestamp",
     "output": "metaverse_transactions_dataset",
+    "mapping": {
+        "_uniq": "Number of unique values",
+        "_null_ratio": "Ratio of null values",
+        "_min": "Min",
+        "_max": "Max",
+        "_mean": "Mean",
+        "_median": "Median",
+        "_std": "Standard deviation"
+    },
     "anomalies": {
         "multiplier": 1.5,
         "threshold": 3.0
     },
     "plotly": {
-        "titles": {
-            "std": "Standard deviation",
-            "uniq": "Number of unique values",
-            "null_ratio": "Ratio of null values",
-            "__count": "Number of values"
-        },
         "plot": {
             "mode": "lines+markers",
             "line": {

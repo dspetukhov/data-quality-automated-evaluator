@@ -51,7 +51,7 @@ def make_analysis(
         aggs.append(
             pl.col(target_column).mean().alias("__balance")
         )
-        metadata = {"__balance": True}
+        metadata = {"__balance": "Class balance"}
     else:
         metadata = {}
     for col in schema.names():
@@ -63,7 +63,7 @@ def make_analysis(
         ])
         metadata[col] = {
             "dtype": str(schema[col]),
-            "common": ("uniq", "null_ratio")
+            "common": ("_uniq", "_null_ratio")
         }
         if col in cs.expand_selector(schema, cs.numeric()):
             aggs.extend([
@@ -73,7 +73,10 @@ def make_analysis(
                 pl.col(col).median().alias(f"{col}_median"),
                 pl.col(col).std().alias(f"{col}_std"),
             ])
-            metadata[col]["numeric"] = ("min", "max", "mean", "median", "std")
+            metadata[col]["numeric"] = (
+                "_min", "_max",
+                "_mean", "_median",
+                "_std")
     # Perform aggregations
     output = (
         df.group_by(pl.col(date_column).dt.date().alias('__date'))
