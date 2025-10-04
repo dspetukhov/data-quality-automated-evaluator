@@ -50,7 +50,7 @@ def plot_data(
             Scatter(x=x, y=data[i], **config.get("plot", {})),
             row=(i // n_cols) + 1, col=(i % n_cols) + 1
         )
-        output[fig.layout.annotations[i].text] = get_extra_stats(data[i], config)
+        output[fig.layout.annotations[i].text] = evaluate_data(data[i], config)
 
     layout = config.get("layout", {}).copy()
     height = layout.get("height", 512)
@@ -82,12 +82,12 @@ def plot_data(
     return output
 
 
-def get_extra_stats(
+def evaluate_data(
         data: Sequence[float],
         config: Dict[str, float]
 ) -> Dict[str, float]:
     """
-    Detect anomalies in the series of data using the IQR and Z-score methods.
+    Get Detect anomalies in the series of data using the IQR and Z-score methods.
 
     Args:
         data (pl.Series): Series of data aggregated over dates.
@@ -96,7 +96,11 @@ def get_extra_stats(
             - Z-score threshold for anomaly detection (default 3.0).
 
     Returns:
-        dict: Dictionary with descriptive statistics.
+        dict: Dictionary with descriptive statistics including:
+            - Mean and standard deviation,
+            - Range of values,
+            - Q1 and Q3,
+            - Anomalies ratio according to IQR and Z-score.
     """
     # IQR
     q1 = data.quantile(0.25)
