@@ -118,27 +118,35 @@ def make_md_table(data) -> str:
     Returns:
         str: Markdown table as an HTML code.
     """
-    print(data)
+    print(data, len(data))
     width = 100 // len(data)
     header, content = [], []
-    for el in data:
-        if not el:
-            continue
-        for k, v in el.items():
-            if k == "title":
-                header.append(
-                    f"<th style='text-align:center; width:{width}%'>{v}</th>")
-            if k == "Range" and isinstance(v, dict):
-                el = f"{k}: {v['Max'] - v['Min']:.4f}<br/>Min: {v['Min']:.4f}<br/>Max: {v['Max']:.4f}"
-            elif k == "IQR" and isinstance(v, dict):
-                el = f"{k}: {v['Q3'] - v['Q1']:.4f}<br/>Q1: {v['Q1']:.4f}<br/>Q3: {v['Q3']:.4f}"
-            elif k == "Anomalies" and isinstance(v, dict):
-                el = f"IQR: {v['IQR']:.2f}%<br/>Z-score: {v['Z-score']:.2f}%"
-            # elif isinstance(v, (int, float)):
-            #     el = f"{v:.3f}"
-            else:
-                el = str(v)
-            content.append(f"<td style='text-align:center; padding:5px'>{el}</td>")
+    for el in next((el for el in data if el is not None)):
+        print(el, type(el))
+        if el == "title":
+            header = [
+                f"<th style='text-align:center; width:{width}%'>{el.get('title','')}</th>"
+                for el in data
+            ]
+        if el == "Range":
+            content.extend([
+                f"<td style='text-align:center; padding:5px'>{x}</td>"
+                for x in data
+            ])
+            # if k == "Range" and isinstance(v, dict):
+            #     el = f"{k}: {v['Max'] - v['Min']:.4f}<br/>Min: {v['Min']:.4f}<br/>Max: {v['Max']:.4f}"
+            # elif k == "IQR" and isinstance(v, dict):
+            #     el = f"{k}: {v['Q3'] - v['Q1']:.4f}<br/>Q1: {v['Q1']:.4f}<br/>Q3: {v['Q3']:.4f}"
+            # elif k == "Anomalies" and isinstance(v, dict):
+            #     el = f"IQR: {v['IQR']:.2f}%<br/>Z-score: {v['Z-score']:.2f}%"
+            # # elif isinstance(v, (int, float)):
+            # #     el = f"{v:.3f}"
+        else:
+            content.extend([
+                f"<td style='text-align:center; padding:5px'>{x.get(el, '')}</td>"
+                for x in data
+            ])
+            # content.append(f"<td style='text-align:center; padding:5px'>{el}</td>")
     # if any("—" not in cell for cell in row_cells):
         # rows.append(f"<tr>{''.join(row_cells)}</tr>")
 
@@ -152,7 +160,7 @@ def make_md_table(data) -> str:
         #         v = f"{k} (%): IQR: {v['IQR']:.2f} | Z-score: {v['Z-score']:.2f}"
         #     content.append(f"<tr><td>{v}</td></tr>\n")
     output = """
-        <table style="width:100%; table-layout:fixed; border-collapse:collapse; border: 1px solid #ddd; margin: 10px 0;">
+        <table style="width:100%; table-layout:fixed; border-collapse:collapse; border:1px solid #ddd; margin:5px 0;">
         <colgroup>
             {colgroup}
         </colgroup>
@@ -168,7 +176,7 @@ def make_md_table(data) -> str:
             [f'<col style="width:{width}%">' for _ in range(len(data))]
         ),
         header="".join(header),
-        content="".join(content)
+        content="".join([f"<tr>{el}</tr>" for el in content])
     )
     return "\n".join([
         line.lstrip() for line in output.splitlines()
