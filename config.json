@@ -11,6 +11,10 @@
         "_median": "Median",
         "_std": "Standard deviation"
     },
+    "html": {
+        "basic": "text-align:center;",
+        "padding": "padding:5px"
+    },
     "anomalies": {
         "multiplier": 1.5,
         "threshold": 3.0

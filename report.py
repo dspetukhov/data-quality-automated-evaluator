@@ -37,7 +37,7 @@ def make_report(
     md_toc.append(("Overview", col))
     md_content.append(f"## <a name='{col}'></a> Overview\n")
     md_content.append(f"![{col}]({col}.png)\n\n")
-    md_content.append(make_md_table(stats))
+    md_content.append(make_md_table(stats, config.get("html", {})))
 
     mapping = config.get("mapping", {})
     for col in metadata:
@@ -55,7 +55,7 @@ def make_report(
         # Predictive power if present
         # md_content.append(f"### <a name='{col}'></a> {col} [common]\n")
         md_content.append(f"![{col}]({col}.png)\n")
-        md_content.append(make_md_table(stats))
+        md_content.append(make_md_table(stats, config.get("html", {})))
 
         # Numeric datatypes if present
         if metadata[col].get("numeric"):
@@ -71,7 +71,9 @@ def make_report(
             md_content.append(
                 f"### <a name='{col}'></a> [{metadata[col]['dtype']}]\n")
             md_content.append(f"![{col}]({col}__numeric.png)\n")
-            md_content.append(make_md_table(stats))
+            md_content.append(
+                make_md_table(stats, config.get("html", {}))
+            )
         md_content.append('\n[Back to the TOC](#toc)\n\n')
     make_md(md_toc, md_content, output, config["source"])
 
@@ -108,7 +110,7 @@ def make_md(
         logging.error(f"Failed to write file: {e}")
 
 
-def make_md_table(data) -> str:
+def make_md_table(data, config) -> str:
     """
     Make a markdown table from a dictionary.
 
@@ -118,7 +120,6 @@ def make_md_table(data) -> str:
     Returns:
         str: Markdown table as an HTML code.
     """
-    ld = len(data)
     _width = 10
     width = (100 - _width) // len(data)
     data = {
@@ -127,28 +128,31 @@ def make_md_table(data) -> str:
     }
     print(data, len(data))
     print()
-    header = [f"<th style='text-align:center; width:{_width}%'></th>"]
+    # css styles for html
+    style = config.get("basic", "")
+    padding = style + config.get("padding", "")
+    header = [f"<th style='{style};width:{_width}%'></th>"]
     content = []
     for key, value in data.items():
         if key == "title":
             header.extend([
-                f"<th style='text-align:center; width:{width}%'>{el}</th>"
+                f"<th style='{padding};width:{width}%'>{el}</th>"
                 for el in value
             ])
             continue
         el = next((el for el in value if el is not None))
         if isinstance(el, str):
-            _content = [f"<td style='text-align:center; padding:5px; font-weight:bold'>{key}</td>"]
+            _content = [f"<td style='{padding};font-weight:bold'>{key}</td>"]
             _content.extend([
-                f"<td style='text-align:center; padding:5px'>{item}</td>"
+                f"<td style='{padding}'>{item}</td>"
                 for item in value
             ])
             content.append("".join(_content))
         else:
             for k in el:
-                _content = [f"<td style='text-align:center; padding:5px'>{k}</td>"]
+                _content = [f"<td style='{padding};font-weight:bold'>{key} [{k}]</td>"]
                 _content.extend([
-                    f"<td style='text-align:center; padding:5px'>{v}</td>"
+                    f"<td style='{padding}'>{v}</td>"
                     for v in
                     [
                         item.get(k) if isinstance(item, dict) else ""
@@ -157,27 +161,27 @@ def make_md_table(data) -> str:
                 ])
                 content.append("".join(_content))
             if key == "Range":
-                _content = [f"<td style='text-align:center; padding:5px'>{key}</td>"]
+                _content = [f"<td style='{padding};font-weight:bold'>{key}</td>"]
                 for item in value:
                     if not item:
                         _content.append("")
                         continue
                     _content.append(
-                        f"<td style='text-align:center; padding:5px'>{item['Max'] - item['Min']:.4f}</td>" 
+                        f"<td style='{padding}'>{(item['Max'] - item['Min']):.4f}</td>"
                     )
                 content.append("".join(_content))
             if key == "IQR":
-                _content = [f"<td style='text-align:center; padding:5px'>{key}</td>"]
+                _content = [f"<td style='{padding};font-weight:bold'>{key}</td>"]
                 for item in value:
                     if not item:
                         _content.append("")
                         continue
                     _content.append(
-                        f"<td style='text-align:center; padding:5px'>{item['Q3'] - item['Q1']:.4f}</td>" 
+                        f"<td style='{padding}'>{(item['Q3'] - item['Q1']):.4f}</td>"
                     )
                 content.append("".join(_content))
     output = """
-        <table style="width:100%; table-layout:fixed; border-collapse:collapse; border:1px solid #ddd; margin:5px 0;">
+        <table style="width:100%;table-layout:fixed;border-collapse:collapse;border:1px solid #ddd;margin:5px 0;">
         <colgroup>
             {colgroup}
         </colgroup>
@@ -191,7 +195,7 @@ def make_md_table(data) -> str:
     """.format(
         colgroup="".join(
             ["<col style='width:{_width}%'>"] +
-            [f'<col style="width:{width}%">' for _ in range(ld)]
+            [f'<col style="width:{width}%">' for _ in range(len(header) - 1)]
         ),
         header="".join(header),
         content="".join([f"<tr>{el}</tr>" for el in content])
