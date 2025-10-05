@@ -39,18 +39,20 @@ def plot_data(
         vertical_spacing=config.get("subplots", {})
         .get("vertical_spacing", 0.1),
         subplot_titles=[
-            config.get("titles", {}).get(el, el).capitalize()
-            if el else "" for el in (titles or [""] * n_subplots)]
+            el if el else "" for el in (titles or [""] * n_subplots)]
     )
-    output = {}
+    output = []
     for i in range(n_subplots):
         if data[i] is None:
+            output.append({})
             continue
         fig.add_trace(
             Scatter(x=x, y=data[i], **config.get("plot", {})),
             row=(i // n_cols) + 1, col=(i % n_cols) + 1
         )
-        output[fig.layout.annotations[i].text] = evaluate_data(data[i], config)
+        output.append({
+            **evaluate_data(data[i], config),
+            **{"title": fig.layout.annotations[i].text}})
 
     layout = config.get("layout", {}).copy()
     height = layout.get("height", 512)
@@ -120,7 +122,7 @@ def evaluate_data(
         ).sum()
 
     return {
-        "mean_std": f"μ±σ: {mean:.2f}±{std:.2f}",
+        "μ±σ": f"{mean:.2f}±{std:.2f}",
         "Range": {
             "Min": data.min(), "Max": data.max()},
         "IQR": {"Q1": q1, "Q3": q3},

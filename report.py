@@ -118,47 +118,64 @@ def make_md_table(data) -> str:
     Returns:
         str: Markdown table as an HTML code.
     """
+    ld = len(data)
+    _width = 10
+    width = (100 - _width) // len(data)
+    data = {
+        key: [d.get(key, "") for d in data]
+        for key in next((el for el in data if el is not None))
+    }
     print(data, len(data))
-    width = 100 // len(data)
-    header, content = [], []
-    for el in next((el for el in data if el is not None)):
-        print(el, type(el))
-        if el == "title":
-            header = [
-                f"<th style='text-align:center; width:{width}%'>{el.get('title','')}</th>"
-                for el in data
-            ]
-        if el == "Range":
-            content.extend([
-                f"<td style='text-align:center; padding:5px'>{x}</td>"
-                for x in data
+    print()
+    header = [f"<th style='text-align:center; width:{_width}%'></th>"]
+    content = []
+    for key, value in data.items():
+        if key == "title":
+            header.extend([
+                f"<th style='text-align:center; width:{width}%'>{el}</th>"
+                for el in value
             ])
-            # if k == "Range" and isinstance(v, dict):
-            #     el = f"{k}: {v['Max'] - v['Min']:.4f}<br/>Min: {v['Min']:.4f}<br/>Max: {v['Max']:.4f}"
-            # elif k == "IQR" and isinstance(v, dict):
-            #     el = f"{k}: {v['Q3'] - v['Q1']:.4f}<br/>Q1: {v['Q1']:.4f}<br/>Q3: {v['Q3']:.4f}"
-            # elif k == "Anomalies" and isinstance(v, dict):
-            #     el = f"IQR: {v['IQR']:.2f}%<br/>Z-score: {v['Z-score']:.2f}%"
-            # # elif isinstance(v, (int, float)):
-            # #     el = f"{v:.3f}"
+            continue
+        el = next((el for el in value if el is not None))
+        if isinstance(el, str):
+            _content = [f"<td style='text-align:center; padding:5px; font-weight:bold'>{key}</td>"]
+            _content.extend([
+                f"<td style='text-align:center; padding:5px'>{item}</td>"
+                for item in value
+            ])
+            content.append("".join(_content))
         else:
-            content.extend([
-                f"<td style='text-align:center; padding:5px'>{x.get(el, '')}</td>"
-                for x in data
-            ])
-            # content.append(f"<td style='text-align:center; padding:5px'>{el}</td>")
-    # if any("—" not in cell for cell in row_cells):
-        # rows.append(f"<tr>{''.join(row_cells)}</tr>")
-
-        # header.append(f"<th>{key}</th>")
-        # for k, v in data[key].items():
-        #     if k == "Range":
-        #         v = f"{k}: {v['Max'] - v['Min']} | Min: {v['Min']} | Max: {v['Max']}"
-        #     elif k == "IQR":
-        #         v = f"{k}: {v['Q3'] - v['Q1']} | Q1: {v['Q1']} | Q3: {v['Q3']}"
-        #     elif k == "Anomalies":
-        #         v = f"{k} (%): IQR: {v['IQR']:.2f} | Z-score: {v['Z-score']:.2f}"
-        #     content.append(f"<tr><td>{v}</td></tr>\n")
+            for k in el:
+                _content = [f"<td style='text-align:center; padding:5px'>{k}</td>"]
+                _content.extend([
+                    f"<td style='text-align:center; padding:5px'>{v}</td>"
+                    for v in
+                    [
+                        item.get(k) if isinstance(item, dict) else ""
+                        for item in value
+                    ]
+                ])
+                content.append("".join(_content))
+            if key == "Range":
+                _content = [f"<td style='text-align:center; padding:5px'>{key}</td>"]
+                for item in value:
+                    if not item:
+                        _content.append("")
+                        continue
+                    _content.append(
+                        f"<td style='text-align:center; padding:5px'>{item['Max'] - item['Min']:.4f}</td>" 
+                    )
+                content.append("".join(_content))
+            if key == "IQR":
+                _content = [f"<td style='text-align:center; padding:5px'>{key}</td>"]
+                for item in value:
+                    if not item:
+                        _content.append("")
+                        continue
+                    _content.append(
+                        f"<td style='text-align:center; padding:5px'>{item['Q3'] - item['Q1']:.4f}</td>" 
+                    )
+                content.append("".join(_content))
     output = """
         <table style="width:100%; table-layout:fixed; border-collapse:collapse; border:1px solid #ddd; margin:5px 0;">
         <colgroup>
@@ -173,7 +190,8 @@ def make_md_table(data) -> str:
         </table>
     """.format(
         colgroup="".join(
-            [f'<col style="width:{width}%">' for _ in range(len(data))]
+            ["<col style='width:{_width}%'>"] +
+            [f'<col style="width:{width}%">' for _ in range(ld)]
         ),
         header="".join(header),
         content="".join([f"<tr>{el}</tr>" for el in content])
@@ -181,30 +199,3 @@ def make_md_table(data) -> str:
     return "\n".join([
         line.lstrip() for line in output.splitlines()
     ]) + "\n\n"
-    # return output + "\n\n"
-
-#     headers = [f"<th style='text-align:center; width:20%'>{key}</th>" for key in ordered_keys]
-#     all_stats = set()
-#     for stats_dict in data.values():
-#         all_stats.update(stats_dict.keys())
-#     rows = []
-#     for stat_type in sorted(all_stats):
-#         row_cells = []
-#         for key in ordered_keys:
-#             if key in data and stat_type in data[key]:
-#                 value = data[key][stat_type]
-#                 if stat_type == "Range" and isinstance(value, dict):
-#                     cell_value = f"Range: {value['Max'] - value['Min']:.3f}<br/>Min: {value['Min']:.3f}<br/>Max: {value['Max']:.3f}"
-#                 elif stat_type == "IQR" and isinstance(value, dict):
-#                     cell_value = f"IQR: {value['Q3'] - value['Q1']:.3f}<br/>Q1: {value['Q1']:.3f}<br/>Q3: {value['Q3']:.3f}"
-#                 elif stat_type == "Anomalies" and isinstance(value, dict):
-#                     cell_value = f"IQR: {value['IQR']:.2f}%<br/>Z-score: {value['Z-score']:.2f}%"
-#                 elif isinstance(value, (int, float)):
-#                     cell_value = f"{value:.3f}"
-#                 else:
-#                     cell_value = str(value)
-#             else:
-#                 cell_value = "—"
-#             row_cells.append(f"<td style='text-align:center; padding:5px'>{cell_value}</td>")
-#         if any("—" not in cell for cell in row_cells):
-#             rows.append(f"<tr>{''.join(row_cells)}</tr>")
