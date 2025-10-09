@@ -2,22 +2,15 @@
     "source": "../datasets/metaverse_transactions_dataset.csv",
     "date_column": "timestamp",
     "output": "metaverse_transactions_dataset",
-    "mapping": {
-        "_uniq": "Number of unique values",
-        "_null_ratio": "Ratio of null values",
-        "_min": "Min",
-        "_max": "Max",
-        "_mean": "Mean",
-        "_median": "Median",
-        "_std": "Standard deviation"
-    },
-    "html": {
-        "basic": "text-align:center;",
-        "padding": "padding:5px"
+    "transformations": {
     },
     "anomalies": {
         "multiplier": 1.5,
         "threshold": 3.0
+    },
+    "markdown": {
+        "index_column": 10,
+        "html_style": "text-align:center;padding:5px"
     },
     "plotly": {
         "plot": {
@@ -57,5 +50,14 @@
             "horizontal_spacing": 0.05,
             "vertical_spacing": 0.065
         }
+    },
+    "mapping": {
+        "_uniq": "Number of unique values",
+        "_null_ratio": "Ratio of null values",
+        "_min": "Min",
+        "_max": "Max",
+        "_mean": "Mean",
+        "_median": "Median",
+        "_std": "Standard deviation"
     }
 }
