@@ -1,3 +1,4 @@
+import sys
 import polars as pl
 import polars.selectors as cs
 from typing import Dict, Any, Tuple, Union
@@ -33,17 +34,27 @@ def make_analysis(
     """
     df = read_source(config['source'])
     schema = df.collect_schema()
-    target_column = config.get('target_column')
-    date_column = config.get('date_column', get_date_column(schema))
+    target_column = config.get("target_column")
+    date_column = config.get("date_column")
+    if date_column:
+        if schema.get(date_column) not in (pl.Date, pl.Datetime):
+            try:
+                df = df.with_columns(
+                    pl.col(date_column).str.to_date(strict=True)
+                )
+            except Exception as e:
+                logging.error(
+                    f"Failed to convert '{date_column}' to date: {e}")
+                sys.exit(1)
+    else:
+        date_column = get_date_column(schema)
+
     if not date_column:
         logging.error(
             "There are no date columns "
             "for temporal data distribution analysis.")
         return (None, None)
-    if schema.get(date_column) not in (pl.Date, pl.Datetime):
-        df = df.with_columns(
-            pl.col(date_column).str.to_datetime()
-        )
+
     logging.warning(f'base date column: {date_column}')
 
     aggs = [pl.count().alias("__count")]
@@ -86,7 +97,7 @@ def make_analysis(
     return output, metadata
 
 
-def get_date_column(schema: pl.LazyFrame.schema) -> str:
+def get_date_column(schema: pl.LazyFrame.schema) -> Union[str, None]:
     """
     Get the name of the date column in the dataframe.
 
