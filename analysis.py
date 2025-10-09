@@ -36,11 +36,13 @@ def make_analysis(
     schema = df.collect_schema()
     target_column = config.get("target_column")
     date_column = config.get("date_column")
-    if date_column:
+    if isinstance(date_column, dict):
+        pass
+    elif isinstance(date_column, str):
         if schema.get(date_column) not in (pl.Date, pl.Datetime):
             try:
                 df = df.with_columns(
-                    pl.col(date_column).str.to_date(strict=True)
+                    pl.col(date_column).str.to_datetime(strict=True)
                 )
             except Exception as e:
                 logging.error(
