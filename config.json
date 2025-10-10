@@ -10,7 +10,7 @@
     },
     "markdown": {
         "index_column": 10,
-        "html_style": "text-align:center;padding:5px"
+        "html_style": "text-align:center;padding:5px;"
     },
     "plotly": {
         "plot": {

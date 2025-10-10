@@ -120,67 +120,24 @@ def make_md_table(data, config) -> str:
     Returns:
         str: Markdown table as an HTML code.
     """
-    idx_width = config.get("index_column", 10)
-    keys, data_restructured = set(), {}
-    for item in data:
-        if item:
-            keys.update(item.keys())
-    for key in keys:
-        data_restructured[key] = [
-            item.get(key, "") if item else ""
-            for item in data
-        ]
+    data_restructured = {
+        k: [item.get(k, "") for item in data]
+        for item in data for k in item
+    }
 
     html_style = config.get("html_style", "")
+    idx_width = config.get("index_column", 10)
+
     header, col_width = make_md_table_header(
         data_restructured, html_style, idx_width)
+
     content = []
     for key, values in data_restructured.items():
         sample_value = next((val for val in values if val), None)
         if isinstance(sample_value, str):
             content.append(make_md_table_row(key, values, html_style))
         elif isinstance(sample_value, dict):
-            content.extend(create_dict_rows(key, values, config))
-        #
-        # if isinstance(el, str):
-        #     _content = [f"<td style='{padding};font-weight:bold'>{key}</td>"]
-        #     _content.extend([
-        #         f"<td style='{padding}'>{item}</td>"
-        #         for item in value
-        #     ])
-        #     content.append("".join(_content))
-        # else:
-        #     for k in el:
-        #         _content = [f"<td style='{padding};font-weight:bold'>{key} [{k}]</td>"]
-        #         _content.extend([
-        #             f"<td style='{padding}'>{v}</td>"
-        #             for v in
-        #             [
-        #                 item.get(k) if isinstance(item, dict) else ""
-        #                 for item in value
-        #             ]
-        #         ])
-        #         content.append("".join(_content))
-        #     if key == "Range":
-        #         _content = [f"<td style='{padding};font-weight:bold'>{key}</td>"]
-        #         for item in value:
-        #             if not item:
-        #                 _content.append("")
-        #                 continue
-        #             _content.append(
-        #                 f"<td style='{padding}'>{(item['Max'] - item['Min']):.4f}</td>"
-        #             )
-        #         content.append("".join(_content))
-        #     if key == "IQR":
-        #         _content = [f"<td style='{padding};font-weight:bold'>{key}</td>"]
-        #         for item in value:
-        #             if not item:
-        #                 _content.append("")
-        #                 continue
-        #             _content.append(
-        #                 f"<td style='{padding}'>{(item['Q3'] - item['Q1']):.4f}</td>"
-        #             )
-        #         content.append("".join(_content))
+            content.append(make_md_table_from_dict(key, values, html_style))
 
     colgroup = f"<col style='width:{idx_width}%'>" + "".join([
         f'<col style="width:{col_width}%">'
@@ -191,37 +148,13 @@ def make_md_table(data, config) -> str:
         {colgroup}
     </colgroup>
     <thead style="background-color:#f5f5f5;">
-        <tr>{header}</tr>
+        {header}
     </thead>
     <tbody>
         {"".join(content)}
     </tbody>
     </table>"""
     return output + "\n\n"
-
-    # output = """
-    #     <table style="width:100%;table-layout:fixed;border-collapse:collapse;border:1px solid #ddd;margin:5px 0;">
-    #     <colgroup>
-    #         {colgroup}
-    #     </colgroup>
-    #     <thead style="background-color:#f5f5f5;">
-    #         <tr>{header}</tr>
-    #     </thead>
-    #     <tbody>
-    #         {content}
-    #     </tbody>
-    #     </table>
-    # """.format(
-    #     colgroup="".join(
-    #         ["<col style='width:{idx_width}%'>"] +
-    #         [f'<col style="width:{col_width}%">' for _ in range(len(header) - 1)]
-    #     ),
-    #     header="".join(header),
-    #     content="".join([f"<tr>{el}</tr>" for el in content])
-    # )
-    # return "\n".join([
-    #     line.lstrip() for line in output.splitlines()
-    # ]) + "\n\n"
 
 
 def make_md_table_header(data, style, width):
@@ -239,56 +172,46 @@ def make_md_table_header(data, style, width):
         header.append(
             f"<th style='{style};width:{col_width}%'>{title}</th>"
         )
-    return "".join(header), col_width
+    return "<tr>{}</tr>".format("".join(header)), col_width
 
 
 def make_md_table_row(key, values, style):
-    """Create HTML table row for simple string/numeric values."""
+    """Create HTML-formatted Markdown table row for simple variables."""
     content = [f"<td style='{style};font-weight:bold'>{key}</td>"]
     content.extend([
-        f"<td style='{style}'>{val}</td>"
+        f"<td style='{style}'>{format_number(val)}</td>"
         for val in values
     ])
-    return "<tr>" + "".join(content) + "</tr>"
+    return "<tr>{}</tr>".format("".join(content))
 
 
-def create_dict_rows(key, values, style):
-    """Create HTML table rows for dictionary values (e.g., Range, IQR, Anomalies)."""
+def make_md_table_from_dict(key, values, style):
+    """Create HTML-formatted Markdown table rows from dictionary values."""
     content = []
-    for value in values:
-        for v in value.values():
-            content.append(
-                make_md_table_row(
-                    0, 0, 0
-                )
-            )
-    sample_item = next((item for item in values if item), {})
-    for sub_key in sample_item.keys():
-        content = [f"<td style='{style};font-weight:bold'>{key} [{sub_key}]</td>"]
-        for item in values:
-            if not item:
-                content.append(f"<td style='{style}'></td>")
-            else:
-                value = item.get(sub_key, "")
-                content.append(f"<td style='{style}'>{value}</td>")
-        rows.append("<tr>" + "".join(content) + "</tr>")
-    # Special computed rows for Range/IQR
-    if key == "Range":
-        content = [f"<td style='{style};font-weight:bold'>{key}</td>"]
-        for item in values:
-            if not item:
-                content.append(f"<td style='{style}'></td>")
-            else:
-                range_value = item.get('Max', 0) - item.get('Min', 0)
-                content.append(f"<td style='{style}'>{range_value}</td>")
-        rows.append("<tr>" + "".join(content) + "</tr>")
-    elif key == "IQR":
-        content = [f"<td style='{style};font-weight:bold'>{key}</td>"]
-        for item in values:
-            if not item:
-                content.append(f"<td style='{style}'></td>")
-            else:
-                iqr_value = item.get('Q3', 0) - item.get('Q1', 0)
-                content.append(f"<td style='{style}'>{iqr_value}</td>")
-        rows.append("<tr>" + "".join(content) + "</tr>")
-    return rows
+    values_restructured = {
+        k: [(item or {}).get(k, "") for item in values]
+        for item in values for k in item
+    }
+
+    for item in values_restructured:
+        content.append(
+            make_md_table_row(
+                f"{key} [{item}]", values_restructured[item], style)
+        )
+    if key in ("Range", "IQR"):
+        values = [
+            list(v.values())[1] - list(v.values())[0]
+            if v else "" for v in values
+        ]
+        content.append(
+            make_md_table_row(f"{key}", values, style)
+        )
+    return "<tr>{}</tr>".format("".join(content))
+
+
+def format_number(value, precision=4):
+    """Format numeric values to a fixed number of decimal places."""
+    if isinstance(value, float):
+        if len(str(value).split(".")[1]) > precision:
+            return f"{value:,.{precision}f}"
+    return str(value)
