@@ -122,7 +122,7 @@ def evaluate_data(
         ).sum()
 
     return {
-        "μ±σ": f"{mean:.2f} ± {std:.2f}",
+        "μ±σ": (mean, std),
         "Range": {
             "Min": data.min(), "Max": data.max()},
         "IQR": {"Q1": q1, "Q3": q3},

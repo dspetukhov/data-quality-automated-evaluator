@@ -125,19 +125,24 @@ def make_md_table(data, config) -> str:
         for item in data for k in item
     }
 
-    html_style = config.get("html_style", "")
     idx_width = config.get("index_column", 10)
+    style = config.get("html_style", "")
+    precision = config.get("float_precision")
 
     header, col_width = make_md_table_header(
-        data_restructured, html_style, idx_width)
+        data_restructured, style, idx_width)
 
     content = []
     for key, values in data_restructured.items():
         sample_value = next((val for val in values if val), None)
-        if isinstance(sample_value, str):
-            content.append(make_md_table_row(key, values, html_style))
+        if isinstance(sample_value, (str, tuple)):
+            content.append(
+                make_md_table_row(key, values, style, precision)
+            )
         elif isinstance(sample_value, dict):
-            content.append(make_md_table_from_dict(key, values, html_style))
+            content.append(
+                make_md_table_from_dict(key, values, style, precision)
+            )
 
     colgroup = f"<col style='width:{idx_width}%'>" + "".join([
         f'<col style="width:{col_width}%">'
@@ -161,6 +166,9 @@ def make_md_table_header(data, style, width):
     """Create a HTML header for markdown table.
 
     Args:
+        data (dict): Dictionary to be converted to a table.
+        style (str): HTML style for Markdown table.
+        width (int): relative index column width.
 
     Returns:
         tuple (str, int): header as HTML string and relative column width (%).
@@ -175,17 +183,17 @@ def make_md_table_header(data, style, width):
     return "<tr>{}</tr>".format("".join(header)), col_width
 
 
-def make_md_table_row(key, values, style):
+def make_md_table_row(key, values, style, precision):
     """Create HTML-formatted Markdown table row for simple variables."""
     content = [f"<td style='{style};font-weight:bold'>{key}</td>"]
     content.extend([
-        f"<td style='{style}'>{format_number(val)}</td>"
+        f"<td style='{style}'>{format_number(val, precision)}</td>"
         for val in values
     ])
     return "<tr>{}</tr>".format("".join(content))
 
 
-def make_md_table_from_dict(key, values, style):
+def make_md_table_from_dict(key, values, style, precision):
     """Create HTML-formatted Markdown table rows from dictionary values."""
     content = []
     values_restructured = {
@@ -196,7 +204,7 @@ def make_md_table_from_dict(key, values, style):
     for item in values_restructured:
         content.append(
             make_md_table_row(
-                f"{key} [{item}]", values_restructured[item], style)
+                f"{key} [{item}]", values_restructured[item], style, precision)
         )
     if key in ("Range", "IQR"):
         values = [
@@ -204,14 +212,16 @@ def make_md_table_from_dict(key, values, style):
             if v else "" for v in values
         ]
         content.append(
-            make_md_table_row(f"{key}", values, style)
+            make_md_table_row(f"{key}", values, style, precision)
         )
     return "<tr>{}</tr>".format("".join(content))
 
 
 def format_number(value, precision=4):
-    """Format numeric values to a fixed number of decimal places."""
+    """Format float numbers to the specified precision."""
     if isinstance(value, float):
         if len(str(value).split(".")[1]) > precision:
             return f"{value:,.{precision}f}"
+    elif isinstance(value, tuple):
+        return " ± ".join([f"{v:,.{precision}f}" for v in value])
     return str(value)
