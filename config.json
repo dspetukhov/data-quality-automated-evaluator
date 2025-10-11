@@ -2,7 +2,16 @@
     "source": "../datasets/metaverse_transactions_dataset.csv",
     "date_column": "timestamp",
     "output": "metaverse_transactions_dataset",
-    "transformations": {
+    "filtration": {
+        "sql": "select * from self where amount > 200"
+    },
+    "transformation": {
+        "date_column": {
+            "sql": "polars"
+        },
+        "target_column": {
+            "polars": "lambda"
+        }
     },
     "anomalies": {
         "multiplier": 1.5,
@@ -10,7 +19,8 @@
     },
     "markdown": {
         "index_column": 10,
-        "html_style": "text-align:center;padding:5px;"
+        "html_style": "text-align:center;padding:5px;",
+        "float_precision": 4
     },
     "plotly": {
         "plot": {
