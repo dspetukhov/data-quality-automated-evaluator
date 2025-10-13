@@ -56,11 +56,10 @@ def make_analysis(
                 logging.error(
                     f"Failed to convert '{date_column}' to date: {e}")
                 sys.exit(1)
+    elif schema.get("date_column"):
+        date_column = schema.get("date_column")
     else:
-        if schema.get("date_column"):
-            date_column = schema.get("date_column")
-        else:
-            date_column = get_date_column(schema)
+        date_column = get_date_column(schema)
 
     if not date_column:
         logging.error(
@@ -72,9 +71,7 @@ def make_analysis(
 
     aggs = [pl.count().alias("__count")]
 
-    target_column = config.get("target_column")
-    if isinstance(target_column, dict):
-        df, target_column = apply_transformation(df, target_column)
+    target_column = config.get("target_column") if "target_column" in config else schema.get("target_column")
     if target_column:
         aggs.append(
             pl.col(target_column).mean().alias("__balance")
@@ -142,12 +139,23 @@ def read_source(source: str) -> pl.LazyFrame:
     Returns:
         LazyFrame: The loaded dataframe.
     """
-    if source.endswith('.csv'):
+    if source.endswith(".csv"):
         return pl.scan_csv(source)
-    elif source.endswith('.parquet'):
+    elif source.endswith(".parquet"):
         return pl.scan_parquet(source)
-    elif source.endswith('.xlsx'):
+    elif source.endswith(".xlsx"):
         return pl.read_excel(source).lazy()
+    elif isinstance(source, dict):
+        if all([k in ("query", "uri") for k in source.keys()]):
+            df = pl.read_database_uri(query=source["query"], uri=source["uri"])
+    elif source.startswith("s3://"):
+        df = pl.scan_csv(source)
+        if not df:
+            df = pl.scan_parquet(source)
+        if not df:
+            df = pl.scan_iceberg(source)
+        if not df:
+            return None
     else:
         logging.error(f"Unsupported file format: {source}")
         return None
