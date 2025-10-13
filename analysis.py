@@ -155,9 +155,10 @@ def read_source(source: str) -> pl.LazyFrame:
         if not df:
             df = pl.scan_iceberg(source)
         if not df:
+            logging.error(f"No supported file formats found in `{source}`")
             return None
     else:
-        logging.error(f"Unsupported file format: {source}")
+        logging.error(f"Unsupported file format: `{source}`")
         return None
 
 
