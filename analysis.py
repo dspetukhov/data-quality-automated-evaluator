@@ -33,21 +33,20 @@ def make_analysis(
         dict: Metainfo about aggregated data.
     """
     df = read_source(config['source'])
-    schema = df.collect_schema()
 
     # filter for DataFrame rows
     filtration = config.get("filtration")
     if isinstance(filtration, dict):
-        df, _ = apply_transformation(df, filtration)
+        df = apply_transformation(df, filtration)
     # transformations for DataFrame columns
     transformation = config.get("transformation")
     if isinstance(transformation, dict):
-        df, _ = apply_transformation(df, transformation)
+        df = apply_transformation(df, transformation)
+
+    schema = df.collect_schema()
 
     date_column = config.get("date_column")
-    if isinstance(date_column, dict):
-        df, date_column = apply_transformation(df, date_column)
-    elif isinstance(date_column, str):
+    if isinstance(date_column, str):
         if schema.get(date_column) not in (pl.Date, pl.Datetime):
             try:
                 df = df.with_columns(
@@ -58,7 +57,10 @@ def make_analysis(
                     f"Failed to convert '{date_column}' to date: {e}")
                 sys.exit(1)
     else:
-        date_column = get_date_column(schema)
+        if schema.get("date_column"):
+            date_column = schema.get("date_column")
+        else:
+            date_column = get_date_column(schema)
 
     if not date_column:
         logging.error(
@@ -67,7 +69,6 @@ def make_analysis(
         return (None, None)
 
     logging.warning(f'base date column: {date_column}')
-    # https://docs.pola.rs/api/python/stable/reference/expressions/api/polars.Expr.map_batches.html#polars.Expr.map_batches
 
     aggs = [pl.count().alias("__count")]
 
@@ -152,64 +153,38 @@ def read_source(source: str) -> pl.LazyFrame:
         return None
 
 
-def apply_transformation(df: pl.LazyFrame, config: dict, f=False) -> pl.LazyFrame:
+def apply_transformation(
+        df: pl.LazyFrame, config: dict
+) -> pl.LazyFrame:
     """
     Apply transformations from config.json to the dataframe.
     - Supports Polars expressions, lambda functions, and SQL-like expressions.
     - Exits on date column failure, logs and continues on target column failure.
     """
-    # if f:
-    apply = lambda t, sql: df.sql(sql) if t == "sql" else None
-    print(config, type(config), len(config))
     for item in config:
-        print(item, type(item), type(config[item]))
-        if item == "sql":
-            return df.sql(config["item"]), None
-        elif item == "polars":
-            pass
-
-        if isinstance(config[item], dict):
-            for i in config["item"]:
-                if i == "sql":
-                    pass
-                elif i == "polars":
-                    pass
+        t = config[item]
+        if isinstance(t, str):
+            if item == "sql":
+                df = df.sql(t)
+                logging.info(f"The following transformation applied: {t}")
+                t.append(config[item])
+            elif item == "polars":
+                pass
+            else:
+                logging.warning("Unrecognized type of transformation: {item}")
+        elif isinstance(t, dict):
+            if t.get("sql"):
+                df = df.sql("""
+                    select *, {0} as {1} from self
+                """.format(t["sql"], item))
+                t.append(item)
+            elif config[item].get("polars"):
+                pass
+            else:
+                logging.warning("Unrecognized type of transformation")
+            logging.info(f"The following transformation applied: {t}")
         else:
-            pass
-    # logging.error(f"Incorrectly specified filtration: {value}.")
-    return df, config
-
-
-# def apply_data_transformations(df: pl.LazyFrame, config: dict) -> pl.LazyFrame:
-
-#     import sys
-#     transformations = config.get('transformations', {})
-#     for col, trans in transformations.items():
-#         try:
-#             if isinstance(trans, dict):
-#                 ttype = trans.get('type', 'polars')
-#                 expr = trans.get('expression')
-#                 source_col = trans.get('source_column', col)
-#                 if ttype == 'polars':
-#                     df = df.with_columns(eval(expr).alias(col))
-#                 elif ttype == 'lambda':
-#                     func = eval(expr)
-#                     df = df.with_columns(
-#                         pl.col(source_col).map_elements(func).alias(col)
-#                     )
-#                 # Add SQL-like support as needed
-#             elif isinstance(trans, str):
-#                 # Auto-detect simple expressions
-#                 if trans.startswith('log2(') and trans.endswith(')'):
-#                     src = trans[5:-1]
-#                     df = df.with_columns(pl.col(src).log(2).alias(col))
-#                 # Add more patterns as needed
-#         except Exception as e:
-#             if col == config.get('date_column'):
-#                 print(f"❌ FATAL: Date column transformation failed: {e}")
-#                 sys.exit(1)
-#             elif col == config.get('target_column'):
-#                 print(f"⚠️ WARNING: Target column transformation failed: {e}")
-#             else:
-#                 print(f"⚠️ WARNING: Transformation for '{col}' failed: {e}")
-#     return df
+            logging.warning(
+                f"Unrecognized type of transformation for `{item}`: {type(config[item])}"
+                )
+    return df

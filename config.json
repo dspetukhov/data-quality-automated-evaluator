@@ -6,11 +6,11 @@
         "sql": "select * from self where amount > 200"
     },
     "transformation": {
-        "date_column": {
-            "sql": "polars"
-        },
         "target_column": {
-            "polars": "lambda"
+            "sql": "(anomaly = 'high_risk')::int"
+        },
+        "timestamp": {
+            "sql": "timestamp::timestamp"
         }
     },
     "anomalies": {
