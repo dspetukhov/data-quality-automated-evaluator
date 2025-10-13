@@ -3,6 +3,7 @@ import polars as pl
 import polars.selectors as cs
 from typing import Dict, Any, Tuple, Union
 from utils import logging
+from sklearn.metrics import roc_auc_score, average_precision_score
 
 
 def make_analysis(
@@ -71,7 +72,12 @@ def make_analysis(
 
     aggs = [pl.count().alias("__count")]
 
-    target_column = config.get("target_column") if "target_column" in config else schema.get("target_column")
+    target_column = config.get("target_column") \
+        if "target_column" in config \
+        else schema.get("target_column")
+    if df[target_column].n_unique() != 2:
+        logging.warning(f"Target column {target_column} is not binary")
+        target_column = None
     if target_column:
         aggs.append(
             pl.col(target_column).mean().alias("__balance")
@@ -197,3 +203,15 @@ def apply_transformation(
                 f"Unrecognized type of transformation for `{item}`: {type(config[item])}"
                 )
     return df
+
+
+def estimate_importance(data, target):
+    """
+    TODO: calculate cardinality: number of uniq values / df.shape[0], isNumeric: yes/no
+    """
+    auc_roc = roc_auc_score(y_true=target, y_score=data)
+    auc_pr = average_precision_score(y_true=target, y_score=data)
+# If numerical: compute AUC-ROC/PR using the feature as a univariate predictor
+# If categorical: encode and compute AUC, or use mutual information
+# For tree-based models: use feature importance (info gain, Gini)
+# For redundancy: use mRMR or mutual information
