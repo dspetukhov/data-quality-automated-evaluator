@@ -3,7 +3,8 @@ import polars as pl
 import polars.selectors as cs
 from typing import Dict, Any, Tuple, Union
 from utils import logging
-from sklearn.metrics import roc_auc_score, average_precision_score
+from sklearn.metrics import roc_auc_score, average_precision_score, mutual_info_score
+from sklearn.preprocessing import LabelEncoder
 
 
 def make_analysis(
@@ -33,32 +34,30 @@ def make_analysis(
         LazyFrame: Dataframe with aggregated data.
         dict: Metainfo about aggregated data.
     """
-    df = read_source(config['source'])
+    lf = read_source(config['source'])
 
     # filter for DataFrame rows
     filtration = config.get("filtration")
     if isinstance(filtration, dict):
-        df = apply_transformation(df, filtration)
+        lf = apply_transformation(lf, filtration)
     # transformations for DataFrame columns
     transformation = config.get("transformation")
     if isinstance(transformation, dict):
-        df = apply_transformation(df, transformation)
+        lf = apply_transformation(lf, transformation)
 
-    schema = df.collect_schema()
+    schema = lf.collect_schema()
 
     date_column = config.get("date_column")
     if isinstance(date_column, str):
         if schema.get(date_column) not in (pl.Date, pl.Datetime):
             try:
-                df = df.with_columns(
+                lf = lf.with_columns(
                     pl.col(date_column).str.to_datetime(strict=True)
                 )
             except Exception as e:
                 logging.error(
                     f"Failed to convert '{date_column}' to date: {e}")
                 sys.exit(1)
-    elif schema.get("date_column"):
-        date_column = schema.get("date_column")
     else:
         date_column = get_date_column(schema)
 
@@ -70,14 +69,15 @@ def make_analysis(
 
     logging.warning(f'base date column: {date_column}')
 
-    aggs = [pl.count().alias("__count")]
+    aggs, = [pl.count().alias("__count")]
 
     target_column = config.get("target_column") \
         if "target_column" in config \
         else schema.get("target_column")
-    if df[target_column].n_unique() != 2:
-        logging.warning(f"Target column {target_column} is not binary")
-        target_column = None
+    # print(lf.select(pl.col(target_column).unique().count()).collect())
+    # if .uniquecount().collect() != 2:
+        # logging.warning(f"Target column {target_column} is not binary")
+        # target_column = None
     if target_column:
         aggs.append(
             pl.col(target_column).mean().alias("__balance")
@@ -110,10 +110,11 @@ def make_analysis(
                 "_std")
     # Perform aggregations
     output = (
-        df.group_by(pl.col(date_column).dt.date().alias('__date'))
+        lf.group_by(pl.col(date_column).dt.date().alias('__date'))
         .agg(aggs)
         .sort('__date')
     ).collect()
+    # print(output, metadata) "valuation": ("_min", "_max", "_cardinality")
     return output, metadata
 
 
@@ -132,6 +133,8 @@ def get_date_column(schema: pl.LazyFrame.schema) -> Union[str, None]:
         cs.date() | cs.datetime()
     )
     if candidates:
+        if "date_column" in candidates:
+            return "date_column"
         return candidates[0]
 
 
@@ -153,14 +156,14 @@ def read_source(source: str) -> pl.LazyFrame:
         return pl.read_excel(source).lazy()
     elif isinstance(source, dict):
         if all([k in ("query", "uri") for k in source.keys()]):
-            df = pl.read_database_uri(query=source["query"], uri=source["uri"])
+            lf = pl.read_database_uri(query=source["query"], uri=source["uri"])
     elif source.startswith("s3://"):
-        df = pl.scan_csv(source)
-        if not df:
-            df = pl.scan_parquet(source)
-        if not df:
-            df = pl.scan_iceberg(source)
-        if not df:
+        lf = pl.scan_csv(source)
+        if not lf:
+            lf = pl.scan_parquet(source)
+        if not lf:
+            lf = pl.scan_iceberg(source)
+        if not lf:
             logging.error(f"No supported file formats found in `{source}`")
             return None
     else:
@@ -169,7 +172,7 @@ def read_source(source: str) -> pl.LazyFrame:
 
 
 def apply_transformation(
-        df: pl.LazyFrame, config: dict
+        lf: pl.LazyFrame, config: dict
 ) -> pl.LazyFrame:
     """
     Apply transformations from config.json to the dataframe.
@@ -178,21 +181,20 @@ def apply_transformation(
     """
     for item in config:
         t = config[item]
+        print(item, t)
         if isinstance(t, str):
             if item == "sql":
-                df = df.sql(t)
+                lf = lf.sql(t)
                 logging.info(f"The following transformation applied: {t}")
-                t.append(config[item])
             elif item == "polars":
                 pass
             else:
                 logging.warning("Unrecognized type of transformation: {item}")
         elif isinstance(t, dict):
             if t.get("sql"):
-                df = df.sql("""
+                lf = lf.sql("""
                     select *, {0} as {1} from self
                 """.format(t["sql"], item))
-                t.append(item)
             elif config[item].get("polars"):
                 pass
             else:
@@ -202,16 +204,39 @@ def apply_transformation(
             logging.warning(
                 f"Unrecognized type of transformation for `{item}`: {type(config[item])}"
                 )
-    return df
+    return lf
 
 
-def estimate_importance(data, target):
+def estimate_data(lf: pl.LazyFrame, col: str, target: Union[str, None]) -> dict:
     """
-    TODO: calculate cardinality: number of uniq values / df.shape[0], isNumeric: yes/no
+    TODO: calculate cardinality: number of uniq values / lf.shape[0], isNumeric: yes/no
+    TODO: sampling for prediction power estimation
+    Compute AUC-ROC and AUC-PR.
+    MI for numerical feature.
+    add imputation strategy: applied only for AUCs and MI (do not drop nulls)
+    add labelenconding or dummy encoding for categorical
     """
-    auc_roc = roc_auc_score(y_true=target, y_score=data)
-    auc_pr = average_precision_score(y_true=target, y_score=data)
-# If numerical: compute AUC-ROC/PR using the feature as a univariate predictor
-# If categorical: encode and compute AUC, or use mutual information
+    # Prediction power'
+    # TO DO: compare gain with white noise column
+#     mask = (~df[feature].is_null()) & (~df[target].is_null())
+#     x = df[feature][mask].to_numpy().astype(str)
+#     y = df[target][mask].to_numpy()
+#
+    schema = lf.collect_schema()
+    if col not in cs.expand_selector(schema, cs.numeric()):
+        le = LabelEncoder()
+        col = le.fit_transform(lf[col])
+        # test
+    return {
+        "AUC ROC": roc_auc_score(y_true=lf[target], y_score=lf[col]),
+        "AUC PR": average_precision_score(y_true=lf[target], y_score=lf[col]),
+        "MI": mutual_info_score(labels_true=lf[target], labels_pred=lf[col])
+    }
+
 # For tree-based models: use feature importance (info gain, Gini)
 # For redundancy: use mRMR or mutual information
+# sample_size = 2
+# n_rows = df.select(pl.len()).collect().item()
+# indices = sorted(np.random.choice(n_rows, size=sample_size, replace=False))
+
+# df.select(pl.col("a").gather(indices)).collect()
