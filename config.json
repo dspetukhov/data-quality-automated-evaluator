@@ -8,9 +8,6 @@
     "transformation": {
         "target_column": {
             "sql": "(anomaly = 'high_risk')::int"
-        },
-        "timestamp": {
-            "sql": "timestamp::timestamp"
         }
     },
     "anomalies": {
