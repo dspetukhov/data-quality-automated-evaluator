@@ -7,7 +7,7 @@ from utils import plot_data
 
 
 def make_report(
-        df: LazyFrame,
+        lf: LazyFrame,
         metadata: Dict[str, Union[Tuple[str], str]],
         config: Dict[str, Any]
 ) -> None:
@@ -15,7 +15,7 @@ def make_report(
     Generate a Markdown report with plots.
 
     Args:
-        df (LazyFrame): The aggregated data.
+        lf (LazyFrame): The aggregated data.
         metadata (dict): Metainfo about aggregated data.
         config (dict): Configuration dictionary for making analysis and report.
 
@@ -28,12 +28,12 @@ def make_report(
     md_toc, md_content = [], []
     col = "__overview"
     stats = plot_data(
-        df["__date"],
-        df["__count"],
-        df["__balance"] if metadata.get("__balance") else None,
+        lf["__date"],
+        lf["__count"],
+        lf["__balance"] if "__balance" in lf.columns else None,
         config=config.get("plotly", {}),
         file_path=f"{output}/{col}",
-        titles=("Number of values", metadata.get("__balance")))
+        titles=("Number of values", "Class balance" if "__balance" in lf.columns else None))
     md_toc.append(("Overview", col))
     md_content.append(f"## <a name='{col}'></a> Overview\n")
     md_content.append(f"![{col}]({col}.png)\n\n")
@@ -42,27 +42,25 @@ def make_report(
     mapping = config.get("mapping", {})
     for col in metadata:
         stats = plot_data(
-            df['__date'],
+            lf['__date'],
             *[
-                df[col + metadata[col]["common"][i]]
+                lf[col + metadata[col]["common"][i]]
                 for i in range(len(metadata[col]["common"]))
             ],
             config=config.get("plotly", {}),
             file_path=f"{output}/{col}",
             titles=[mapping.get(el, el) for el in metadata[col]["common"]])
         md_toc.append((col, col))
-        md_content.append(f"## <a name='{col}'></a> `{col}`\n")
-        # Predictive power if present
-        # md_content.append(f"### <a name='{col}'></a> {col} [common]\n")
+        md_content.append(f"## <a name='{col}'></a> `{col}`\n")s
         md_content.append(f"![{col}]({col}.png)\n")
         md_content.append(make_md_table(stats, config.get("markdown", {})))
 
         # Numeric datatypes if present
         if metadata[col].get("numeric"):
             stats = plot_data(
-                df['__date'],
+                lf['__date'],
                 *[
-                    df[col + metadata[col]["numeric"][i]]
+                    lf[col + metadata[col]["numeric"][i]]
                     for i in range(len(metadata[col]["numeric"]))
                 ],
                 config=config.get("plotly", {}),
