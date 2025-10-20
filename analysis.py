@@ -68,23 +68,22 @@ def make_analysis(
     logging.warning(f'base date column: {date_column}')
 
     metadata = {}
-    aggs, = [pl.count().alias("__count")]
+    aggs = [pl.count().alias("__count")]
 
-    target_column = config.get("target_column") \
-        if "target_column" in config \
-        else schema.get("target_column")
-
+    target_column = config.get("target_column")
     if not target_column:
-        logging.warning("Target column wasn't specified")
-    else:
-        n_unique = lf.select(pl.col(target_column).n_unique()).collect().item()
-        if n_unique == 2:
-            aggs.append(
-                pl.col(target_column).mean().alias("__balance")
-            )
-            metadata = {"__balance": "Class balance"}
+        if schema.get("target_column"):
+            target_column = "target_column"
         else:
-            logging.warning(f"Target column `{target_column}` is not binary")
+            logging.warning("Target column wasn't specified")
+
+    n_unique = lf.select(pl.col(target_column).n_unique()).collect().item()
+    if n_unique == 2:
+        aggs.append(
+            pl.col(target_column).mean().alias("__balance")
+        )
+    else:
+        logging.warning(f"Target column `{target_column}` is not binary")
 
     for col in schema.names():
         if col in (date_column, target_column):
