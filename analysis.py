@@ -3,8 +3,6 @@ import polars as pl
 import polars.selectors as cs
 from typing import Dict, Any, Tuple, Union
 from utils import logging
-from sklearn.metrics import roc_auc_score, average_precision_score, mutual_info_score
-from sklearn.preprocessing import LabelEncoder
 
 
 def make_analysis(
@@ -152,11 +150,13 @@ def read_source(source: str) -> pl.LazyFrame:
         return pl.scan_csv(source)
     elif source.endswith(".parquet"):
         return pl.scan_parquet(source)
+    elif source.endswith(".iceberg"):
+        return pl.scan_iceberg(source)
     elif source.endswith(".xlsx"):
         return pl.read_excel(source).lazy()
-    elif isinstance(source, dict):
-        if all([k in ("query", "uri") for k in source.keys()]):
-            lf = pl.read_database_uri(query=source["query"], uri=source["uri"])
+    # elif isinstance(source, dict):
+        # if all([k in ("query", "uri") for k in source.keys()]):
+            # lf = pl.read_database_uri(query=source["query"], uri=source["uri"])
     elif source.startswith("s3://"):
         lf = pl.scan_csv(source)
         if not lf:
@@ -205,38 +205,3 @@ def apply_transformation(
                 f"Unrecognized type of transformation for `{item}`: {type(config[item])}"
                 )
     return lf
-
-
-def estimate_data(lf: pl.LazyFrame, col: str, target: Union[str, None]) -> dict:
-    """
-    TODO: calculate cardinality: number of uniq values / lf.shape[0], isNumeric: yes/no
-    TODO: sampling for prediction power estimation
-    Compute AUC-ROC and AUC-PR.
-    MI for numerical feature.
-    add imputation strategy: applied only for AUCs and MI (do not drop nulls)
-    add labelenconding or dummy encoding for categorical
-    """
-    # Prediction power'
-    # TO DO: compare gain with white noise column
-#     mask = (~df[feature].is_null()) & (~df[target].is_null())
-#     x = df[feature][mask].to_numpy().astype(str)
-#     y = df[target][mask].to_numpy()
-#
-    schema = lf.collect_schema()
-    if col not in cs.expand_selector(schema, cs.numeric()):
-        le = LabelEncoder()
-        col = le.fit_transform(lf[col])
-        # test
-    return {
-        "AUC ROC": roc_auc_score(y_true=lf[target], y_score=lf[col]),
-        "AUC PR": average_precision_score(y_true=lf[target], y_score=lf[col]),
-        "MI": mutual_info_score(labels_true=lf[target], labels_pred=lf[col])
-    }
-
-# For tree-based models: use feature importance (info gain, Gini)
-# For redundancy: use mRMR or mutual information
-# sample_size = 2
-# n_rows = df.select(pl.len()).collect().item()
-# indices = sorted(np.random.choice(n_rows, size=sample_size, replace=False))
-
-# df.select(pl.col("a").gather(indices)).collect()
