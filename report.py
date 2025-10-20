@@ -33,7 +33,10 @@ def make_report(
         lf["__balance"] if "__balance" in lf.columns else None,
         config=config.get("plotly", {}),
         file_path=f"{output}/{col}",
-        titles=("Number of values", "Class balance" if "__balance" in lf.columns else None))
+        titles=(
+            "Number of values",
+            "Class balance" if "__balance" in lf.columns else None)
+    )
     md_toc.append(("Overview", col))
     md_content.append(f"## <a name='{col}'></a> Overview\n")
     md_content.append(f"![{col}]({col}.png)\n\n")
@@ -51,7 +54,7 @@ def make_report(
             file_path=f"{output}/{col}",
             titles=[mapping.get(el, el) for el in metadata[col]["common"]])
         md_toc.append((col, col))
-        md_content.append(f"## <a name='{col}'></a> `{col}`\n")s
+        md_content.append(f"## <a name='{col}'></a> `{col}`\n")
         md_content.append(f"![{col}]({col}.png)\n")
         md_content.append(make_md_table(stats, config.get("markdown", {})))
 

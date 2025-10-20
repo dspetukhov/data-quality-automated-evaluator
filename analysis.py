@@ -114,7 +114,6 @@ def make_analysis(
         .agg(aggs)
         .sort('__date')
     ).collect()
-    # print(output, metadata) "valuation": ("_min", "_max", "_cardinality")
     return output, metadata
 
 
@@ -156,9 +155,6 @@ def read_source(source: str) -> pl.LazyFrame:
         return pl.scan_iceberg(source)
     elif source.endswith(".xlsx"):
         return pl.read_excel(source).lazy()
-    # elif isinstance(source, dict):
-        # if all([k in ("query", "uri") for k in source.keys()]):
-            # lf = pl.read_database_uri(query=source["query"], uri=source["uri"])
     elif source.startswith("s3://"):
         lf = pl.scan_csv(source)
         if not lf:
