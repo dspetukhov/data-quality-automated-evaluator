@@ -177,41 +177,39 @@ def apply_transformation(
     Transformations can be defined as Polars expressions
     or SQL quieries powered by Polars.
     """
-    def apply(lf, key, value, f=False):
+    def apply(lf: pl.LazyFrame, alias: str, ttype: str, texpr: str, f=False):
         """Apply single transformation."""
         try:
-            if key == "sql":
-                lf = lf.sql(value) if f else lf.sql("""
+            if ttype == "sql":
+                lf = lf.sql(texpr) if f else lf.sql("""
                     select *, {0} as {1} from self
-                """.format(value, key))
-            elif key == "polars":
-                if not value.startswith("pl.col"):
+                """.format(texpr, alias))
+            elif ttype == "polars":
+                if not texpr.startswith("pl.col"):
                     raise ValueError(
                         "Expression should start with pl.col()")
-                expr = eval(value, {"pl": pl})
+                expr = eval(texpr, {"pl": pl})
                 if isinstance(expr, pl.Expr):
-                    lf = lf.filter(expr) if f else lf.with_columns(expr)
+                    lf = lf.filter(expr) if f else lf.with_columns(expr).alias(alias)
                 else:
                     logging.warning(
-                        f"Invalid Polars expression: {value}")
+                        f"Invalid Polars expression: {texpr}")
             else:
                 logging.warning(
-                    f"Unrecognized type of transformation: {key}")
+                    f"Unrecognized type of transformation: `{ttype}`")
         except Exception as e:
             logging.error(
-                f"Failed to apply transformation `{value}`: {e}")
+                f"Failed to apply transformation `{texpr}`: {e}")
             return lf
 
-        logging.info(f"The transformation applied: {value}")
+        logging.info(f"The transformation applied: {texpr}")
         return lf
 
     for item in config:
         t = config[item]
-        print(item, t)
         if isinstance(t, str):
-            lf = apply(lf, item, t, f)
+            lf = apply(lf, alias=None, ttype=item, texpr=t, f=f)
         if isinstance(t, dict):
             for key, value in t.items():
-                lf = apply(lf, key, value, f)
-
+                lf = apply(lf, item, key, value, f)
     return lf
