@@ -37,7 +37,7 @@ def make_analysis(
     # filter for DataFrame rows
     filtration = config.get("filtration")
     if isinstance(filtration, dict):
-        lf = apply_transformation(lf, filtration)
+        lf = apply_transformation(lf, filtration, f=True)
     # transformations for DataFrame columns
     transformation = config.get("transformation")
     if isinstance(transformation, dict):
@@ -170,36 +170,48 @@ def read_source(source: str) -> pl.LazyFrame:
 
 
 def apply_transformation(
-        lf: pl.LazyFrame, config: dict
+        lf: pl.LazyFrame, config: dict, f: bool = False
 ) -> pl.LazyFrame:
     """
-    Apply transformations from config.json to the dataframe.
-    - Supports Polars expressions, lambda functions, and SQL-like expressions.
-    - Exits on date column failure, logs and continues on target column failure.
+    Apply transformations from config.json to the LazyFrame.
+    Transformations can be defined as Polars expressions
+    or SQL quieries powered by Polars.
     """
+    def apply(lf, key, value, f=False):
+        """Apply single transformation."""
+        try:
+            if key == "sql":
+                lf = lf.sql(value) if f else lf.sql("""
+                    select *, {0} as {1} from self
+                """.format(value, key))
+            elif key == "polars":
+                if not value.startswith("pl.col"):
+                    raise ValueError(
+                        "Expression should start with pl.col()")
+                expr = eval(value, {"pl": pl})
+                if isinstance(expr, pl.Expr):
+                    lf = lf.filter(expr) if f else lf.with_columns(expr)
+                else:
+                    logging.warning(
+                        f"Invalid Polars expression: {value}")
+            else:
+                logging.warning(
+                    f"Unrecognized type of transformation: {key}")
+        except Exception as e:
+            logging.error(
+                f"Failed to apply transformation `{value}`: {e}")
+            return lf
+
+        logging.info(f"The transformation applied: {value}")
+        return lf
+
     for item in config:
         t = config[item]
         print(item, t)
         if isinstance(t, str):
-            if item == "sql":
-                lf = lf.sql(t)
-                logging.info(f"The following transformation applied: {t}")
-            elif item == "polars":
-                pass
-            else:
-                logging.warning("Unrecognized type of transformation: {item}")
-        elif isinstance(t, dict):
-            if t.get("sql"):
-                lf = lf.sql("""
-                    select *, {0} as {1} from self
-                """.format(t["sql"], item))
-            elif config[item].get("polars"):
-                pass
-            else:
-                logging.warning("Unrecognized type of transformation")
-            logging.info(f"The following transformation applied: {t}")
-        else:
-            logging.warning(
-                f"Unrecognized type of transformation for `{item}`: {type(config[item])}"
-                )
+            lf = apply(lf, item, t, f)
+        if isinstance(t, dict):
+            for key, value in t.items():
+                lf = apply(lf, key, value, f)
+
     return lf

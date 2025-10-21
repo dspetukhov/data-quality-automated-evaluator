@@ -8,6 +8,9 @@
     "transformation": {
         "target_column": {
             "sql": "(anomaly = 'high_risk')::int"
+        },
+        "amount_log": {
+            "polars": "pl.col('amount').log()"
         }
     },
     "anomalies": {
