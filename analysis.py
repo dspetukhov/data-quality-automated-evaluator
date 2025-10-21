@@ -190,7 +190,7 @@ def apply_transformation(
                         "Expression should start with pl.col()")
                 expr = eval(texpr, {"pl": pl})
                 if isinstance(expr, pl.Expr):
-                    lf = lf.filter(expr) if f else lf.with_columns(expr).alias(alias)
+                    lf = lf.filter(expr) if f else lf.with_columns(expr.alias(alias))
                 else:
                     logging.warning(
                         f"Invalid Polars expression: {texpr}")
@@ -212,4 +212,5 @@ def apply_transformation(
         if isinstance(t, dict):
             for key, value in t.items():
                 lf = apply(lf, item, key, value, f)
+
     return lf
