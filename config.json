@@ -3,7 +3,7 @@
     "date_column": "timestamp",
     "output": "metaverse_transactions_dataset",
     "filtration": {
-        "sql": "select * from self where amount > 200"
+        "polars": "pl.col('amount') > 200"
     },
     "transformation": {
         "target_column": {
