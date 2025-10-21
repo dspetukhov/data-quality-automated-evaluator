@@ -102,7 +102,7 @@ def evaluate_data(
             - Mean and standard deviation,
             - Range of values,
             - Q1 and Q3,
-            - Anomalies ratio according to IQR and Z-score.
+            - Anomalies percent ratio according to IQR and Z-score.
     """
     # IQR
     q1 = data.quantile(0.25)
