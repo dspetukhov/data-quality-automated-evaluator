@@ -2,6 +2,7 @@ import sys
 import polars as pl
 import polars.selectors as cs
 from typing import Dict, Any, Tuple, Union
+from types import LambdaType
 from utils import logging
 
 
@@ -32,7 +33,7 @@ def make_analysis(
         LazyFrame: Dataframe with aggregated data.
         dict: Metainfo about aggregated data.
     """
-    lf = read_source(config['source'])
+    lf = read_source(config["source"])
 
     # filter for DataFrame rows
     filtration = config.get("filtration")
@@ -65,7 +66,7 @@ def make_analysis(
             "for temporal data distribution analysis.")
         return (None, None)
 
-    logging.warning(f'base date column: {date_column}')
+    logging.warning(f"base date column: {date_column}")
 
     metadata = {}
     aggs = [pl.count().alias("__count")]
@@ -110,9 +111,9 @@ def make_analysis(
                 "_std")
     # Perform aggregations
     output = (
-        lf.group_by(pl.col(date_column).dt.date().alias('__date'))
+        lf.group_by(pl.col(date_column).dt.date().alias("__date"))
         .agg(aggs)
-        .sort('__date')
+        .sort("__date")
     ).collect()
     return output, metadata
 
@@ -137,35 +138,64 @@ def get_date_column(schema: pl.LazyFrame.schema) -> Union[str, None]:
         return candidates[0]
 
 
-def read_source(source: str) -> pl.LazyFrame:
+def read_source(source: Union[str, Dict[str, str]]) -> pl.LazyFrame:
     """
     Read the source file into a Polars LazyFrame.
 
     Args:
-        source (str): Path to the source file.
+        source (str, dict): Data source specification.
 
     Returns:
         LazyFrame: The loaded dataframe.
     """
-    if source.endswith(".csv"):
-        return pl.scan_csv(source)
-    elif source.endswith(".parquet"):
-        return pl.scan_parquet(source)
-    elif source.endswith(".iceberg"):
-        return pl.scan_iceberg(source)
-    elif source.endswith(".xlsx"):
-        return pl.read_excel(source).lazy()
-    elif source.startswith("s3://"):
-        lf = pl.scan_csv(source)
-        if not lf:
-            lf = pl.scan_parquet(source)
-        if not lf:
-            lf = pl.scan_iceberg(source)
-        if not lf:
-            logging.error(f"No supported file formats found in `{source}`")
+    read_file_func = {
+        "csv": pl.scan_csv,
+        "parquet": pl.scan_parquet,
+        "iceberg": pl.scan_iceberg,
+        "xlsx": pl.read_excel
+    }
+    if isinstance(source, dict):
+        if "query" in source and "uri" in source:
+            return pl.read_database_uri(
+                query=source["query"], uri=source["uri"]
+            ).lazy()
+        elif "file_path" in source:
+            storage_options = source.get("storage_options", None)
+            if "extension" in source:
+                rff = read_file_func.get(source["extension"])
+                if isinstance(rff, LambdaType):
+                    return rff(source["file_path"]).lazy()
+            else:
+                for rff in read_file_func.values():
+                    lf = rff(
+                        source["file_path"],
+                        storage_options=storage_options
+                    ).lazy()
+                    if isinstance(lf, pl.LazyFrame):
+                        return lf
+            logging.error("Unsupported file extension in source.")
+            return None
+        else:
+            logging.error("Incorrect source specification.")
+            return None
+    elif isinstance(source, str):
+        if source.endswith(".csv"):
+            return read_file_func["csv"](source)
+        elif source.endswith(".parquet"):
+            return read_file_func["parquet"](source)
+        elif source.endswith(".iceberg"):
+            return read_file_func["iceberg"](source)
+        elif source.endswith(".xlsx"):
+            return read_file_func["xlsx"](source).lazy()
+        else:
+            for rff in read_file_func.values():
+                lf = rff(source).lazy()
+                if isinstance(lf, pl.LazyFrame):
+                    return lf
+            logging.error(f"Unsupported source: `{source}`")
             return None
     else:
-        logging.error(f"Unsupported file format: `{source}`")
+        logging.error(f"Unrecognized source type: `{type(source)}`")
         return None
 
 
