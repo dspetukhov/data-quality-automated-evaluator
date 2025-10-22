@@ -26,12 +26,15 @@ def make_report(
     Path(output).mkdir(exist_ok=True)
 
     md_toc, md_content = [], []
+    plotly_config = config.get("plotly", {})
+    plotly_config.update(config.get("anomalies", {}))
+
     col = "__overview"
     stats = plot_data(
         lf["__date"],
         lf["__count"],
         lf["__balance"] if "__balance" in lf.columns else None,
-        config=config.get("plotly", {}),
+        config=plotly_config,
         file_path=f"{output}/{col}",
         titles=(
             "Number of values",
@@ -50,7 +53,7 @@ def make_report(
                 lf[col + metadata[col]["common"][i]]
                 for i in range(len(metadata[col]["common"]))
             ],
-            config=config.get("plotly", {}),
+            config=plotly_config,
             file_path=f"{output}/{col}",
             titles=[mapping.get(el, el) for el in metadata[col]["common"]])
         md_toc.append((col, col))
@@ -66,7 +69,7 @@ def make_report(
                     lf[col + metadata[col]["numeric"][i]]
                     for i in range(len(metadata[col]["numeric"]))
                 ],
-                config=config.get("plotly", {}),
+                config=plotly_config,
                 file_path=f"{output}/{col}__numeric",
                 titles=[mapping.get(el, el) for el in metadata[col]["numeric"]])
             md_content.append(
