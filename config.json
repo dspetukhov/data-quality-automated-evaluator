@@ -40,6 +40,21 @@
                 }
             }
         },
+        "anomalies": {
+            "criterion": "IQR",
+            "style": {
+                "type": "rect",
+                "xref": "x",
+                "yref": "y",
+                "fillcolor": "grey",
+                "opacity": 0.05,
+                "line": {
+                    "width": 1.0,
+                    "dash": "dot",
+                    "color": "black"
+                }
+            }
+        },
         "layout": {
             "margin": { "l": 20, "r": 20, "t": 30, "b": 20 },
             "showlegend": false,

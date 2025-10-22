@@ -4,8 +4,12 @@ from plotly.subplots import make_subplots
 from plotly.graph_objs import Scatter
 import plotly.io as pio
 
-
 pio.templates.default = "plotly_white"
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 
 
 def plot_data(
@@ -50,8 +54,25 @@ def plot_data(
             Scatter(x=x, y=data[i], **config.get("plot", {})),
             row=(i // n_cols) + 1, col=(i % n_cols) + 1
         )
+        ed_output = evaluate_data(data[i], config)
+        bounds = ed_output["Anomalies"].pop("Bounds")
+        print(bounds)
+        if isinstance(bounds, tuple):
+            lb, ub = bounds
+            if lb and ub:
+                shape = (
+                    (data[i].min(), lb),
+                    (ub, data[i].max())
+                )
+                for s in range(len(shape)):
+                    fig.add_shape(
+                        x0=min(x), x1=max(x), y0=shape[s][0], y1=shape[s][1],
+                        **config.get("anomalies", {}).get("style", {}),
+                        row=(i // n_cols) + 1, col=(i % n_cols) + 1
+                    )
+
         output.append({
-            **evaluate_data(data[i], config),
+            **ed_output,
             **{"title": fig.layout.annotations[i].text}})
 
     layout = config.get("layout", {}).copy()
@@ -121,6 +142,17 @@ def evaluate_data(
             ((data - mean) / std).abs() > config.get("threshold", 3.0)
         ).sum()
 
+    # Determine bounds for anomaly highlighting on plots
+    if config.get("anomalies", {}).get("criterion") == "IQR":
+        bounds = (lower_bound, upper_bound)
+    elif config.get("anomalies", {}).get("criterion") == "Z-score":
+        bounds = (
+            mean - config.get("threshold", 3.0) * std,
+            mean + config.get("threshold", 3.0) * std
+        )
+    else:
+        bounds = None
+
     return {
         "μ±σ": (mean, std),
         "Range": {
@@ -128,6 +160,7 @@ def evaluate_data(
         "IQR": {"Q1": q1, "Q3": q3},
         "Anomalies": {
             "IQR": 100 * anomalies_iqr / len(data),
-            "Z-score": 100 * anomalies_zscore / len(data)
+            "Z-score": 100 * anomalies_zscore / len(data),
+            "Bounds": bounds
         }
     }
