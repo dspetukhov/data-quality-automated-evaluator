@@ -1,11 +1,23 @@
 import sys
 import polars as pl
 import polars.selectors as cs
-from typing import Dict, Any, Tuple, Union
+from typing import Dict, Any, Tuple, Union, Callable
 from types import LambdaType
+from functools import wraps
 from utils import logging
 
 
+def exception_handler(func) -> Callable:
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            logging.error(f"An error occurred in {func.__name__}: {e}")
+    return wrapper
+
+
+@exception_handler
 def make_analysis(
         config: Dict[str, Any]
 ) -> Tuple[pl.LazyFrame, Dict[str, Union[Tuple[str], str]]]:
@@ -138,6 +150,7 @@ def get_date_column(schema: pl.LazyFrame.schema) -> Union[str, None]:
         return candidates[0]
 
 
+@exception_handler
 def read_source(source: Union[str, Dict[str, str]]) -> pl.LazyFrame:
     """
     Read the source file into a Polars LazyFrame.
@@ -207,6 +220,7 @@ def apply_transformation(
     Transformations can be defined as Polars expressions
     or SQL quieries powered by Polars.
     """
+    @exception_handler
     def apply(lf: pl.LazyFrame, alias: str, ttype: str, texpr: str, f=False):
         """Apply single transformation."""
         try:
@@ -232,7 +246,7 @@ def apply_transformation(
                 f"Failed to apply transformation `{texpr}`: {e}")
             return lf
 
-        logging.info(f"The transformation applied: {texpr}")
+        logging.info(f"Transformation applied: {texpr}")
         return lf
 
     for item in config:
