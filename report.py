@@ -111,7 +111,7 @@ def make_md(
                 "<a name='toc'></a>\n" + "".join(toc) + "\n" +
                 "".join(content))
     except IOError as e:
-        logging.error(f"Failed to write file: {e}")
+        logging.error(f"Failed to save markdown file: {e}")
 
 
 def make_md_table(data, config) -> str:
