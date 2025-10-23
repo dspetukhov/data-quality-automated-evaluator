@@ -17,7 +17,6 @@ def exception_handler(func) -> Callable:
     return wrapper
 
 
-@exception_handler
 def make_analysis(
         config: Dict[str, Any]
 ) -> Tuple[pl.LazyFrame, Dict[str, Union[Tuple[str], str]]]:
@@ -46,6 +45,9 @@ def make_analysis(
         dict: Metainfo about aggregated data.
     """
     lf = read_source(config["source"])
+    if not isinstance(lf, pl.LazyFrame):
+        logging.error(f"Failed to load source: `{config['source']}`")
+        return (None, None)
 
     # filter for DataFrame rows
     filtration = config.get("filtration")
@@ -150,7 +152,6 @@ def get_date_column(schema: pl.LazyFrame.schema) -> Union[str, None]:
         return candidates[0]
 
 
-@exception_handler
 def read_source(source: Union[str, Dict[str, str]]) -> pl.LazyFrame:
     """
     Read the source file into a Polars LazyFrame.
@@ -159,7 +160,7 @@ def read_source(source: Union[str, Dict[str, str]]) -> pl.LazyFrame:
         source (str, dict): Data source specification.
 
     Returns:
-        LazyFrame: The loaded dataframe.
+        LazyFrame: The loaded dataframe or None if load was unsuccessful.
     """
     read_file_func = {
         "csv": pl.scan_csv,
@@ -167,6 +168,26 @@ def read_source(source: Union[str, Dict[str, str]]) -> pl.LazyFrame:
         "iceberg": pl.scan_iceberg,
         "xlsx": pl.read_excel
     }
+
+    def iterate_extensions(
+            source: str,
+            storage_options: dict = None
+    ) -> pl.LazyFrame:
+        """Choose appropriate extension to read the source if possible
+        or iterate over possible file extensions.
+        """
+        extension = source.split(".")[-1].lower()
+        if extension in read_file_func:
+            return read_file_func[extension](
+                source,
+                storage_options=storage_options).lazy()
+        else:
+            for rff in read_file_func.values():
+                lf = rff(source, storage_options=storage_options).lazy()
+                if isinstance(lf, pl.LazyFrame):
+                    return lf
+        logging.error("Unsupported file format in source.")
+
     if isinstance(source, dict):
         if "query" in source and "uri" in source:
             return pl.read_database_uri(
@@ -177,36 +198,15 @@ def read_source(source: Union[str, Dict[str, str]]) -> pl.LazyFrame:
             if "extension" in source:
                 rff = read_file_func.get(source["extension"])
                 if isinstance(rff, LambdaType):
-                    return rff(source["file_path"]).lazy()
-            else:
-                for rff in read_file_func.values():
-                    lf = rff(
+                    return rff(
                         source["file_path"],
-                        storage_options=storage_options
-                    ).lazy()
-                    if isinstance(lf, pl.LazyFrame):
-                        return lf
-            logging.error("Unsupported file extension in source.")
-            return None
+                        storage_options=storage_options).lazy()
+            else:
+                return iterate_extensions(source["file_path"], storage_options)
         else:
             logging.error("Incorrect source specification.")
-            return None
     elif isinstance(source, str):
-        if source.endswith(".csv"):
-            return read_file_func["csv"](source)
-        elif source.endswith(".parquet"):
-            return read_file_func["parquet"](source)
-        elif source.endswith(".iceberg"):
-            return read_file_func["iceberg"](source)
-        elif source.endswith(".xlsx"):
-            return read_file_func["xlsx"](source).lazy()
-        else:
-            for rff in read_file_func.values():
-                lf = rff(source).lazy()
-                if isinstance(lf, pl.LazyFrame):
-                    return lf
-            logging.error(f"Unsupported source: `{source}`")
-            return None
+        return iterate_extensions(source)
     else:
         logging.error(f"Unrecognized source type: `{type(source)}`")
         return None
@@ -220,7 +220,6 @@ def apply_transformation(
     Transformations can be defined as Polars expressions
     or SQL quieries powered by Polars.
     """
-    @exception_handler
     def apply(lf: pl.LazyFrame, alias: str, ttype: str, texpr: str, f=False):
         """Apply single transformation."""
         try:
@@ -231,7 +230,7 @@ def apply_transformation(
             elif ttype == "polars":
                 if not texpr.startswith("pl.col"):
                     raise ValueError(
-                        "Expression should start with pl.col()")
+                        "expression should start with pl.col()")
                 expr = eval(texpr, {"pl": pl})
                 if isinstance(expr, pl.Expr):
                     lf = lf.filter(expr) if f else lf.with_columns(expr.alias(alias))
