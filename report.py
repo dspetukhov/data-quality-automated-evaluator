@@ -82,7 +82,7 @@ def make_report(
     make_md(md_toc, md_content, output, config["source"])
 
 
-@exception_handler(error_message="Failed to save the report")
+@exception_handler()
 def make_md(
         toc: List[Tuple[str, str]],
         content: List[str],
@@ -106,7 +106,7 @@ def make_md(
         for section, anchor in toc
     ])
     with open(os.path.join(output, "README.md"), "w") as f:
-        f.write(
+        f.write(  # possible exception
             "# Preliminary analysis for **`{}`**\n\n".format(source) +
             "<a name='toc'></a>\n" + "".join(toc) + "\n" +
             "".join(content))

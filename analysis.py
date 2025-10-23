@@ -8,30 +8,25 @@ from utils import logging
 import traceback
 
 
-def exception_handler(error_message: str = "", exit_on_error: bool = False):
+def exception_handler(exit_on_error: bool = False):
     """Decorator to handle exceptions."""
     def decorator(func: Callable) -> Callable:
-        def make_message(exc_info, error_message) -> str:
-            _, exception, tb = exc_info
+        def make_message(exc_info) -> str:
+            exc_type, exc_obj, tb = exc_info
             tb = traceback.extract_tb(tb)[1]
-            return "{0} in {1}#{2}: {3}: {4}".format(
-                error_message,
+            return "{0}: {1}#{2}: {3}: {4}".format(
+                exc_type.__name__,
                 tb.filename, tb.lineno,
                 tb.line,
-                str(exception).lower())
+                str(exc_obj).lower())
 
         @wraps(func)
         def wrapper(*args, **kwargs):
             try:
                 return func(*args, **kwargs)
-            except pl.exceptions.PolarsError:
-                logging.error(
-                    make_message(
-                        sys.exc_info(), error_message or "Polars error"))
-            except (Exception, IOError, ValueError):
-                logging.error(
-                    make_message(
-                        sys.exc_info(), error_message or "An exception"))
+            except Exception:
+                print()
+                logging.error(make_message(sys.exc_info()))
             if exit_on_error:
                 sys.exit(1)
             return args[0] if args else None
@@ -86,7 +81,7 @@ def make_analysis(
     date_column = config.get("date_column")
     if isinstance(date_column, str):
         if schema.get(date_column) not in (pl.Date, pl.Datetime):
-            lf = lf.with_columns(
+            lf = lf.with_columns(  # possible exception
                 pl.col(date_column).str.to_datetime(strict=True)
             )
     else:
@@ -144,7 +139,7 @@ def make_analysis(
         lf.group_by(pl.col(date_column).dt.date().alias("__date"))
         .agg(aggs)
         .sort("__date")
-    ).collect()
+    ).collect()  # possible exception
     return output, metadata
 
 
@@ -236,7 +231,7 @@ def apply_transformation(
     Transformations can be defined as Polars expressions
     or SQL quieries powered by Polars.
     """
-    @exception_handler(error_message="Failed to apply transformation")
+    @exception_handler()
     def apply(lf: pl.LazyFrame, alias: str, ttype: str, texpr: str, f=False):
         """Apply single transformation."""
         if ttype == "sql":

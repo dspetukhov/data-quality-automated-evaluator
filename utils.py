@@ -13,7 +13,7 @@ logging.basicConfig(
 )
 
 
-@exception_handler(error_message="Failed to save the plot")
+@exception_handler()
 def plot_data(
     x: list,
     *data: Sequence[Any],
@@ -96,7 +96,7 @@ def plot_data(
             x=annotation.x + (1 / n_cols) / 2.005,
             y=annotation.y + 0.005,
             xanchor="right", yanchor="bottom", font={"weight": "normal"})
-    fig.write_image(
+    fig.write_image(  # possible exception
         f"{file_path}.png",
         scale=config.get("misc", {}).get("scale", 1))
     return output
