@@ -5,18 +5,41 @@ from typing import Dict, Any, Tuple, Union, Callable
 from types import LambdaType
 from functools import wraps
 from utils import logging
+import traceback
 
 
-def exception_handler(func) -> Callable:
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            logging.error(f"An error occurred in {func.__name__}: {e}")
-    return wrapper
+def exception_handler(error_message: str = "", exit_on_error: bool = False):
+    """Decorator to handle exceptions."""
+    def decorator(func: Callable) -> Callable:
+        def make_message(exc_info, error_message) -> str:
+            _, exception, tb = exc_info
+            tb = traceback.extract_tb(tb)[1]
+            return "{0} in {1}#{2}: {3}: {4}".format(
+                error_message,
+                tb.filename, tb.lineno,
+                tb.line,
+                str(exception).lower())
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except pl.exceptions.PolarsError:
+                logging.error(
+                    make_message(
+                        sys.exc_info(), error_message or "Polars error"))
+            except (Exception, IOError, ValueError):
+                logging.error(
+                    make_message(
+                        sys.exc_info(), error_message or "An exception"))
+            if exit_on_error:
+                sys.exit(1)
+            return args[0] if args else None
+        return wrapper
+    return decorator
 
 
+@exception_handler(exit_on_error=True)
 def make_analysis(
         config: Dict[str, Any]
 ) -> Tuple[pl.LazyFrame, Dict[str, Union[Tuple[str], str]]]:
@@ -63,21 +86,14 @@ def make_analysis(
     date_column = config.get("date_column")
     if isinstance(date_column, str):
         if schema.get(date_column) not in (pl.Date, pl.Datetime):
-            try:
-                lf = lf.with_columns(
-                    pl.col(date_column).str.to_datetime(strict=True)
-                )
-            except Exception as e:
-                logging.error(
-                    f"Failed to convert '{date_column}' to date: {e}")
-                sys.exit(1)
+            lf = lf.with_columns(
+                pl.col(date_column).str.to_datetime(strict=True)
+            )
     else:
-        date_column = get_date_column(schema)
+        date_column = find_date_column(schema)
 
     if not date_column:
-        logging.error(
-            "There are no date columns "
-            "for temporal data distribution analysis.")
+        logging.error("There are no date columns for data analysis")
         return (None, None)
 
     logging.warning(f"base date column: {date_column}")
@@ -86,19 +102,19 @@ def make_analysis(
     aggs = [pl.count().alias("__count")]
 
     target_column = config.get("target_column")
-    if not target_column:
-        if schema.get("target_column"):
-            target_column = "target_column"
+    if not schema.get(target_column):
+        target_column = "target_column"
+    if schema.get(target_column):
+        n_unique = lf.select(pl.col(target_column).n_unique()).collect().item()
+        if n_unique == 2:
+            aggs.append(
+                pl.col(target_column).mean().alias("__balance")
+            )
         else:
-            logging.warning("Target column wasn't specified")
-
-    n_unique = lf.select(pl.col(target_column).n_unique()).collect().item()
-    if n_unique == 2:
-        aggs.append(
-            pl.col(target_column).mean().alias("__balance")
-        )
+            logging.warning(f"Target column `{target_column}` is not binary")
+            target_column = None
     else:
-        logging.warning(f"Target column `{target_column}` is not binary")
+        logging.warning("Target column wasn't found")
 
     for col in schema.names():
         if col in (date_column, target_column):
@@ -132,7 +148,7 @@ def make_analysis(
     return output, metadata
 
 
-def get_date_column(schema: pl.LazyFrame.schema) -> Union[str, None]:
+def find_date_column(schema: pl.LazyFrame.schema) -> Union[str, None]:
     """
     Get the name of the date column in the dataframe.
 
@@ -220,30 +236,26 @@ def apply_transformation(
     Transformations can be defined as Polars expressions
     or SQL quieries powered by Polars.
     """
+    @exception_handler(error_message="Failed to apply transformation")
     def apply(lf: pl.LazyFrame, alias: str, ttype: str, texpr: str, f=False):
         """Apply single transformation."""
-        try:
-            if ttype == "sql":
-                lf = lf.sql(texpr) if f else lf.sql("""
-                    select *, {0} as {1} from self
-                """.format(texpr, alias))
-            elif ttype == "polars":
-                if not texpr.startswith("pl.col"):
-                    raise ValueError(
-                        "expression should start with pl.col()")
-                expr = eval(texpr, {"pl": pl})
-                if isinstance(expr, pl.Expr):
-                    lf = lf.filter(expr) if f else lf.with_columns(expr.alias(alias))
-                else:
-                    logging.warning(
-                        f"Invalid Polars expression: {texpr}")
+        if ttype == "sql":
+            lf = lf.sql(texpr) if f else lf.sql("""
+                select *, {0} as {1} from self
+            """.format(texpr, alias))
+        elif ttype == "polars":
+            if not texpr.startswith("pl.col"):
+                raise ValueError(
+                    "Polars expression should start with pl.col()")
+            expr = eval(texpr, {"pl": pl})
+            if isinstance(expr, pl.Expr):
+                lf = lf.filter(expr) if f else lf.with_columns(expr.alias(alias))
             else:
                 logging.warning(
-                    f"Unrecognized type of transformation: `{ttype}`")
-        except Exception as e:
-            logging.error(
-                f"Failed to apply transformation `{texpr}`: {e}")
-            return lf
+                    f"Invalid Polars expression: {texpr}")
+        else:
+            logging.warning(
+                f"Unrecognized type of transformation: `{ttype}`")
 
         logging.info(f"Transformation applied: {texpr}")
         return lf

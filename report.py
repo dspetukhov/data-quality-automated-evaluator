@@ -1,9 +1,9 @@
 import os
-import logging
 from pathlib import Path
 from typing import Dict, List, Union, Any, Tuple
 from polars import LazyFrame
 from utils import plot_data
+from analysis import exception_handler
 
 
 def make_report(
@@ -82,6 +82,7 @@ def make_report(
     make_md(md_toc, md_content, output, config["source"])
 
 
+@exception_handler(error_message="Failed to save the report")
 def make_md(
         toc: List[Tuple[str, str]],
         content: List[str],
@@ -104,14 +105,11 @@ def make_md(
         f"- [{section}](#{anchor})\n"
         for section, anchor in toc
     ])
-    try:
-        with open(os.path.join(output, "README.md"), "w") as f:
-            f.write(
-                "# Preliminary analysis for **`{}`**\n\n".format(source) +
-                "<a name='toc'></a>\n" + "".join(toc) + "\n" +
-                "".join(content))
-    except IOError as e:
-        logging.error(f"Failed to save markdown file: {e}")
+    with open(os.path.join(output, "README.md"), "w") as f:
+        f.write(
+            "# Preliminary analysis for **`{}`**\n\n".format(source) +
+            "<a name='toc'></a>\n" + "".join(toc) + "\n" +
+            "".join(content))
 
 
 def make_md_table(data, config) -> str:

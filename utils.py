@@ -3,6 +3,7 @@ from typing import Sequence, Any, Dict
 from plotly.subplots import make_subplots
 from plotly.graph_objs import Scatter
 import plotly.io as pio
+from analysis import exception_handler
 
 pio.templates.default = "plotly_white"
 logging.basicConfig(
@@ -12,6 +13,7 @@ logging.basicConfig(
 )
 
 
+@exception_handler(error_message="Failed to save the plot")
 def plot_data(
     x: list,
     *data: Sequence[Any],
@@ -31,7 +33,8 @@ def plot_data(
         titles (tuple, optional): Titles for each subplot.
 
     Returns:
-        None
+        dict: A list of dictionaries with descriptive statistics
+        for each data series representing columns in the aggregated LazyFrame.
     """
     n_subplots = len(data)
     n_cols = 2
@@ -56,7 +59,6 @@ def plot_data(
         )
         ed_output = evaluate_data(data[i], config)
         bounds = ed_output["Anomalies"].pop("Bounds")
-        print(bounds)
         if isinstance(bounds, tuple):
             lb, ub = bounds
             if lb and ub:
@@ -94,14 +96,9 @@ def plot_data(
             x=annotation.x + (1 / n_cols) / 2.005,
             y=annotation.y + 0.005,
             xanchor="right", yanchor="bottom", font={"weight": "normal"})
-    try:
-        fig.write_image(
-            f"{file_path}.png",
-            scale=config.get("misc", {}).get("scale", 1))
-    except ValueError as e:
-        logging.error(f"Failed to represent image: {e}")
-    except IOError as e:
-        logging.error(f"Failed to save image: {e}")
+    fig.write_image(
+        f"{file_path}.png",
+        scale=config.get("misc", {}).get("scale", 1))
     return output
 
 
@@ -110,7 +107,7 @@ def evaluate_data(
         config: Dict[str, float]
 ) -> Dict[str, float]:
     """
-    Get Detect anomalies in the series of data using the IQR and Z-score methods.
+    Detect anomalies in the series of data using the IQR and Z-score methods.
 
     Args:
         data (pl.Series): Series of data aggregated over dates.
