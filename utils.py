@@ -38,7 +38,7 @@ def plot_data(
     """
     n_subplots = len(data)
     n_cols = 2
-    n_rows = n_cols * (n_subplots % 2) + 1
+    n_rows = (n_subplots + n_cols - 1) // n_cols
     fig = make_subplots(
         rows=n_rows, cols=n_cols,
         horizontal_spacing=config.get("subplots", {})
@@ -58,7 +58,7 @@ def plot_data(
             row=(i // n_cols) + 1, col=(i % n_cols) + 1
         )
         ed_output = evaluate_data(data[i], config)
-        bounds = ed_output["Anomalies"].pop("Bounds")
+        bounds = ed_output.pop("Bounds")
         if isinstance(bounds, tuple):
             lb, ub = bounds
             if lb and ub:
@@ -74,8 +74,8 @@ def plot_data(
                     )
 
         output.append({
-            **ed_output,
-            **{"title": fig.layout.annotations[i].text}})
+            **{"title": fig.layout.annotations[i].text},
+            **ed_output})
 
     layout = config.get("layout", {}).copy()
     height = layout.get("height", 512)
@@ -152,12 +152,13 @@ def evaluate_data(
 
     return {
         "μ±σ": (mean, std),
-        "Range": {
-            "Min": data.min(), "Max": data.max()},
-        "IQR": {"Q1": q1, "Q3": q3},
-        "Anomalies": {
-            "IQR": 100 * anomalies_iqr / len(data),
-            "Z-score": 100 * anomalies_zscore / len(data),
-            "Bounds": bounds
-        }
+        "Range [Min]": data.min(),
+        "Range [Max]": data.max(),
+        "Range": data.max() - data.min(),
+        "IQR [Q1]": q1,
+        "IQR [Q3]": q3,
+        "IQR": q3 - q1,
+        "Anomalies [IQR]": 100 * anomalies_iqr / len(data),
+        "Anomalies [Z-score]": 100 * anomalies_zscore / len(data),
+        "Bounds": bounds
     }

@@ -1,7 +1,9 @@
 import os
+import sys
+from tabulate import tabulate
 from pathlib import Path
 from typing import Dict, List, Union, Any, Tuple
-from polars import LazyFrame
+from polars import LazyFrame, DataFrame, Config
 from utils import plot_data
 from analysis import exception_handler
 
@@ -44,6 +46,19 @@ def make_report(
     md_content.append(f"## <a name='{col}'></a> Overview\n")
     md_content.append(f"![{col}]({col}.png)\n\n")
     md_content.append(make_md_table(stats, config.get("markdown", {})))
+    print(stats)
+    sample = next((el for el in stats if el))
+    rows = [[" " if key == "title" else key] + [format_number(el[key]) for el in stats] for key in sample]
+    print(rows[0])
+    df = DataFrame(rows[1:], schema=rows[0], orient="row")
+    # print(df.to)
+    t = tabulate(rows[1:], headers=rows[0], tablefmt='pipe', floatfmt=".2f", stralign="center")#, colalign=["left"] + ["right"]*(len(rows[0])-1))
+    # with Config(tbl_formatting="MARKDOWN", tbl_hide_column_data_types=True, tbl_hide_dataframe_shape=True):
+    with open("test.md", "w") as f:
+        f.write(t)
+        # print(df)
+
+    sys.exit(1)
 
     mapping = config.get("mapping", {})
     for col in metadata:
@@ -161,8 +176,23 @@ def make_md_table(data, config) -> str:
         {"".join(content)}
     </tbody>
     </table>"""
-    return output + "\n\n"
+    return output + "\n\n"  # <link rel="stylesheet" href="styles.css">
 
+
+# <style>
+#   table {
+#     width: 100%; /* Makes the table span the full width of its container */
+#     table-layout: fixed; /* Optional: Distributes column widths evenly */
+#     border-collapse:collapse; border:0px solid #ddd;margin:5px 0;
+#     text-align:center;padding:5px;
+#     align-items: center;
+#     margin-left: auto;
+#     margin-right: auto;vertical-align: middle;
+#   }
+#   thead {
+#     background-color:#f5f5f5;
+#   }
+# </style>
 
 def make_md_table_header(data, style, width):
     """Create a HTML header for markdown table.
