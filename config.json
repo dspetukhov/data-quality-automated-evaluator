@@ -25,7 +25,7 @@
         "plot": {
             "mode": "lines+markers",
             "line": {
-                "color": "cornflowerblue",
+                "color": "dodgerblue",
                 "dash": "dash",
                 "width": 0.8
             },
@@ -34,7 +34,7 @@
                 "symbol": "circle",
                 "color": "white",
                 "line": {
-                    "color": "cornflowerblue",
+                    "color": "dodgerblue",
                     "width": 0.5
                 }
             }

@@ -100,19 +100,14 @@ def make_analysis(
     if not schema.get(target_column):
         target_column = "target_column"
     if schema.get(target_column):
-        n_unique = lf.select(pl.col(target_column).n_unique()).collect().item()
-        if n_unique == 2:
-            aggs.append(
-                pl.col(target_column).mean().alias("__balance")
-            )
-        else:
-            logging.warning(f"Target column `{target_column}` is not binary")
-            target_column = None
+        aggs.append(
+            pl.col(target_column).mean().alias("__target")
+        )
     else:
         logging.warning("Target column wasn't found")
 
     for col in schema.names():
-        if col in (date_column, target_column):
+        if col == date_column:
             continue
         aggs.extend([
             pl.col(col).n_unique().alias(f"{col}_uniq"),
@@ -139,7 +134,9 @@ def make_analysis(
         lf.group_by(pl.col(date_column).dt.date().alias("__date"))
         .agg(aggs)
         .sort("__date")
-    ).collect()  # possible exception
+    )
+    logging.info(output.explain())
+    output = output.collect()  # possible exception
     return output, metadata
 
 

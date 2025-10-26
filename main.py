@@ -13,6 +13,7 @@ if __name__ == "__main__":
             except json.JSONDecodeError as e:
                 logging.error(f"Error parsing configuration file: {e}")
                 conifg = None
+        # independent file load (or pass the existing lazyframe or dataframe)
         if config and os.path.exists(config.get("source")):
             df, metadata = make_analysis(config)
             if df is not None:
