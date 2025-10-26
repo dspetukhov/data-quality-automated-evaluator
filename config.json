@@ -18,8 +18,7 @@
         "threshold": 3.0
     },
     "markdown": {
-        "index_column": 10,
-        "html_style": "text-align:center;padding:5px;",
+        "css_style": "../style.css",
         "float_precision": 4
     },
     "plotly": {

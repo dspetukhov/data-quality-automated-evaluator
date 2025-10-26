@@ -1,9 +1,8 @@
 import os
-import sys
 from tabulate import tabulate
 from pathlib import Path
 from typing import Dict, List, Union, Any, Tuple
-from polars import LazyFrame, DataFrame, Config
+from polars import LazyFrame
 from utils import plot_data
 from analysis import exception_handler
 
@@ -27,7 +26,15 @@ def make_report(
     output = config.get("output", "output")
     Path(output).mkdir(exist_ok=True)
 
-    md_toc, md_content = [], []
+    # markdown definitions
+    precision = config.get("markdown", {}).get("float_precision")
+    style = config.get("markdown", {}).get("css_style")
+    md_toc = []
+    md_content = [
+        f"<link rel='stylesheet' href='{style}'>\n\n"
+        if style else ""]
+    print(md_content)
+    # plotly definitions
     plotly_config = config.get("plotly", {})
     plotly_config.update(config.get("anomalies", {}))
 
@@ -44,21 +51,8 @@ def make_report(
     )
     md_toc.append(("Overview", col))
     md_content.append(f"## <a name='{col}'></a> Overview\n")
-    md_content.append(f"![{col}]({col}.png)\n\n")
-    md_content.append(make_md_table(stats, config.get("markdown", {})))
-    print(stats)
-    sample = next((el for el in stats if el))
-    rows = [[" " if key == "title" else key] + [format_number(el[key]) for el in stats] for key in sample]
-    print(rows[0])
-    df = DataFrame(rows[1:], schema=rows[0], orient="row")
-    # print(df.to)
-    t = tabulate(rows[1:], headers=rows[0], tablefmt='pipe', floatfmt=".2f", stralign="center")#, colalign=["left"] + ["right"]*(len(rows[0])-1))
-    # with Config(tbl_formatting="MARKDOWN", tbl_hide_column_data_types=True, tbl_hide_dataframe_shape=True):
-    with open("test.md", "w") as f:
-        f.write(t)
-        # print(df)
-
-    sys.exit(1)
+    md_content.append(f"![{col}]({col}.png)\n")
+    md_content.append(make_md_table(stats, precision))
 
     mapping = config.get("mapping", {})
     for col in metadata:
@@ -74,7 +68,7 @@ def make_report(
         md_toc.append((col, col))
         md_content.append(f"## <a name='{col}'></a> `{col}`\n")
         md_content.append(f"![{col}]({col}.png)\n")
-        md_content.append(make_md_table(stats, config.get("markdown", {})))
+        md_content.append(make_md_table(stats, precision))
 
         # Numeric datatypes if present
         if metadata[col].get("numeric"):
@@ -91,7 +85,7 @@ def make_report(
                 f"### <a name='{col}'></a> [{metadata[col]['dtype']}]\n")
             md_content.append(f"![{col}]({col}__numeric.png)\n")
             md_content.append(
-                make_md_table(stats, config.get("markdown", {}))
+                make_md_table(stats, precision)
             )
         md_content.append('\n[Back to the TOC](#toc)\n\n')
     make_md(md_toc, md_content, output, config["source"])
@@ -127,7 +121,7 @@ def make_md(
             "".join(content))
 
 
-def make_md_table(data, config) -> str:
+def make_md_table(data, precision) -> str:
     """
     Create a markdown table from a dictionary with calculated statistics.
 
@@ -137,123 +131,24 @@ def make_md_table(data, config) -> str:
     Returns:
         str: Markdown table as an HTML code.
     """
-    data_restructured = {
-        k: [item.get(k, "") for item in data]
-        for item in data for k in item
-    }
-
-    idx_width = config.get("index_column", 10)
-    style = config.get("html_style", "")
-    precision = config.get("float_precision")
-
-    header, col_width = make_md_table_header(
-        data_restructured, style, idx_width)
-
-    content = []
-    for key, values in data_restructured.items():
-        sample_value = next((val for val in values if val), None)
-        if isinstance(sample_value, (str, tuple)):
-            content.append(
-                make_md_table_row(key, values, style, precision)
-            )
-        elif isinstance(sample_value, dict):
-            content.append(
-                make_md_table_from_dict(key, values, style, precision)
-            )
-
-    colgroup = f"<col style='width:{idx_width}%'>" + "".join([
-        f'<col style="width:{col_width}%">'
-        for _ in range(len(data))
-    ])
-    output = f"""<table style="width:100%;table-layout:fixed;border-collapse:collapse;border:1px solid #ddd;margin:5px 0;">
-    <colgroup>
-        {colgroup}
-    </colgroup>
-    <thead style="background-color:#f5f5f5;">
-        {header}
-    </thead>
-    <tbody>
-        {"".join(content)}
-    </tbody>
-    </table>"""
-    return output + "\n\n"  # <link rel="stylesheet" href="styles.css">
-
-
-# <style>
-#   table {
-#     width: 100%; /* Makes the table span the full width of its container */
-#     table-layout: fixed; /* Optional: Distributes column widths evenly */
-#     border-collapse:collapse; border:0px solid #ddd;margin:5px 0;
-#     text-align:center;padding:5px;
-#     align-items: center;
-#     margin-left: auto;
-#     margin-right: auto;vertical-align: middle;
-#   }
-#   thead {
-#     background-color:#f5f5f5;
-#   }
-# </style>
-
-def make_md_table_header(data, style, width):
-    """Create a HTML header for markdown table.
-
-    Args:
-        data (dict): Dictionary to be converted to a table.
-        style (str): HTML style for Markdown table.
-        width (int): relative index column width.
-
-    Returns:
-        tuple (str, int): header as HTML string and relative column width (%).
-    """
-    header = [f"<th style='{style};width:{width}%'></th>"]
-    col_width = (100 - width) // len(data)
-    titles = data.pop("title")
-    for title in titles:
-        header.append(
-            f"<th style='{style};width:{col_width}%'>{title}</th>"
-        )
-    return "<tr>{}</tr>".format("".join(header)), col_width
-
-
-def make_md_table_row(key, values, style, precision):
-    """Create HTML-formatted Markdown table row for simple variables."""
-    content = [f"<td style='{style};font-weight:bold'>{key}</td>"]
-    content.extend([
-        f"<td style='{style}'>{format_number(val, precision)}</td>"
-        for val in values
-    ])
-    return "<tr>{}</tr>".format("".join(content))
-
-
-def make_md_table_from_dict(key, values, style, precision):
-    """Create HTML-formatted Markdown table rows from dictionary values."""
-    content = []
-    values_restructured = {
-        k: [(item or {}).get(k, "") for item in values]
-        for item in values for k in item
-    }
-
-    for item in values_restructured:
-        content.append(
-            make_md_table_row(
-                f"{key} [{item}]", values_restructured[item], style, precision)
-        )
-    if key in ("Range", "IQR"):
-        values = [
-            list(v.values())[1] - list(v.values())[0]
-            if v else "" for v in values
-        ]
-        content.append(
-            make_md_table_row(f"{key}", values, style, precision)
-        )
-    return "<tr>{}</tr>".format("".join(content))
+    sample = next((el for el in data if el))
+    rows = [
+        [" " if key == "title" else f"**{key}**"] + [format_number(el[key], precision) for el in data]
+        for key in sample
+    ]
+    return tabulate(
+        rows,
+        headers="firstrow",
+        tablefmt="pipe",
+        colalign=["left"] + ["center"]*(len(rows[0])-1)
+    ) + "\n\n"
 
 
 def format_number(value, precision=4):
     """Format float numbers to the specified precision."""
     if isinstance(value, float):
         if len(str(value).split(".")[1]) > precision:
-            return f"{value:,.{precision}f}"
+            value = f"{value:,.{precision}f}"
     elif isinstance(value, tuple):
-        return " ± ".join([f"{v:,.{precision}f}" for v in value])
+        value = " ± ".join([f"{v:,.{precision}f}" for v in value])
     return str(value)
