@@ -31,9 +31,9 @@ def make_report(
     style = config.get("markdown", {}).get("css_style")
     md_toc = []
     md_content = [
-        f"<link rel='stylesheet' href='{style}'>\n\n"
+        f"<link rel='stylesheet' href='{style}'>\n"
         if style else ""]
-    print(md_content)
+
     # plotly definitions
     plotly_config = config.get("plotly", {})
     plotly_config.update(config.get("anomalies", {}))
@@ -42,57 +42,54 @@ def make_report(
     stats = plot_data(
         lf["__date"],
         lf["__count"],
-        lf["__balance"] if "__balance" in lf.columns else None,
+        lf["__target"] if "__target" in lf.columns else None,
         config=plotly_config,
         file_path=f"{output}/{col}",
         titles=(
             "Number of values",
-            "Class balance" if "__balance" in lf.columns else None)
+            "Target average" if "__target" in lf.columns else None)
     )
-    md_toc.append(("Overview", col))
-    md_content.append(f"## <a name='{col}'></a> Overview\n")
-    md_content.append(f"![{col}]({col}.png)\n")
-    md_content.append(make_md_table(stats, precision))
+    collect_md(col, stats, md_toc, md_content, precision)
 
     mapping = config.get("mapping", {})
     for col in metadata:
         stats = plot_data(
-            lf['__date'],
+            lf["__date"],
             *[
                 lf[col + metadata[col]["common"][i]]
                 for i in range(len(metadata[col]["common"]))
             ],
             config=plotly_config,
             file_path=f"{output}/{col}",
-            titles=[mapping.get(el, el) for el in metadata[col]["common"]])
-        md_toc.append((col, col))
-        md_content.append(f"## <a name='{col}'></a> `{col}`\n")
-        md_content.append(f"![{col}]({col}.png)\n")
-        md_content.append(make_md_table(stats, precision))
+            titles=[mapping.get(el, el) for el in metadata[col]["common"]]
+        )
+        collect_md(col, stats, md_toc, md_content, precision)
 
         # Numeric datatypes if present
         if metadata[col].get("numeric"):
             stats = plot_data(
-                lf['__date'],
+                lf["__date"],
                 *[
                     lf[col + metadata[col]["numeric"][i]]
                     for i in range(len(metadata[col]["numeric"]))
                 ],
                 config=plotly_config,
                 file_path=f"{output}/{col}__numeric",
-                titles=[mapping.get(el, el) for el in metadata[col]["numeric"]])
-            md_content.append(
-                f"### <a name='{col}'></a> [{metadata[col]['dtype']}]\n")
-            md_content.append(f"![{col}]({col}__numeric.png)\n")
-            md_content.append(
-                make_md_table(stats, precision)
+                titles=[mapping.get(el, el) for el in metadata[col]["numeric"]]
             )
-        md_content.append('\n[Back to the TOC](#toc)\n\n')
-    make_md(md_toc, md_content, output, config["source"])
+            collect_md(
+                col, stats,
+                md_toc, md_content,
+                suffix="__numeric",
+                precision=precision,
+                dtype=metadata[col]["dtype"])
+
+        md_content.append("[Back to the TOC](#toc)\n")
+    write_md(md_toc, md_content, output, config["source"])
 
 
 @exception_handler()
-def make_md(
+def write_md(
         toc: List[Tuple[str, str]],
         content: List[str],
         output: str,
@@ -110,15 +107,42 @@ def make_md(
     Returns:
         None
     """
-    toc = "".join([
-        f"- [{section}](#{anchor})\n"
-        for section, anchor in toc
-    ])
+    toc = [
+        f"- [{section}](#{anchor})"
+        for anchor, section in toc
+    ]
     with open(os.path.join(output, "README.md"), "w") as f:
         f.write(  # possible exception
             "# Preliminary analysis for **`{}`**\n\n".format(source) +
-            "<a name='toc'></a>\n" + "".join(toc) + "\n" +
-            "".join(content))
+            "<a name='toc'></a>\n" + "\n".join(toc) + "\n\n" +
+            "\n".join(content))
+
+
+def collect_md(col, data, toc, content, precision=4, **kwargs) -> List:
+    """Process data to create Markdown file
+    by updating lists for TOC and content in-place."""
+    suffix = kwargs.get("suffix", "")
+    if col == "__overview":
+        cols = (col, "Overview")
+    elif suffix:
+        cols = (col, kwargs.get("dtype"))
+    else:
+        cols = (col, col)
+
+    if not suffix:
+        toc.append(cols)
+
+    content.append((
+        "{level} <a name='{col}'></a> `{alias}`\n"
+        "![{col}]({col}{suffix}.png)\n"
+        "{table}"
+    ).format(
+        level="###" if suffix else "##",
+        col=col,
+        alias=kwargs.get("dtype", "Overview" if col == "__overview" else col),
+        suffix=suffix,
+        table=make_md_table(data, precision)
+    ))
 
 
 def make_md_table(data, precision) -> str:
@@ -141,10 +165,10 @@ def make_md_table(data, precision) -> str:
         headers="firstrow",
         tablefmt="pipe",
         colalign=["left"] + ["center"]*(len(rows[0])-1)
-    ) + "\n\n"
+    ) + "\n"
 
 
-def format_number(value, precision=4):
+def format_number(value, precision):
     """Format float numbers to the specified precision."""
     if isinstance(value, float):
         if len(str(value).split(".")[1]) > precision:
