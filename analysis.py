@@ -69,11 +69,11 @@ def make_analysis(
 
     # filter for DataFrame rows
     filtration = config.get("filtration")
-    if isinstance(filtration, dict):
+    if filtration and isinstance(filtration, dict):
         lf = apply_transformation(lf, filtration, f=True)
     # transformations for DataFrame columns
     transformation = config.get("transformation")
-    if isinstance(transformation, dict):
+    if transformation and isinstance(transformation, dict):
         lf = apply_transformation(lf, transformation)
 
     schema = lf.collect_schema()
@@ -135,11 +135,12 @@ def make_analysis(
         .agg(aggs)
         .sort("__date")
     )
-    logging.info(output.explain())
+    output.explain()
     output = output.collect()  # possible exception
     return output, metadata
 
 
+@exception_handler()
 def find_date_column(schema: pl.LazyFrame.schema) -> Union[str, None]:
     """
     Get the name of the date column in the dataframe.
@@ -160,6 +161,7 @@ def find_date_column(schema: pl.LazyFrame.schema) -> Union[str, None]:
         return candidates[0]
 
 
+@exception_handler(exit_on_error=True)
 def read_source(source: Union[str, Dict[str, str]]) -> pl.LazyFrame:
     """
     Read the source file into a Polars LazyFrame.
@@ -184,25 +186,18 @@ def read_source(source: Union[str, Dict[str, str]]) -> pl.LazyFrame:
         """Choose appropriate extension to read the source if possible
         or iterate over possible file extensions.
         """
-        extension = source.split(".")[-1].lower()
-        if extension in read_file_func:
-            return read_file_func[extension](
-                source,
-                storage_options=storage_options).lazy()
-        else:
-            for rff in read_file_func.values():
-                lf = rff(source, storage_options=storage_options).lazy()
-                if isinstance(lf, pl.LazyFrame):
-                    return lf
-        logging.error("Unsupported file format in source.")
+        for extension, rff in read_file_func.items():
+            if source.endswith(extension):
+                return rff(source, storage_options=storage_options).lazy()
+        raise ValueError(f"Unrecognized file extension: {source}")
 
     if isinstance(source, dict):
-        if "query" in source and "uri" in source:
+        if source.get("query") and source.get("uri"):
             return pl.read_database_uri(
                 query=source["query"], uri=source["uri"]
             ).lazy()
         elif "file_path" in source:
-            storage_options = source.get("storage_options", None)
+            storage_options = source.get("storage_options")
             if "extension" in source:
                 rff = read_file_func.get(source["extension"])
                 if isinstance(rff, LambdaType):
@@ -215,20 +210,16 @@ def read_source(source: Union[str, Dict[str, str]]) -> pl.LazyFrame:
             logging.error("Incorrect source specification.")
     elif isinstance(source, str):
         return iterate_extensions(source)
-    else:
-        logging.error(f"Unrecognized source type: `{type(source)}`")
-        return None
 
 
+@exception_handler()
 def apply_transformation(
         lf: pl.LazyFrame, config: dict, f: bool = False
 ) -> pl.LazyFrame:
     """
     Apply transformations from config.json to the LazyFrame.
-    Transformations can be defined as Polars expressions
-    or SQL quieries powered by Polars.
+    Transformations can be defined as SQL quieries executed by Polars.
     """
-    @exception_handler()
     def apply(lf: pl.LazyFrame, alias: str, ttype: str, texpr: str, f=False):
         """Apply single transformation."""
         if ttype == "sql":
@@ -236,15 +227,7 @@ def apply_transformation(
                 select *, {0} as {1} from self
             """.format(texpr, alias))
         elif ttype == "polars":
-            if not texpr.startswith("pl.col"):
-                raise ValueError(
-                    "Polars expression should start with pl.col()")
-            expr = eval(texpr, {"pl": pl})
-            if isinstance(expr, pl.Expr):
-                lf = lf.filter(expr) if f else lf.with_columns(expr.alias(alias))
-            else:
-                logging.warning(
-                    f"Invalid Polars expression: {texpr}")
+            raise ValueError("Not implemented yet")
         else:
             logging.warning(
                 f"Unrecognized type of transformation: `{ttype}`")
@@ -252,12 +235,11 @@ def apply_transformation(
         logging.info(f"Transformation applied: {texpr}")
         return lf
 
-    for item in config:
-        t = config[item]
+    for name, t in config.items():
         if isinstance(t, str):
-            lf = apply(lf, alias=None, ttype=item, texpr=t, f=f)
+            lf = apply(lf, alias=None, ttype=name, texpr=t, f=f)
         if isinstance(t, dict):
             for key, value in t.items():
-                lf = apply(lf, item, key, value, f)
+                lf = apply(lf, name, key, value, f)
 
     return lf
