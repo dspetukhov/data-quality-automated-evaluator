@@ -121,16 +121,11 @@ def write_md(
 def collect_md(col, data, toc, content, precision=4, **kwargs) -> List:
     """Process data to create Markdown file
     by updating lists for TOC and content in-place."""
+    alias = kwargs.get("dtype", "Overview" if col == "__overview" else col)
     suffix = kwargs.get("suffix", "")
-    if col == "__overview":
-        cols = (col, "Overview")
-    elif suffix:
-        cols = (col, kwargs.get("dtype"))
-    else:
-        cols = (col, col)
 
     if not suffix:
-        toc.append(cols)
+        toc.append((col, alias))
 
     content.append((
         "{level} <a name='{col}'></a> `{alias}`\n"
@@ -139,7 +134,7 @@ def collect_md(col, data, toc, content, precision=4, **kwargs) -> List:
     ).format(
         level="###" if suffix else "##",
         col=col,
-        alias=kwargs.get("dtype", "Overview" if col == "__overview" else col),
+        alias=alias,
         suffix=suffix,
         table=make_md_table(data, precision)
     ))
