@@ -3,14 +3,11 @@
     "date_column": "timestamp",
     "output": "metaverse_transactions_dataset",
     "filtration": {
-        "polars": "pl.col('amount') > 200"
+        "sql": "amount > 200"
     },
     "transformation": {
         "target_column": {
             "sql": "(anomaly = 'high_risk')::int"
-        },
-        "amount_log": {
-            "polars": "pl.col('amount').log()"
         }
     },
     "anomalies": {
