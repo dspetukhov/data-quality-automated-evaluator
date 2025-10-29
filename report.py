@@ -7,6 +7,7 @@ from utils import plot_data
 from analysis import exception_handler
 
 
+@exception_handler()
 def make_report(
         lf: LazyFrame,
         metadata: Dict[str, Union[Tuple[str], str]],
@@ -88,7 +89,7 @@ def make_report(
     write_md(md_toc, md_content, output, config["source"])
 
 
-@exception_handler()
+@exception_handler(exit_on_error=True)
 def write_md(
         toc: List[Tuple[str, str]],
         content: List[str],
@@ -140,6 +141,7 @@ def collect_md(col, data, toc, content, precision=4, **kwargs) -> List:
     ))
 
 
+@exception_handler()
 def make_md_table(data, precision) -> str:
     """
     Create a markdown table from a dictionary with calculated statistics.
@@ -164,7 +166,7 @@ def make_md_table(data, precision) -> str:
 
 
 def format_number(value, precision):
-    """Format float numbers to the specified precision."""
+    """Format float numbers with specified precision."""
     if isinstance(value, float):
         if len(str(value).split(".")[1]) > precision:
             value = f"{value:,.{precision}f}"

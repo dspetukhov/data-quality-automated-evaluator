@@ -102,6 +102,7 @@ def plot_data(
     return output
 
 
+@exception_handler()
 def evaluate_data(
         data: Sequence[float],
         config: Dict[str, float]
