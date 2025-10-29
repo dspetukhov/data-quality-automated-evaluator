@@ -11,10 +11,10 @@ if __name__ == "__main__":
             try:
                 config = json.load(file)
             except json.JSONDecodeError as e:
-                logging.error(f"Error parsing configuration file: {e}")
+                logging.error(f"Error loading configuration file: {e}")
                 conifg = None
-        # independent file load (or pass the existing lazyframe or dataframe)
-        if config and os.path.exists(config.get("source")):
+
+        if config and config.get("source"):
             df, metadata = make_analysis(config)
             if df is not None:
                 make_report(df, metadata, config)
