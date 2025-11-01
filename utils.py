@@ -1,16 +1,7 @@
-import logging
 from typing import Sequence, Any, Dict
 from plotly.subplots import make_subplots
 from plotly.graph_objs import Scatter
-import plotly.io as pio
 from analysis import exception_handler
-
-pio.templates.default = "plotly_white"
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
 
 
 @exception_handler()

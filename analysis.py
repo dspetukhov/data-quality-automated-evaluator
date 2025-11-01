@@ -1,37 +1,8 @@
-import sys
 import polars as pl
 import polars.selectors as cs
-from typing import Dict, Any, Tuple, Union, Callable
+from typing import Dict, Any, Tuple, Union
 from types import LambdaType
-from functools import wraps
-from utils import logging
-import traceback
-
-
-def exception_handler(exit_on_error: bool = False):
-    """Decorator to handle exceptions."""
-    def decorator(func: Callable) -> Callable:
-        def make_message(exc_info) -> str:
-            exc_type, exc_obj, tb = exc_info
-            tb = traceback.extract_tb(tb)[1]
-            return "{0}: {1}#{2}: {3}: {4}".format(
-                exc_type.__name__,
-                tb.filename, tb.lineno,
-                tb.line,
-                str(exc_obj).lower())
-
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            try:
-                return func(*args, **kwargs)
-            except Exception:
-                print()
-                logging.error(make_message(sys.exc_info()))
-            if exit_on_error:
-                sys.exit(1)
-            return args[0] if args else None
-        return wrapper
-    return decorator
+from utility import logging, exception_handler
 
 
 @exception_handler(exit_on_error=True)
