@@ -36,7 +36,7 @@ def exception_handler(exit_on_error: bool = False):
 
 @exception_handler(exit_on_error=True)
 def make_analysis(
-        config: Dict[str, Any], lf: Union[pl.LazyFrame, pl.DataFrame] = None
+        lf: Union[pl.LazyFrame, pl.DataFrame], config: Dict[str, Any]
 ) -> Tuple[pl.LazyFrame, Dict[str, Union[Tuple[str], str]]]:
     """
     Perform data analysis using Polars
@@ -62,22 +62,17 @@ def make_analysis(
         LazyFrame: Dataframe with aggregated data.
         dict: Metainfo about aggregated data.
     """
-    if isinstance(lf, [pl.LazyFrame, pl.DataFrame]):
+    if isinstance(lf, pl.DataFrame):
         lf = lf.lazy()
-    else:
-        lf = read_source(config["source"])
-        if not isinstance(lf, pl.LazyFrame):
-            logging.error(f"Failed to load source: `{config['source']}`")
-            return (None, None)
 
-        # filter for rows
-        filtration = config.get("filtration")
-        if filtration and isinstance(filtration, dict):
-            lf = apply_transformation(lf, filtration, f=True)
-        # transformations for columns
-        transformation = config.get("transformation")
-        if transformation and isinstance(transformation, dict):
-            lf = apply_transformation(lf, transformation)
+    # filter for rows
+    filtration = config.get("filtration")
+    if filtration and isinstance(filtration, dict):
+        lf = apply_transformation(lf, filtration, f=True)
+    # transformations for columns
+    transformation = config.get("transformation")
+    if transformation and isinstance(transformation, dict):
+        lf = apply_transformation(lf, transformation)
 
     schema = lf.collect_schema()
 
