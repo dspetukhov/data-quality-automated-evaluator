@@ -14,7 +14,7 @@ def make_report(
         config: Dict[str, Any]
 ) -> None:
     """
-    Generate a Markdown report with plots.
+    Generate a markdown report with plots.
 
     Args:
         lf (LazyFrame): The aggregated data.
@@ -94,7 +94,7 @@ def make_report(
 
 @exception_handler()
 def collect_md_file(col, data, toc, content, precision=4, **kwargs) -> List:
-    """Process data to create Markdown file
+    """Process data to create markdown file
     by updating lists for TOC and content in-place."""
     alias = kwargs.get("dtype", "Overview" if col == "__overview" else col)
     suffix = kwargs.get("suffix", "")
@@ -118,27 +118,28 @@ def collect_md_file(col, data, toc, content, precision=4, **kwargs) -> List:
 @exception_handler()
 def make_md_table(data, precision) -> str:
     """
-    Create a markdown table from a dictionary of statistics.
+    Create a markdown table from input data.
 
     This function converts a list of dictionaries
-    with statistics of aggregated column
     into a markdown table using the tabulate library.
     The table is returned as a string
     to be included as a part of the markdown report.
 
     Args:
-        data (List[dict]): The list of dictionaries with calculated statistics.
-        precision (int): Number of decimal places for numbers formatting.
+        data (List[dict]): List of dictionaries with calculated statistics.
+        precision (int): Number of decimal places to format numbers to.
 
     Returns:
         str: Markdown table.
     """
     sample = next((el for el in data if el))
+    # Compose formatted table content
     rows = [
         [" " if key == "title" else f"**{key}**"] +
         [format_number(el.get(key, ""), precision) for el in data]
         for key in sample
     ]
+    # Create markdown table using `tabulate`
     return tabulate(
         rows,
         headers="firstrow",
@@ -155,26 +156,36 @@ def write_md_file(
         source: str
 ) -> None:
     """
-    Create README.md file with table of contents and content.
+    Create the markdown report file.
+
+    This function creates a markdown file that includes a table of contents
+    (TOC) and the main content sections.
+    The file is written to the specified output directory.
+    The name of the source data is included for reference.
 
     Args:
-        toc (list): List of tuples for a markdown table of content (section name, anchor).
-        content (list): List of strings representing markdown content.
-        output (str): Output directory path.
-        source (str): Source file path.
+        toc (List[Tuple[str, str]]): List of tuples (section name, anchor)
+            for the table of contents.
+        content (List[str]): List of strings for each markdown section.
+        output (str): Output directory path where markdown file will be saved.
+        source (str): Source file path to be referenced in the report.
 
     Returns:
-        None
+        None: Function writes the markdown file to disk.
     """
-    toc = [
+    # Create `Table of contents` with links
+    toc = "\n".join([
         f"- [{section}](#{anchor})"
         for anchor, section in toc
-    ]
+    ])
+    content = "\n".join(content)
+    # Assemble content and write it to file
     with open(os.path.join(output, "README.md"), "w") as f:
-        f.write(  # possible exception
-            "# Preliminary analysis for **`{}`**\n\n".format(source) +
-            "<a name='toc'></a>\n" + "\n".join(toc) + "\n\n" +
-            "\n".join(content))
+        f.write(f"""
+            # Preliminary analysis for **`{source}`**\n
+            ## Table of contents<a name='toc'></a>\n{toc}\n
+            {content}
+        """)
 
 
 @exception_handler()
@@ -187,11 +198,11 @@ def format_number(value, precision):
     otherwise it returns it as a string unchanged.
 
     Args:
-        value (Union[float, tuple]): The number or a tuple of numbers to format.
-        precision (int): The number of decimal places to format to.
+        value (Union[float, tuple]): Number or a tuple of numbers to format.
+        precision (int): Number of decimal places to format numbers to.
 
     Returns:
-        str: The formatted number(s) as a string.
+        str: Formatted number(s) as a string.
     """
     if isinstance(value, float):
         if len(str(value).split(".")[1]) > precision:
