@@ -199,11 +199,11 @@ def write_md_file(
     content = "\n".join(content)
     # Assemble content and write it to file
     with open(os.path.join(output, "README.md"), "w", encoding="utf-8") as f:
-        f.write((
+        f.writelines([
             f"# Preliminary analysis for **`{source}`**\n\n",
             f"## Table of contents<a name='toc'></a>\n{toc}\n\n",
             content
-        ))
+        ])
 
 
 @exception_handler()
