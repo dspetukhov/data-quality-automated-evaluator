@@ -53,7 +53,7 @@ def make_report(
             "Number of values",
             "Target average" if "__target" in lf.columns else None)
     )
-    collect_md_file(col, stats, md_toc, md_content, precision)
+    collect_md_content(col, stats, md_toc, md_content, precision)
 
     mapping = config.get("mapping", {})
     for col in metadata:
@@ -67,7 +67,7 @@ def make_report(
             file_path=f"{output}/{col}",
             titles=[mapping.get(el, el) for el in metadata[col]["common"]]
         )
-        collect_md_file(col, stats, md_toc, md_content, precision)
+        collect_md_content(col, stats, md_toc, md_content, precision)
 
         # Numeric datatypes if present
         if metadata[col].get("numeric"):
@@ -81,7 +81,7 @@ def make_report(
                 file_path=f"{output}/{col}__numeric",
                 titles=[mapping.get(el, el) for el in metadata[col]["numeric"]]
             )
-            collect_md_file(
+            collect_md_content(
                 col, stats,
                 md_toc, md_content,
                 suffix="__numeric",
@@ -93,19 +93,37 @@ def make_report(
 
 
 @exception_handler()
-def collect_md_file(col, data, toc, content, precision=4, **kwargs) -> List:
-    """Process data to create markdown file
-    by updating lists for TOC and content in-place."""
+def collect_md_content(col, data, toc, content, precision=4, **kwargs) -> None:
+    """
+    Process data to create markdown content
+    by updating table-of-contents and content lists.
+
+    This function appends new entry to the table-of-contents list
+    and appends formatted markdown string to the content list.
+
+    Args:
+        col (str): Section name.
+        data (List[dict]): Data to create a table using `make_md_table`.
+        toc (List): List to be updated with new table-of-contents entries.
+        content (List): List to be updated with new markdown content.
+        precision (int, optional): Number of decimal places to format numbers.
+        **kwargs: Additional keyword arguments for numeric data types
+            to alter content formation logic.
+
+    Returns:
+        None: Function updates lists in-place.
+    """
     alias = kwargs.get("dtype", "Overview" if col == "__overview" else col)
     suffix = kwargs.get("suffix", "")
 
     if not suffix:
+        # Add new section to the table-of-contents with anchor
         toc.append((col, alias))
 
     content.append((
-        "{level} <a name='{col}'></a> `{alias}`\n"
-        "![{col}]({col}{suffix}.png)\n"
-        "{table}"
+        "{level} <a name='{col}'></a> `{alias}`\n"  # New section with anchor
+        "![{col}]({col}{suffix}.png)\n"  # Embed plot
+        "{table}"  # Embed table based on input data
     ).format(
         level="###" if suffix else "##",
         col=col,
@@ -127,7 +145,7 @@ def make_md_table(data, precision) -> str:
 
     Args:
         data (List[dict]): List of dictionaries with calculated statistics.
-        precision (int): Number of decimal places to format numbers to.
+        precision (int): Number of decimal places to format numbers.
 
     Returns:
         str: Markdown table.
@@ -158,14 +176,14 @@ def write_md_file(
     """
     Create the markdown report file.
 
-    This function creates a markdown file that includes a table of contents
+    This function creates a markdown file that includes a table-of-contents
     (TOC) and the main content sections.
     The file is written to the specified output directory.
     The name of the source data is included for reference.
 
     Args:
         toc (List[Tuple[str, str]]): List of tuples (section name, anchor)
-            for the table of contents.
+            for the table-of-contents.
         content (List[str]): List of strings for each markdown section.
         output (str): Output directory path where markdown file will be saved.
         source (str): Source file path to be referenced in the report.
@@ -180,12 +198,12 @@ def write_md_file(
     ])
     content = "\n".join(content)
     # Assemble content and write it to file
-    with open(os.path.join(output, "README.md"), "w") as f:
-        f.write(f"""
-            # Preliminary analysis for **`{source}`**\n
-            ## Table of contents<a name='toc'></a>\n{toc}\n
-            {content}
-        """)
+    with open(os.path.join(output, "README.md"), "w", encoding="utf-8") as f:
+        f.write((
+            f"# Preliminary analysis for **`{source}`**\n\n",
+            f"## Table of contents<a name='toc'></a>\n{toc}\n\n",
+            content
+        ))
 
 
 @exception_handler()
@@ -199,7 +217,7 @@ def format_number(value, precision):
 
     Args:
         value (Union[float, tuple]): Number or a tuple of numbers to format.
-        precision (int): Number of decimal places to format numbers to.
+        precision (int): Number of decimal places to format numbers.
 
     Returns:
         str: Formatted number(s) as a string.
