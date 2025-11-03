@@ -192,9 +192,13 @@ def apply_transformation(
     def apply(lf: pl.LazyFrame, alias: str, ttype: str, texpr: str, f=False):
         """Apply single transformation."""
         if ttype == "sql":
-            lf = lf.sql(texpr) if f else lf.sql("""
-                select *, {0} as {1} from self
-            """.format(texpr, alias))
+            if f:
+                if texpr.startswith("select "):
+                    lf = lf.sql(texpr)
+                else:
+                    lf = lf.sql(f"select * from self where {texpr}")
+            else:
+                lf = lf.sql(f"select *, {texpr} as {alias} from self")
         elif ttype == "polars":
             raise ValueError("Not implemented yet")
         else:
