@@ -3,7 +3,7 @@ import sys
 import traceback
 from functools import wraps
 from typing import Callable
-from setup_logging import logging
+from .setup_logging import logging
 
 
 def exception_handler(exit_on_error: bool = False):
@@ -14,7 +14,7 @@ def exception_handler(exit_on_error: bool = False):
             """Get necessary attributes from traceback
             and make output message."""
             exc_type, exc_obj, tb_obj = exc_info
-            summary = traceback.extract_tb(tb_obj)[0]
+            summary = traceback.extract_tb(tb_obj)[1]
             return "{0}: {1}#{2}: {3}: {4}".format(
                 exc_type.__name__,
                 summary.filename, summary.lineno, summary.line,
