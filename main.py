@@ -1,7 +1,7 @@
 import os
 import json
 from polars import LazyFrame, DataFrame
-from utils import logging
+from utility import logging
 from analysis import make_analysis
 from report import make_report
 from analysis import read_source
