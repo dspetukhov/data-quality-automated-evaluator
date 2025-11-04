@@ -75,7 +75,7 @@ def make_report(
         )
         collect_md_content(col, stats, md_toc, md_content, precision)
 
-        # Continue if datatype is numeric
+        # Extended if datatype is numeric
         if metadata[col].get("numeric"):
             stats = plot_data(
                 df["__date"],
@@ -94,6 +94,7 @@ def make_report(
                 precision=precision,
                 dtype=metadata[col]["dtype"])
 
+        # Add backlink to the Table of contents
         md_content.append("[Back to the TOC](#toc)\n")
 
     # Write collected markdown content as a markdown file
