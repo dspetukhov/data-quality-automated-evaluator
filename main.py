@@ -1,10 +1,9 @@
 import os
 import json
 from polars import LazyFrame, DataFrame
-from utility import logging
-from analysis import make_analysis
+from utility import logging, read_source
+from preprocessing import make_preprocessing
 from report import make_report
-from analysis import read_source
 
 
 def main():
@@ -12,12 +11,13 @@ def main():
     Main function to execute the data quality evaluation pipeline.
     Requires `config.json` correct preset.
 
-    This pipeline inclues the following steps:
-      1. Checks for the existence of the configuration file.
-      2. Loads and parses the configuration from JSON.
-      3. Reads the data source as specified in the configuration.
-      4. Performs data analysis on the loaded data.
-      5. Generates a report based on the analysis results.
+    This pipeline includes the following steps:
+      1. Checks if the configuration exists
+         and loads it as a configuration using json library.
+      2. Reads the data source as specified in the configuration.
+      3. Preprocess data: applies filters and transformations (optional),
+         aggregates data over dates.
+      4. Generates a report as a markdown file based on the preprocessed data.
 
     Raises:
         SystemExit: If the configuration file is missing or cannot be parsed,
@@ -36,8 +36,9 @@ def main():
         if config and config.get("source"):
             source_data = read_source(config["source"])
             if isinstance(source_data, LazyFrame):
-                # Perform analysis on the data
-                df, metadata = make_analysis(source_data, config)
+                # Preprocess data
+                df, metadata = make_preprocessing(source_data, config)
+                # Generate a report if preprocessing was successful
                 if isinstance(df, DataFrame):
                     make_report(df, metadata, config)
             else:
