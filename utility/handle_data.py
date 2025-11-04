@@ -1,39 +1,51 @@
 import polars as pl
 from typing import Union, Dict
-from types import LambdaType
 from .handle_exceptions import exception_handler
-from .setup_logging import logging
 
 
 @exception_handler(exit_on_error=True)
 def read_source(source: Union[str, Dict[str, str]]) -> pl.LazyFrame:
     """
-    Read the source file into a Polars LazyFrame.
+    Read specified source of data into Polars LazyFrame.
+
+    Supports CSV, Parquet, Iceberg, XLSX, and database URIs.
+    Returns LazyFrame for preprocessing. If loading fails,
+    it terminates the main program.
 
     Args:
-        source (str, dict): Data source specification.
+        source (Union[str, Dict[str, str]]): Data source specification.
+            Can be a string, a dictionary with `query` and `uri` keys
+            to read from a PostgreSQL database,
+            a dictionary with `file_path` key
+            to read from hard drive / Google Drive / S3
+            (`storage_options` and `extension` are optional).
 
     Returns:
-        LazyFrame: The loaded dataframe or None if load was unsuccessful.
+        LazyFrame: Polars lazy DataFrame.
+
+    Raises:
+        SystemExit: If data cannot be loaded.
     """
-    read_file_func = {
+    # {file extension: read function} mapping
+    read_source_func = {
         "csv": pl.scan_csv,
         "parquet": pl.scan_parquet,
         "iceberg": pl.scan_iceberg,
         "xlsx": pl.read_excel
     }
 
-    def iterate_extensions(
+    def get_read_source_func(
             source: str,
             storage_options: dict = None
     ) -> pl.LazyFrame:
-        """Choose appropriate extension to read the source if possible
-        or iterate over possible file extensions.
         """
-        for extension, rff in read_file_func.items():
+        Get function to read the source based on its ending.
+        """
+        for extension, read in read_source_func.items():
             if source.endswith(extension):
-                return rff(source, storage_options=storage_options).lazy()
-        raise ValueError(f"Unrecognized file extension: {source}")
+                return read(source, storage_options=storage_options).lazy()
+        # Raise exception if read function wasn't found
+        raise ValueError(f"Unrecognized source: {source}")
 
     if isinstance(source, dict):
         if source.get("query") and source.get("uri"):
@@ -42,15 +54,17 @@ def read_source(source: Union[str, Dict[str, str]]) -> pl.LazyFrame:
             ).lazy()
         elif "file_path" in source:
             storage_options = source.get("storage_options")
-            if "extension" in source:
-                rff = read_file_func.get(source["extension"])
-                if isinstance(rff, LambdaType):
-                    return rff(
-                        source["file_path"],
-                        storage_options=storage_options).lazy()
+            # Get read function based on extension
+            read = read_source_func.get(source.get("extension"))
+            # If extension wasn't provided or wasn't found in read_source_func
+            if read is None:
+                return get_read_source_func(
+                    source["file_path"], storage_options)
             else:
-                return iterate_extensions(source["file_path"], storage_options)
+                return read(
+                    source["file_path"],
+                    storage_options=storage_options).lazy()
         else:
-            logging.error("Incorrect source specification.")
+            raise ValueError(f"Incorrect source specification: {source}")
     elif isinstance(source, str):
-        return iterate_extensions(source)
+        return get_read_source_func(source)
