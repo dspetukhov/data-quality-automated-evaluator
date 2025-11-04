@@ -75,7 +75,7 @@ def make_report(
         )
         collect_md_content(col, stats, md_toc, md_content, precision)
 
-        # Extended if datatype is numeric
+        # Extend if datatype is numeric
         if metadata[col].get("numeric"):
             stats = plot_data(
                 df["__date"],
