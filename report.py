@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Dict, List, Union, Any, Tuple
 from polars import DataFrame
 from utils import plot_data
-from analysis import exception_handler
+from utility import exception_handler
 
 
 @exception_handler()
