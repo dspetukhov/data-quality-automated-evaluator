@@ -1,66 +1,72 @@
 import os
-from pathlib import Path
-from typing import Dict, Union, Any, Tuple, List
-from polars import LazyFrame
-from utils import plot_data
-from utility import exception_handler
 from tabulate import tabulate
+from pathlib import Path
+from typing import Dict, List, Union, Any, Tuple
+from polars import DataFrame
+from utils import plot_data
+from analysis import exception_handler
 
 
 @exception_handler()
 def make_report(
-        lf: LazyFrame,
+        df: DataFrame,
         metadata: Dict[str, Union[Tuple[str], str]],
         config: Dict[str, Any]
 ) -> None:
     """
-    Generate a markdown report with plots.
+    Generate a markdown report with plots and tables.
+
+    This function handles the report generation by processing input data
+    for plotting, collecting and producing output as a single markdown file
+    taking into account settings specified in the configuration file.
 
     Args:
-        lf (LazyFrame): The aggregated data.
-        metadata (dict): Metainfo about aggregated data.
-        config (dict): Configuration dictionary for making analysis and report.
+        df (DataFrame): Aggregated data for report assembling.
+        metadata (Dict[str, Union[Tuple[str], str]]): Metainformation describing aggregated data.
+        config (Dict[str, Any]): Configuration dictionary specifying
+            data source name, markdown options, and plotting options.
 
     Returns:
-        None
+        None: Function writes the report to disk.
     """
     output = config.get(
         "output",
         Path(config["source"]).name.split(".")[0]
     )
-    Path(output).mkdir(exist_ok=True)
+    Path(output).mkdir(exist_ok=True)  # Creates output directory if not exists
 
-    # markdown definitions
+    # Markdown configuration
     precision = config.get("markdown", {}).get("float_precision")
     style = config.get("markdown", {}).get("css_style")
     md_toc = []
     md_content = [
-        f"<link rel='stylesheet' href='{style}'>\n"
-        if style else ""]
+        f"<link rel='stylesheet' href='{style}'>\n" if style else ""]
 
-    # plotly definitions
+    # Plotly configuration
     plotly_config = config.get("plotly", {})
     plotly_config.update(config.get("anomalies", {}))
 
+    # Create overview plot and get evaluation from input data
     col = "__overview"
     stats = plot_data(
-        lf["__date"],
-        lf["__count"],
-        lf["__target"] if "__target" in lf.columns else None,
+        df["__date"],
+        df["__count"],
+        df["__target"] if "__target" in df.columns else None,
         config=plotly_config,
         file_path=f"{output}/{col}",
         titles=(
             "Number of values",
-            "Target average" if "__target" in lf.columns else None)
+            "Target average" if "__target" in df.columns else None)
     )
     collect_md_content(col, stats, md_toc, md_content, precision)
 
+    # Create plots and get evaluations for each column in metadata
     mapping = config.get("mapping", {})
     for col in metadata:
         stats = plot_data(
-            lf["__date"],
+            df["__date"],
             *[
-                lf[col + metadata[col]["common"][i]]
+                df[col + metadata[col]["common"][i]]
                 for i in range(len(metadata[col]["common"]))
             ],
             config=plotly_config,
@@ -69,12 +75,12 @@ def make_report(
         )
         collect_md_content(col, stats, md_toc, md_content, precision)
 
-        # Numeric datatypes if present
+        # Continue if datatype is numeric
         if metadata[col].get("numeric"):
             stats = plot_data(
-                lf["__date"],
+                df["__date"],
                 *[
-                    lf[col + metadata[col]["numeric"][i]]
+                    df[col + metadata[col]["numeric"][i]]
                     for i in range(len(metadata[col]["numeric"]))
                 ],
                 config=plotly_config,
@@ -89,7 +95,12 @@ def make_report(
                 dtype=metadata[col]["dtype"])
 
         md_content.append("[Back to the TOC](#toc)\n")
-    write_md_file(md_toc, md_content, output, config["source"])
+
+    # Write collected markdown content as a markdown file
+    write_md_file(
+        md_toc, md_content,
+        output, config["source"],
+        config.get("markdown", {}).get("name"))
 
 
 @exception_handler()
@@ -171,15 +182,18 @@ def write_md_file(
         toc: List[Tuple[str, str]],
         content: List[str],
         output: str,
-        source: str
+        source: str,
+        file_name: str = None
 ) -> None:
     """
     Create the markdown report file.
 
     This function creates a markdown file that includes a table-of-contents
     (TOC) and the main content sections.
-    The file is written to the specified output directory.
     The name of the source data is included for reference.
+    The file is written to the specified output directory.
+    The name of the file is defined by file_name variable,
+    defaults to README.md.
 
     Args:
         toc (List[Tuple[str, str]]): List of tuples (section name, anchor)
@@ -187,6 +201,7 @@ def write_md_file(
         content (List[str]): List of strings for each markdown section.
         output (str): Output directory path where markdown file will be saved.
         source (str): Source file path to be referenced in the report.
+        file_name (str): Name of the markdown file.
 
     Returns:
         None: Function writes the markdown file to disk.
@@ -197,8 +212,13 @@ def write_md_file(
         for anchor, section in toc
     ])
     content = "\n".join(content)
+    # Adjust file_name if it is not None
+    if file_name and not file_name.endswith(".md"):
+        file_name += ".md"
     # Assemble content and write it to file
-    with open(os.path.join(output, "README.md"), "w", encoding="utf-8") as f:
+    with open(
+        os.path.join(output, file_name or "README.md"), "w", encoding="utf-8"
+    ) as f:
         f.writelines([
             f"# Preliminary analysis for **`{source}`**\n\n",
             f"## Table of contents<a name='toc'></a>\n{toc}\n\n",
