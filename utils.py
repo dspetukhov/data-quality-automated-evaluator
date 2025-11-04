@@ -1,7 +1,7 @@
 from typing import Sequence, Any, Dict
 from plotly.subplots import make_subplots
 from plotly.graph_objs import Scatter
-from analysis import exception_handler
+from utility import exception_handler
 
 
 @exception_handler()
