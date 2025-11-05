@@ -44,19 +44,21 @@ def read_source(source: Union[str, Dict[str, str]]) -> pl.LazyFrame:
         for extension, read in read_source_func.items():
             if source.endswith(extension):
                 return read(source, storage_options=storage_options).lazy()
-        # Raise exception if read function wasn't found
-        raise ValueError(f"Unrecognized source: {source}")
+        # Raise exception if source ending didn't match supported file extensions
+        raise ValueError(f"Unsupported source: {source}")
 
     if isinstance(source, dict):
         if source.get("query") and source.get("uri"):
+            # Read from PostgreSQL database
             return pl.read_database_uri(
                 query=source["query"], uri=source["uri"]
             ).lazy()
         elif "file_path" in source:
+            # Get storage_options to read from cloud providers
             storage_options = source.get("storage_options")
-            # Get read function based on extension
+            # Get read function if extension parameter was specified
             read = read_source_func.get(source.get("extension"))
-            # If extension wasn't provided or wasn't found in read_source_func
+            # If extension wasn't specified or read function wasn't found
             if read is None:
                 return get_read_source_func(
                     source["file_path"], storage_options)
