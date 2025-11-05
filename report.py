@@ -3,7 +3,7 @@ from tabulate import tabulate
 from pathlib import Path
 from typing import Dict, List, Union, Any, Tuple
 from polars import DataFrame
-from utils import plot_data
+from plot import plot_data
 from utility import exception_handler
 
 
@@ -44,7 +44,7 @@ def make_report(
 
     # Plotly configuration
     plotly_config = config.get("plotly", {})
-    plotly_config.update(config.get("anomalies", {}))
+    plotly_config.update(config.get("outliers", {}))
 
     # Create overview plot and get evaluation from input data
     col = "__overview"
