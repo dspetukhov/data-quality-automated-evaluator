@@ -7,7 +7,7 @@ from utility import logging, exception_handler
 @exception_handler(exit_on_error=True)
 def make_preprocessing(
         lf: Union[pl.LazyFrame, pl.DataFrame], config: Dict[str, Any]
-) -> Tuple[pl.LazyFrame, Dict[str, Union[Tuple[str], str]]]:
+) -> Tuple[pl.DataFrame, Dict[str, Union[Tuple[str], str]]]:
     """
     Perform data analysis using Polars
     by aggregating column values over dates.
@@ -29,15 +29,15 @@ def make_preprocessing(
         config (dict): Configuration dictionary for making analysis and report.
 
     Returns:
-        LazyFrame: Dataframe with aggregated data.
-        dict: Metainfo about aggregated data.
+        DataFrame: Aggregated data.
+        dict: Metainformation describing aggregated data.
     """
     if isinstance(lf, pl.DataFrame):
         lf = lf.lazy()
 
     # filter for rows
     filtration = config.get("filtration")
-    if filtration and isinstance(filtration, dict):
+    if filtration and isinstance(filtration, str):
         lf = apply_transformation(lf, filtration, f=True)
     # transformations for columns
     transformation = config.get("transformation")
@@ -46,17 +46,14 @@ def make_preprocessing(
 
     schema = lf.collect_schema()
 
-    date_column = config.get("date_column")
-    if isinstance(date_column, str):
+    date_column = config.get("date_column", find_date_column(schema))
+    if date_column:
         if schema.get(date_column) not in (pl.Date, pl.Datetime):
-            lf = lf.with_columns(  # possible exception
+            lf = lf.with_columns(
                 pl.col(date_column).str.to_datetime(strict=True)
             )
     else:
-        date_column = find_date_column(schema)
-
-    if not date_column:
-        logging.error("There are no date columns for data analysis")
+        logging.error("No date columns for data preprocessing")
         return (None, None)
 
     logging.warning(f"base date column: {date_column}")
@@ -111,56 +108,51 @@ def make_preprocessing(
 @exception_handler()
 def find_date_column(schema: pl.LazyFrame.schema) -> Union[str, None]:
     """
-    Get the name of the date column in the dataframe.
+    Find the first date column in data schema.
+
+    This function iterates through data schema
+    and returns the first column of date or datetime type.
 
     Args:
-        schema (polars.LazyFrame.schema): The schema of the dataframe.
+        schema (polars.LazyFrame.schema): Data schema provided by Polars.
 
     Returns:
-        str: The name of the first date column, or None if not found.
+        Union[str, None]: Name of the first date or datetime column found,
+            or None if no such column exists.
     """
-    candidates = cs.expand_selector(
-        schema,
-        cs.date() | cs.datetime()
-    )
-    if candidates:
-        if "date_column" in candidates:
-            return "date_column"
-        return candidates[0]
+    for col, dtype in schema.items():
+        if dtype in (pl.Date, pl.Datetime):
+            return col
 
 
 @exception_handler()
 def apply_transformation(
-        lf: pl.LazyFrame, config: dict, f: bool = False
+        lf: pl.LazyFrame, ft: Union[str, Dict[str, str]], f: bool = False
 ) -> pl.LazyFrame:
     """
-    Apply transformations from config.json to the LazyFrame.
-    Transformations can be defined as SQL quieries executed by Polars.
+    Apply filters and transformations to a Polars LazyFrame.
+
+    This function applies SQL-based filters and transformations as specified in
+    the configuration dictionary. If 'f' is True, a filter applied
+    to make a slice of data, otherwise transformation applied
+    to alter an existing column.
+
+    Args:
+        lf (pl.LazyFrame): Input data as a LazyFrame.
+        ft (Union[str, Dict[str, str]]): Filter or transformations.
+        f (bool): If True, treat as a filter; otherwise, as a transformation.
+
+    Returns:
+        pl.LazyFrame: Filtered or transformed LazyFrame.
     """
-    def apply(lf: pl.LazyFrame, alias: str, ttype: str, texpr: str, f=False):
-        """Apply single transformation."""
-        if ttype == "sql":
-            if f:
-                if texpr.startswith("select "):
-                    lf = lf.sql(texpr)
-                else:
-                    lf = lf.sql(f"select * from self where {texpr}")
-            else:
-                lf = lf.sql(f"select *, {texpr} as {alias} from self")
-        elif ttype == "polars":
-            raise ValueError("Not implemented yet")
-        else:
-            logging.warning(
-                f"Unrecognized type of transformation: `{ttype}`")
-
-        logging.info(f"Transformation applied: {texpr}")
-        return lf
-
-    for name, t in config.items():
-        if isinstance(t, str):
-            lf = apply(lf, alias=None, ttype=name, texpr=t, f=f)
-        if isinstance(t, dict):
-            for key, value in t.items():
-                lf = apply(lf, name, key, value, f)
-
+    if f and isinstance(ft, str):
+        lf = lf.filter(pl.sql_expr(ft))
+        logging.info(f"Filter applied: {ft}")
+    elif not f and isinstance(ft, dict):
+        # Iterate over transformations specified in configuration file
+        for alias, expr in ft.items():
+            lf = lf.with_columns(pl.sql_expr(expr).alias(alias))
+            logging.info(f"Transformation applied: {expr}")
+    else:
+        logging.warning(f"Unrecognized transformation: {ft}")
     return lf

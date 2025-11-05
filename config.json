@@ -2,13 +2,9 @@
     "source": "../datasets/metaverse_transactions_dataset.csv",
     "date_column": "timestamp",
     "output": "metaverse_transactions_dataset",
-    "filtration": {
-        "sql": "amount > 200"
-    },
+    "filtration": "amount > 0",
     "transformation": {
-        "target_column": {
-            "sql": "(anomaly = 'high_risk')::int"
-        }
+        "target_column": "(anomaly = 'high_risk')::int"
     },
     "anomalies": {
         "multiplier": 1.5,
