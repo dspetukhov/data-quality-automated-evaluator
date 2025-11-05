@@ -6,7 +6,7 @@
     "transformation": {
         "target_column": "(anomaly = 'high_risk')::int"
     },
-    "anomalies": {
+    "outliers": {
         "multiplier": 1.5,
         "threshold": 3.0
     },
@@ -33,7 +33,7 @@
                 }
             }
         },
-        "anomalies": {
+        "outliers": {
             "criterion": "IQR",
             "style": {
                 "type": "rect",

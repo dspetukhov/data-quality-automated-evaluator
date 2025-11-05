@@ -1,4 +1,4 @@
-from typing import Sequence, Any, Dict
+from typing import Sequence, Any, Dict, Union
 from plotly.subplots import make_subplots
 from plotly.graph_objs import Scatter
 from utility import exception_handler
@@ -96,45 +96,51 @@ def plot_data(
 @exception_handler()
 def evaluate_data(
         data: Sequence[float],
-        config: Dict[str, float]
+        config: Dict[str, Union[int, float]]
 ) -> Dict[str, float]:
     """
-    Detect anomalies in the series of data using the IQR and Z-score methods.
+    Evaluates descriptive statistic and detects outliers in data.
+
+    This function calculates descriptive statistics and detects outliers
+    in data using IQR and Z-score criteria. Configuration dictionary specifies
+    IQR multiplier and Z-score threshold for outliers detection.
 
     Args:
-        data (pl.Series): Series of data aggregated over dates.
-        config (dict): Values for
-            - IQR multiplier (default 1.5),
-            - Z-score threshold for anomaly detection (default 3.0).
+        data (Sequence[float]): A single column from Polars DataFrame.
+        config (Dict[str, float]): Configuration with keys for outlier detection:
+            - 'multiplier' (float): IQR multiplier (default 1.5).
+            - 'threshold' (float): Z-score threshold (default 3.0).
 
     Returns:
-        dict: Dictionary with descriptive statistics including:
+        Dict[str, Union[float, Tuple[float]]: Dictionary with statistics:
             - Mean and standard deviation,
             - Range of values,
             - Q1 and Q3,
-            - Anomalies percent ratio according to IQR and Z-score.
+            - Outliers percent ratio according to IQR and Z-score criteria,
+            - Boundaries for outliers highlighted on plots.
+
     """
-    # IQR
+    # Calculate IQR, determine boundaries for outliers,
+    # and count the number of outliers based on IQR
     q1 = data.quantile(0.25)
     q3 = data.quantile(0.75)
     lower_bound = q1 - config.get("multiplier", 1.5) * (q3 - q1)
     upper_bound = q3 + config.get("multiplier", 1.5) * (q3 - q1)
-    anomalies_iqr = (
-        (data < lower_bound) | (data > upper_bound)
-    ).sum()
-    # Z-score
+    outliers_iqr = ((data < lower_bound) | (data > upper_bound)).sum()
+
+    # Count the number of outliers based on Z-score
     mean, std = data.mean(), data.std()
     if std == 0:
-        anomalies_zscore = 0
+        outliers_zscore = 0
     else:
-        anomalies_zscore = (
+        outliers_zscore = (
             ((data - mean) / std).abs() > config.get("threshold", 3.0)
         ).sum()
 
-    # Determine bounds for anomaly highlighting on plots
-    if config.get("anomalies", {}).get("criterion") == "IQR":
+    # Determine boundaries to highlight outliers on plots
+    if config.get("outliers", {}).get("criterion") == "IQR":
         bounds = (lower_bound, upper_bound)
-    elif config.get("anomalies", {}).get("criterion") == "Z-score":
+    elif config.get("outliers", {}).get("criterion") == "Z-score":
         bounds = (
             mean - config.get("threshold", 3.0) * std,
             mean + config.get("threshold", 3.0) * std
@@ -150,7 +156,11 @@ def evaluate_data(
         "IQR [Q1]": q1,
         "IQR [Q3]": q3,
         "IQR": q3 - q1,
-        "Anomalies [IQR]": 100 * anomalies_iqr / len(data),
-        "Anomalies [Z-score]": 100 * anomalies_zscore / len(data),
+        "Anomalies [IQR]": 100 * outliers_iqr / len(data),
+        "Anomalies [Z-score]": 100 * outliers_zscore / len(data),
         "Bounds": bounds
     }
+
+
+def plot_outliers_boundaries():
+    pass
