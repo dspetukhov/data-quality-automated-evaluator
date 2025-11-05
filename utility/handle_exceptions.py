@@ -1,8 +1,8 @@
 import sys
 from typing import Callable
 from functools import wraps
-from utils import logging
 import traceback
+from .setup_logging import logging
 
 
 def exception_handler(exit_on_error: bool = False):
