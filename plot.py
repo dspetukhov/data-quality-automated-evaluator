@@ -126,7 +126,7 @@ def evaluate_data(
             - 'threshold' (float): Z-score threshold (default 3.0).
 
     Returns:
-        Tuple[Dict[str, float], Tuple[float]]: Tuple containing:
+        Tuple[Dict[str, float], Tuple[float]]:
             - Dictionary with statistics:
                 - Mean and standard deviation,
                 - Range of values,
