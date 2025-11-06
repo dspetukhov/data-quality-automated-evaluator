@@ -9,79 +9,81 @@ def make_preprocessing(
         lf: Union[pl.LazyFrame, pl.DataFrame], config: Dict[str, Any]
 ) -> Tuple[pl.DataFrame, Dict[str, Union[Tuple[str], str]]]:
     """
-    Perform data analysis using Polars
-    by aggregating column values over dates.
-    It includes:
-    1. General statistics:
-        - number of records per day in dataframe
-        - class balance, i.e. average of the target column per day (if present)
-    2. Statistics for each column:
-        - number of unique values per day
-        - ratio of null values per day
-    3. Statistic for numerical columns (according to pl.LazyFrame.schema):
-        - min value per day
-        - max value per day
-        - mean value per day
-        - median value per day
-        - standard deviation per day
+    Preprocess data for evaluation through per-column aggregation by dates.
+
+    This function processes input data frame by applying filtration
+    and transformation as specified by SQL expressions in the configuration.
+    It then validates date_column to ensure data aggregation over dates,
+    collects aggregation steps and constructs metadata for each column,
+    performs aggregation and returns its result with metadata.
 
     Args:
-        config (dict): Configuration dictionary for making analysis and report.
+        lf (Union[pl.LazyFrame, pl.DataFrame]): Input data frame.
+        config (Dict[str, Any]): Configuration dictionary specifying
+            extra variables, filtration, and transformation parameters.
 
     Returns:
-        DataFrame: Aggregated data.
-        dict: Metainformation describing aggregated data.
+        Tuple[pl.DataFrame, Dict[str, Union[str, Tuple[str]]]]:
+            - Aggregated data with descriptive statistics for each column.
+            - Metadata dictionary describing aggregated columns.
+
+    Raises:
+        SystemExit: In case of failed data aggregation
+            or inconsistent data in date_column.
     """
     if isinstance(lf, pl.DataFrame):
         lf = lf.lazy()
 
-    # filter for rows
-    filtration = config.get("filtration")
-    if filtration and isinstance(filtration, str):
-        lf = apply_transformation(lf, filtration, f=True)
-    # transformations for columns
-    transformation = config.get("transformation")
-    if transformation and isinstance(transformation, dict):
-        lf = apply_transformation(lf, transformation)
+    if "filtration" in config:
+        # Apply filter for rows
+        lf = apply_transformation(lf, config["filtration"], f=True)
+    if "transformation" in config:
+        # Apply transformation for columns
+        lf = apply_transformation(lf, config["transformation"])
 
-    schema = lf.collect_schema()
-
+    schema = lf.schema
+    # Get date_column from configuration or try to find it in data
     date_column = config.get("date_column", find_date_column(schema))
     if date_column:
+        # Check date_column type and convert it if necessary
         if schema.get(date_column) not in (pl.Date, pl.Datetime):
             lf = lf.with_columns(
-                pl.col(date_column).str.to_datetime(strict=True)
-            )
+                pl.col(date_column).str.to_datetime(strict=True))
+        # Convert date_column to Polars date type
+        lf = lf.with_columns(pl.col(date_column).dt.date().alias("__date"))
     else:
         logging.error("No date columns for data preprocessing")
         return (None, None)
 
     logging.warning(f"base date column: {date_column}")
 
-    metadata = {}
+    # aggregation expressions for general statistics
     aggs = [pl.count().alias("__count")]
 
+    # If target column was specified in configuration,
+    # compute its mean (class balance or target average)
     target_column = config.get("target_column")
-    if not schema.get(target_column):
-        target_column = "target_column"
     if schema.get(target_column):
         aggs.append(
-            pl.col(target_column).mean().alias("__target")
-        )
+            pl.col(target_column).mean().alias("__target"))
     else:
         logging.warning("Target column wasn't found")
 
+    metadata = {}
     for col in schema.names():
         if col == date_column:
             continue
+        metadata_col = {"dtype": str(schema[col]), "common": [], "numeric": []}
+        # Add common statistics for the column
         aggs.extend([
+            # number of unique values
             pl.col(col).n_unique().alias(f"{col}_uniq"),
+            # ratio of null values
             pl.col(col).is_null().mean().alias(f"{col}_null_ratio"),
         ])
-        metadata[col] = {
-            "dtype": str(schema[col]),
-            "common": ("_uniq", "_null_ratio")
-        }
+        metadata_col["common"].extend(["_uniq", "_null_ratio"])
+
+        # Add extra statistics if column is of numeric data type
         if col in cs.expand_selector(schema, cs.numeric()):
             aggs.extend([
                 pl.col(col).min().alias(f"{col}_min"),
@@ -90,18 +92,15 @@ def make_preprocessing(
                 pl.col(col).median().alias(f"{col}_median"),
                 pl.col(col).std().alias(f"{col}_std"),
             ])
-            metadata[col]["numeric"] = (
-                "_min", "_max",
-                "_mean", "_median",
-                "_std")
-    # Perform aggregations
-    lf_agg = (
-        lf.group_by(pl.col(date_column).dt.date().alias("__date"))
-        .agg(aggs)
-        .sort("__date")
-    )
+            metadata_col["numeric"].extend(
+                ["_min", "_max", "_mean", "_median", "_std"]
+            )
+        metadata[col] = metadata_col
+
+    # Aggregate data by date column
+    lf_agg = lf.group_by("__date").agg(aggs).sort("__date")
     lf_agg.explain()
-    lf_agg = lf_agg.collect()  # possible exception
+    lf_agg = lf_agg.collect()
     return lf_agg, metadata
 
 
