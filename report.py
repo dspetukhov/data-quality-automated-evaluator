@@ -23,7 +23,7 @@ def make_report(
 
     Args:
         df (DataFrame): Aggregated data for report assembling.
-        metadata (Dict[str, Union[Tuple[str], str]]): Metainformation describing aggregated data.
+        metadata (Dict[str, Union[Tuple[str], str]]): Metadata describing columns in aggregated data.
         config (Dict[str, Any]): Configuration dictionary specifying
             data source name, markdown options, and plotting options.
 
@@ -75,7 +75,7 @@ def make_report(
         )
         collect_md_content(col, stats, md_toc, md_content, precision)
 
-        # Extend if datatype is numeric
+        # Proceed with numeric information if column datatype is numeric
         if metadata[col].get("numeric"):
             stats = plot_data(
                 df["__date"],
