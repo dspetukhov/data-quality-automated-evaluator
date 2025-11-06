@@ -5,6 +5,7 @@ from typing import Dict, List, Union, Any, Tuple
 from polars import DataFrame
 from plot import plot_data
 from utility import exception_handler
+from utility import MAPPING as mapping
 
 
 @exception_handler()
@@ -61,7 +62,6 @@ def make_report(
     collect_md_content(col, stats, md_toc, md_content, precision)
 
     # Create plots and get evaluations for each column in metadata
-    mapping = config.get("mapping", {})
     for col in metadata:
         stats = plot_data(
             df["__date"],

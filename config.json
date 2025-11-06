@@ -68,14 +68,5 @@
             "width_scale_factor": 1.3,
             "scale": 2
         }
-    },
-    "mapping": {
-        "_uniq": "Number of unique values",
-        "_null_ratio": "Ratio of null values",
-        "_min": "Min",
-        "_max": "Max",
-        "_mean": "Mean",
-        "_median": "Median",
-        "_std": "Standard deviation"
     }
 }
