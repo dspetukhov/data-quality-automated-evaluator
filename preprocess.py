@@ -95,14 +95,14 @@ def make_preprocessing(
                 "_mean", "_median",
                 "_std")
     # Perform aggregations
-    output = (
+    lf_agg = (
         lf.group_by(pl.col(date_column).dt.date().alias("__date"))
         .agg(aggs)
         .sort("__date")
     )
-    output.explain()
-    output = output.collect()  # possible exception
-    return output, metadata
+    lf_agg.explain()
+    lf_agg = lf_agg.collect()  # possible exception
+    return lf_agg, metadata
 
 
 @exception_handler()
