@@ -1,4 +1,4 @@
-from typing import Sequence, Any, Dict, Union
+from typing import Sequence, Any, Dict, Union, Tuple
 from plotly.subplots import make_subplots
 from plotly.graph_objs import Scatter
 from utility import exception_handler
@@ -6,30 +6,41 @@ from utility import exception_handler
 
 @exception_handler()
 def plot_data(
-    x: list,
+    x: Sequence[Any],
     *data: Sequence[Any],
-    config: dict,
+    config: Dict[str, Dict[str, Any]],
     file_path: str,
-    titles: tuple,
-) -> None:
-    """Plots data using Plotly.
-    Each y-series in `*data` will be plotted in a separate subplot.
-    Style and layout are specified by the `config` dictionary.
+    titles: Tuple[str],
+) -> Dict[str, float]:
+    """
+    Plots multiple data series as subplots using Plotly.
+
+    Each y-series in *data is plotted in a separate subplot. The function
+    supports custom plot styles, subplot arrangement, and anomaly highlighting
+    (using IQR or Z-score) as specified in the `config` dictionary. The plot is
+    saved to disk, and descriptive statistics for each series are returned.
 
     Args:
-        x (list): The x-axis data.
-        *data (list): A collection of y-axis data.
-        config (dict): Plot and layout settings.
-        file_path (str): Path to save the plot image (without extension).
-        titles (tuple, optional): Titles for each subplot.
+        x (Sequence[Any]): x-axis data.
+        *data (Sequence[Any]): One or more y-axis data series to plot.
+        config (Dict[str, Dict[str, Any]]): Plotly styling settings, including:
+            - 'plot': dict of Scatter style settings.
+            - 'outliers': dict of outliers highlighting settings.
+            - 'layout', 'grid', and other Plotly configuration options.
+        file_path (str): Path to the directory where the image will be saved.
+        titles (Tuple[str], optional): Titles for each subplot.
 
     Returns:
-        dict: A list of dictionaries with descriptive statistics
-        for each data series representing columns in the aggregated LazyFrame.
+        List[Dict[str, float]]: List of dictionaries
+            with descriptive statistics for each data series.
     """
+    # Determine the number of subplots
     n_subplots = len(data)
     n_cols = 2
+    # Determine the number of rows required for the given number of subplots
     n_rows = (n_subplots + n_cols - 1) // n_cols
+
+    # Create a figure with subplots
     fig = make_subplots(
         rows=n_rows, cols=n_cols,
         horizontal_spacing=config.get("subplots", {})
@@ -44,30 +55,32 @@ def plot_data(
         if data[i] is None:
             output.append({})
             continue
+        # Add data series as a trace to the subplot
         fig.add_trace(
             Scatter(x=x, y=data[i], **config.get("plot", {})),
             row=(i // n_cols) + 1, col=(i % n_cols) + 1
         )
-        ed_output = evaluate_data(data[i], config)
-        bounds = ed_output.pop("Bounds")
-        if isinstance(bounds, tuple):
-            lb, ub = bounds
-            if lb and ub:
-                shape = (
-                    (data[i].min(), lb),
-                    (ub, data[i].max())
+        # Evaluate data series
+        ed_output, (lower_bound, upper_bound) = evaluate_data(data[i], config)
+        # Highlight outliers regions using Plotly shapes
+        # if lower and upper boundaries are defined
+        if lower_bound and upper_bound:
+            shape = (
+                (data[i].min(), lower_bound),
+                (upper_bound, data[i].max())
+            )
+            for s in range(len(shape)):
+                fig.add_shape(
+                    x0=min(x), x1=max(x), y0=shape[s][0], y1=shape[s][1],
+                    **config.get("outliers", {}).get("style", {}),
+                    row=(i // n_cols) + 1, col=(i % n_cols) + 1
                 )
-                for s in range(len(shape)):
-                    fig.add_shape(
-                        x0=min(x), x1=max(x), y0=shape[s][0], y1=shape[s][1],
-                        **config.get("anomalies", {}).get("style", {}),
-                        row=(i // n_cols) + 1, col=(i % n_cols) + 1
-                    )
 
         output.append({
             **{"title": fig.layout.annotations[i].text},
             **ed_output})
 
+    # Change figure size, layout, and axes
     layout = config.get("layout", {}).copy()
     height = layout.get("height", 512)
     layout.update({
@@ -81,13 +94,14 @@ def plot_data(
     fig.update_xaxes(
         tickformat="%Y-%m-%d", **config.get("grid", {}))
     fig.update_yaxes(**config.get("grid", {}))
-    # Left-align subplot titles
+    # Left-align for subplot titles
     for i, annotation in enumerate(fig.layout.annotations):
         annotation.update(
             x=annotation.x + (1 / n_cols) / 2.005,
             y=annotation.y + 0.005,
             xanchor="right", yanchor="bottom", font={"weight": "normal"})
-    fig.write_image(  # possible exception
+    # Save figure as PNG file
+    fig.write_image(
         f"{file_path}.png",
         scale=config.get("misc", {}).get("scale", 1))
     return output
@@ -97,7 +111,7 @@ def plot_data(
 def evaluate_data(
         data: Sequence[float],
         config: Dict[str, Union[int, float]]
-) -> Dict[str, float]:
+) -> Tuple[Dict[str, float], Tuple[float]]:
     """
     Evaluates descriptive statistic and detects outliers in data.
 
@@ -107,17 +121,18 @@ def evaluate_data(
 
     Args:
         data (Sequence[float]): A single column from Polars DataFrame.
-        config (Dict[str, float]): Configuration with keys for outlier detection:
+        config (Dict[str, Union[int, float]]): Configuration with keys for outlier detection:
             - 'multiplier' (float): IQR multiplier (default 1.5).
             - 'threshold' (float): Z-score threshold (default 3.0).
 
     Returns:
-        Dict[str, Union[float, Tuple[float]]: Dictionary with statistics:
-            - Mean and standard deviation,
-            - Range of values,
-            - Q1 and Q3,
-            - Outliers percent ratio according to IQR and Z-score criteria,
-            - Boundaries for outliers highlighted on plots.
+        Tuple[Dict[str, float], Tuple[float]]: Tuple containing:
+            - Dictionary with statistics:
+                - Mean and standard deviation,
+                - Range of values,
+                - Q1 and Q3,
+                - Outliers percentage according to IQR and Z-score criteria.
+            - Tuple with boundaries for outliers to be highlighted on plots.
 
     """
     # Calculate IQR, determine boundaries for outliers,
@@ -146,7 +161,7 @@ def evaluate_data(
             mean + config.get("threshold", 3.0) * std
         )
     else:
-        bounds = None
+        bounds = (None, None)
 
     return {
         "μ±σ": (mean, std),
@@ -158,8 +173,7 @@ def evaluate_data(
         "IQR": q3 - q1,
         "Anomalies [IQR]": 100 * outliers_iqr / len(data),
         "Anomalies [Z-score]": 100 * outliers_zscore / len(data),
-        "Bounds": bounds
-    }
+    }, bounds
 
 
 def plot_outliers_boundaries():

@@ -7,6 +7,7 @@
         "target_column": "(anomaly = 'high_risk')::int"
     },
     "outliers": {
+        "criterion": "IQR",
         "multiplier": 1.5,
         "threshold": 3.0
     },
@@ -34,7 +35,6 @@
             }
         },
         "outliers": {
-            "criterion": "IQR",
             "style": {
                 "type": "rect",
                 "xref": "x",
@@ -59,14 +59,14 @@
             "griddash": "dot",
             "gridwidth": 0.5
         },
+        "subplots": {
+            "horizontal_spacing": 0.05,
+            "vertical_spacing": 0.065
+        },
         "misc": {
             "height_scale_factor": 0.95,
             "width_scale_factor": 1.3,
             "scale": 2
-        },
-        "subplots": {
-            "horizontal_spacing": 0.05,
-            "vertical_spacing": 0.065
         }
     },
     "mapping": {
