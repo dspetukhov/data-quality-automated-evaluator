@@ -47,7 +47,7 @@ def make_report(
     plotly_config = config.get("plotly", {})
     plotly_config.update(config.get("outliers", {}))
 
-    # Create overview plot and get evaluation from input data
+    # Create overview plot and get evaluations from input data
     col = "__overview"
     stats = plot_data(
         df["__date"],
@@ -116,7 +116,7 @@ def collect_md_content(col, data, toc, content, precision=4, **kwargs) -> None:
     Args:
         col (str): Section name.
         data (List[dict]): Data to create a table using `make_md_table`.
-        toc (List): List to be updated with new table-of-contents entries.
+        toc (List): List to be updated with new table-of-contents entry.
         content (List): List to be updated with new markdown content.
         precision (int, optional): Number of decimal places to format numbers.
         **kwargs: Additional keyword arguments for numeric data types
@@ -125,6 +125,7 @@ def collect_md_content(col, data, toc, content, precision=4, **kwargs) -> None:
     Returns:
         None: Function updates lists in-place.
     """
+    # Get section title (`alias`)
     alias = kwargs.get("dtype", "Overview" if col == "__overview" else col)
     suffix = kwargs.get("suffix", "")
 
@@ -132,10 +133,11 @@ def collect_md_content(col, data, toc, content, precision=4, **kwargs) -> None:
         # Add new section to the table-of-contents with anchor
         toc.append((col, alias))
 
+    # Add new entry to the content: section with anchor, plot, and table
     content.append((
-        "{level} <a name='{col}'></a> `{alias}`\n"  # New section with anchor
-        "![{col}]({col}{suffix}.png)\n"  # Embed plot
-        "{table}"  # Embed table based on input data
+        "{level} <a name='{col}'></a> `{alias}`\n"
+        "![{col}]({col}{suffix}.png)\n"
+        "{table}"
     ).format(
         level="###" if suffix else "##",
         col=col,
@@ -207,16 +209,17 @@ def write_md_file(
     Returns:
         None: Function writes the markdown file to disk.
     """
-    # Create `Table of contents` with links
+    # Make `Table of contents` with links
     toc = "\n".join([
         f"- [{section}](#{anchor})"
         for anchor, section in toc
     ])
+    # Concatenate content
     content = "\n".join(content)
     # Adjust file_name if it is not None
     if file_name and not file_name.endswith(".md"):
         file_name += ".md"
-    # Assemble content and write it to file
+    # Write final content string to file
     with open(
         os.path.join(output, file_name or "README.md"), "w", encoding="utf-8"
     ) as f:
