@@ -138,7 +138,7 @@ def apply_transformation(
 
     Args:
         lf (pl.LazyFrame): Input data as a LazyFrame.
-        ft (Union[str, Dict[str, str]]): Filter or transformations.
+        ft (Union[str, Dict[str, str]]): Filter or transformation.
         f (bool): If True, treat as a filter; otherwise, as a transformation.
 
     Returns:
