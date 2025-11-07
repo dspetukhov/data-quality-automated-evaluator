@@ -1,11 +1,12 @@
 import os
 import json
 from polars import LazyFrame, DataFrame
-from utility import logging, read_source
+from utility import logging, read_source, exception_handler
 from preprocess import make_preprocessing
 from report import make_report
 
 
+@exception_handler()
 def main():
     """
     Main function to execute the data quality evaluation pipeline.
@@ -23,28 +24,21 @@ def main():
         SystemExit: If the configuration file is missing or cannot be parsed,
             or if the data source cannot be loaded.
     """
+    config = {}
     # Check if the configuration file exists
     if os.path.exists("config.json"):
         with open("config.json") as file:
-            try:
-                config = json.load(file)
-            except json.JSONDecodeError as e:
-                logging.error(f"Error loading configuration file: {e}")
-                config = None
-
-        # Proceed if configuration was loaded and contains a `source`
-        if config and config.get("source"):
-            source_data = read_source(config["source"])
-            if isinstance(source_data, LazyFrame):
-                # Preprocess data
-                df, metadata = make_preprocessing(source_data, config)
-                # Generate a report if preprocessing was successful
-                if isinstance(df, DataFrame):
-                    make_report(df, metadata, config)
-            else:
-                logging.error(f"Failed to load source: `{config['source']}`")
+            config = json.load(file)
     else:
-        logging.warning("Configuration file wasn't found.")
+        logging.warning("Configuration file wasn't found")
+
+    # Proceed if configuration was loaded and contains `source`
+    if config.get("source"):
+        source_data = read_source(config["source"])
+        # Preprocess data
+        df, metadata = make_preprocessing(source_data, config)
+        # Generate a report if preprocessing was successful
+        make_report(df, metadata, config)
 
 
 if __name__ == "__main__":
