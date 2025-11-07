@@ -1,6 +1,5 @@
 import os
 import json
-from polars import LazyFrame, DataFrame
 from utility import logging, read_source, exception_handler
 from preprocess import make_preprocessing
 from report import make_report
