@@ -7,7 +7,7 @@ from utility import logging, exception_handler
 @exception_handler(exit_on_error=True)
 def make_preprocessing(
         lf: Union[pl.LazyFrame, pl.DataFrame], config: Dict[str, Any]
-) -> Tuple[pl.DataFrame, Dict[str, Union[Tuple[str], str]]]:
+) -> Tuple[pl.DataFrame, Dict[str, Dict[str, str]]]:
     """
     Preprocess data for evaluation through per-column aggregation by dates.
 
@@ -23,9 +23,9 @@ def make_preprocessing(
             extra variables, filtration, and transformation parameters.
 
     Returns:
-        Tuple[pl.DataFrame, Dict[str, Union[str, Tuple[str]]]]:
+        Tuple[pl.DataFrame, Dict[str, Dict[str, str]]:
             - Aggregated data with descriptive statistics for each column.
-            - Metadata dictionary describing aggregated columns.
+            - Dictionary of columns indicating types of numeric columns.
 
     Raises:
         SystemExit: In case of failed data aggregation
@@ -34,6 +34,7 @@ def make_preprocessing(
     if isinstance(lf, pl.DataFrame):
         lf = lf.lazy()
 
+    # !rethink filtration and transformation
     if "filtration" in config:
         # Apply filter for rows
         lf = apply_transformation(lf, config["filtration"], f=True)
@@ -41,8 +42,9 @@ def make_preprocessing(
         # Apply transformation for columns
         lf = apply_transformation(lf, config["transformation"])
 
-    schema = lf.schema
+    schema = lf.collect_schema()
     # Get date_column from configuration or try to find it in data
+    # separate into single function
     date_column = config.get("date_column", find_date_column(schema))
     if date_column:
         # Check date_column type and convert it if necessary
@@ -57,45 +59,46 @@ def make_preprocessing(
 
     logging.warning(f"base date column: {date_column}")
 
-    # aggregation expressions for general statistics
-    aggs = [pl.count().alias("__count")]
+    # Start with common aggregation expression for the number of values
+    aggs = [pl.count().alias(" __Number of values")]
 
     # If target column was specified in configuration,
     # compute its mean (class balance or target average)
-    target_column = config.get("target_column")
+    # ! separate into single function
+    target_column = config.get("target_column", "target_column")
     if schema.get(target_column):
         aggs.append(
-            pl.col(target_column).mean().alias("__target"))
+            pl.col(target_column).mean().alias(" __Target average"))
     else:
         logging.warning("Target column wasn't found")
 
+    # collect_aggregations() implement!
     metadata = {}
     for col in schema.names():
         if col == date_column:
             continue
-        metadata_col = {"dtype": str(schema[col]), "common": [], "numeric": []}
         # Add common statistics for the column
         aggs.extend([
-            # number of unique values
-            pl.col(col).n_unique().alias(f"{col}_uniq"),
-            # ratio of null values
-            pl.col(col).is_null().mean().alias(f"{col}_null_ratio"),
+            # Number of unique values
+            pl.col(col).n_unique().alias(
+                f"__ {col} __Number of unique values"),
+            # Ratio of null values
+            pl.col(col).is_null().mean().alias(
+                f"__ {col} __Ratio of null values"),
         ])
-        metadata_col["common"].extend(["_uniq", "_null_ratio"])
 
         # Add extra statistics if column is of numeric data type
         if col in cs.expand_selector(schema, cs.numeric()):
             aggs.extend([
-                pl.col(col).min().alias(f"{col}_min"),
-                pl.col(col).max().alias(f"{col}_max"),
-                pl.col(col).mean().alias(f"{col}_mean"),
-                pl.col(col).median().alias(f"{col}_median"),
-                pl.col(col).std().alias(f"{col}_std"),
+                pl.col(col).min().alias(f"n__ {col} __Min"),
+                pl.col(col).max().alias(f"n__ {col} __Max"),
+                pl.col(col).mean().alias(f"n__ {col} __Mean"),
+                pl.col(col).median().alias(f"n__ {col} __Median"),
+                pl.col(col).std().alias(f"n__ {col} __Standard deviation"),
             ])
-            metadata_col["numeric"].extend(
-                ["_min", "_max", "_mean", "_median", "_std"]
-            )
-        metadata[col] = metadata_col
+            metadata[col] = str(schema[col])
+        else:
+            metadata[col] = None
 
     # Aggregate data by date column
     lf_agg = lf.group_by("__date").agg(aggs).sort("__date")
