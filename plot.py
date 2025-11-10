@@ -1,4 +1,6 @@
-from typing import Sequence, Any, Dict, Union, Tuple
+from typing import Sequence, Any, Dict, Union, Tuple, List
+from itertools import zip_longest
+from polars import DataFrame
 from plotly.subplots import make_subplots
 from plotly.graph_objs import Scatter
 from plotly.graph_objs._figure import Figure
@@ -7,56 +9,54 @@ from utility import exception_handler
 
 @exception_handler()
 def plot_data(
-    x: Sequence[Any],
-    *data: Sequence[Any],
+    data: DataFrame,
     config: Dict[str, Any],
     file_path: str,
-    titles: Tuple[str],
 ) -> Dict[str, float]:
     """
     Plots multiple data series as subplots using Plotly.
 
     Each y-series in *data is plotted in a separate subplot. The function
     supports custom plot styles, subplot arrangement, and anomaly highlighting
-    (using IQR or Z-score) as specified in the `config` dictionary. The plot is
+    (using IQR or Z-score) as specified in the configuration. The plot is
     saved to disk, and descriptive statistics for each series are returned.
 
     Args:
-        x (Sequence[Any]): x-axis data.
-        *data (Sequence[Any]): One or more y-axis data series to plot.
+        data (DataFrame): Data to plot.
         config (Dict[str, Any]): Plotly styling settings, including:
             - 'plot': dict of Scatter style settings.
             - 'outliers': dict of outliers highlighting settings.
             - 'layout', 'grid', and other Plotly configuration parameters.
         file_path (str): Path to the directory where the image will be saved.
-        titles (Tuple[str], optional): Titles for each subplot.
 
     Returns:
         List[Dict[str, float]]: List of dictionaries
             with descriptive statistics for each data series.
     """
     # Determine the number of subplots
-    n_subplots = len(data)
+    # which can't be less than two
+    n_subplots = max(2, data.shape[1] - 1)
     # Create a figure with subplots
     fig, n_cols, n_rows = create_figure(
         n_subplots,
-        config.get("subplots", {}), titles
+        config.get("subplots", {}),
+        titles=data.columns[1:]
     )
     data_stats = []
-    for s in range(n_subplots):
-        if data[s] is None:
+    for s, col in zip_longest(range(n_subplots), data.columns[1:]):
+        if not col:
             data_stats.append({})
             continue
         # Add data series as a trace to the subplot
         fig.add_trace(
-            Scatter(x=x, y=data[s], **config.get("plot", {})),
+            Scatter(x=data["__date"], y=data[col], **config.get("plot", {})),
             row=(s // n_cols) + 1, col=(s % n_cols) + 1
         )
         # Evaluate data series
-        stats, bounds = evaluate_data(data[s], config)
+        stats, bounds = evaluate_data(data[col], config)
         # Highlight outliers regions using Plotly shapes
         fig = highlight_outliers(
-            fig, s, x, data[s], bounds, n_cols,
+            fig, s, data["__date"], data[col], bounds, n_cols,
             config.get("outliers", {}).get("style", {})
         )
         data_stats.append({
@@ -77,7 +77,7 @@ def plot_data(
 def create_figure(
     n_subplots: int,
     config: Dict[str, Any],
-    titles: Tuple[str]
+    titles: List[str]
 ) -> Figure:
     """
     Creates Plotly figure with required number of subplots.
@@ -89,7 +89,7 @@ def create_figure(
     Args:
         n_subplots (int): Total number of subplots in the subplot grid.
         config (Dict[str, Any]): Plotly styling settings for subplots.
-        titles (Tuple[str], optional): Titles for each subplot.
+        titles (List[str]): Raw titles for each subplot.
 
     Returns:
         Tuple[Figure, int, int]: Plotly figure object,
@@ -103,8 +103,7 @@ def create_figure(
         rows=n_rows, cols=n_cols,
         horizontal_spacing=config.get("horizontal_spacing", 0.1),
         vertical_spacing=config.get("vertical_spacing", 0.1),
-        subplot_titles=[
-            el if el else "" for el in (titles or [""] * n_subplots)]
+        subplot_titles=[item.split(" __")[-1] for item in titles]
     )
     return fig, n_cols, n_rows
 
@@ -122,7 +121,7 @@ def evaluate_data(
     IQR multiplier and Z-score threshold for outliers detection.
 
     Args:
-        data (Sequence[float]): Sequence of data as Polars series.
+        data (Sequence[float]): Data as Polars series.
         config (Dict[str, Union[int, float]]): Configuration with parameters for outlier detection:
             - 'multiplier' (float): IQR multiplier (default 1.5).
             - 'threshold' (float): Z-score threshold (default 3.0).
