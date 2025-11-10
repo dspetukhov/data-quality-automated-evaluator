@@ -56,7 +56,7 @@ def plot_data(
         stats, bounds = evaluate_data(data[s], config)
         # Highlight outliers regions using Plotly shapes
         fig = highlight_outliers(
-            fig, s, x, data[s], bounds,
+            fig, s, x, data[s], bounds, n_cols,
             config.get("outliers", {}).get("style", {})
         )
         data_stats.append({
@@ -71,6 +71,42 @@ def plot_data(
         f"{file_path}.png",
         scale=config.get("misc", {}).get("scale", 1))
     return data_stats
+
+
+@exception_handler()
+def create_figure(
+    n_subplots: int,
+    config: Dict[str, Any],
+    titles: Tuple[str]
+) -> Figure:
+    """
+    Creates Plotly figure with required number of subplots.
+
+    This function creates figure using `plotly.subplots.make_subplots`.
+    The size of the subplots grid depends on the total number of subplots.
+    Each subplot may have a title if the titles tuple provided.
+
+    Args:
+        n_subplots (int): Total number of subplots in the subplot grid.
+        config (Dict[str, Any]): Plotly styling settings for subplots.
+        titles (Tuple[str], optional): Titles for each subplot.
+
+    Returns:
+        Tuple[Figure, int, int]: Plotly figure object,
+            number of columns in subplot grid, number of rows in subplot grid.
+    """
+    n_cols = 2  # number of columns in the subplot grid is always equal to 2
+    # Determine the number of rows required for the given number of subplots
+    n_rows = (n_subplots + n_cols - 1) // n_cols
+    # Create a figure with subplots
+    fig = make_subplots(
+        rows=n_rows, cols=n_cols,
+        horizontal_spacing=config.get("horizontal_spacing", 0.1),
+        vertical_spacing=config.get("vertical_spacing", 0.1),
+        subplot_titles=[
+            el if el else "" for el in (titles or [""] * n_subplots)]
+    )
+    return fig, n_cols, n_rows
 
 
 @exception_handler()
@@ -165,53 +201,17 @@ def evaluate_data_outliers(
 
     # Get boundaries to highlight outliers on plots
     # if criterion was specified in configuration
-    if config.get("outliers", {}).get("criterion") == "Z-score":
+    if config.get("criterion") == "Z-score":
         bounds = (
             mean - config.get("threshold", 3.0) * std,
             mean + config.get("threshold", 3.0) * std
         )
-    elif config.get("outliers", {}).get("criterion") == "IQR":
+    elif config.get("criterion") == "IQR":
         bounds = (lower_bound, upper_bound)
     else:
         bounds = (None, None)
 
     return outliers_iqr, outliers_zscore, bounds
-
-
-@exception_handler()
-def create_figure(
-    n_subplots: int,
-    config: Dict[str, Any],
-    titles: Tuple[str]
-) -> Figure:
-    """
-    Creates Plotly figure with required number of subplots.
-
-    This function creates figure using `plotly.subplots.make_subplots`.
-    The size of the subplots grid depends on the total number of subplots.
-    Each subplot may have a title if the titles tuple provided.
-
-    Args:
-        n_subplots (int): Total number of subplots in the subplot grid.
-        config (Dict[str, Any]): Plotly styling settings for subplots.
-        titles (Tuple[str], optional): Titles for each subplot.
-
-    Returns:
-        Tuple[Figure, int, int]: Plotly figure object,
-            number of columns in subplot grid, number of rows in subplot grid.
-    """
-    n_cols = 2  # number of columns in the subplot grid is always equal to 2
-    # Determine the number of rows required for the given number of subplots
-    n_rows = (n_subplots + n_cols - 1) // n_cols
-    # Create a figure with subplots
-    fig = make_subplots(
-        rows=n_rows, cols=n_cols,
-        horizontal_spacing=config.get("horizontal_spacing", 0.1),
-        vertical_spacing=config.get("vertical_spacing", 0.1),
-        subplot_titles=[
-            el if el else "" for el in (titles or [""] * n_subplots)]
-    )
-    return fig, n_cols, n_rows
 
 
 @exception_handler()
@@ -225,7 +225,7 @@ def highlight_outliers(
     config: Dict[str, Any]
 ) -> Figure:
     """
-    Highlight outliers regions using Plotly shapes.
+    Highlight outliers using Plotly shapes.
 
     This function add shapes to highlight outliers on plots
     if boundaries were determined by `evaluate_data_outliers` function.
@@ -281,7 +281,7 @@ def adjust_figure(
     Returns:
         Figure: Adjusted Plotly figure.
     """
-    layout = config.get("layout", {})
+    layout = config.get("layout", {}).copy()
     height = layout.get("height", 512)
 
     # Scale figure size based on the number of rows and cols
