@@ -27,7 +27,7 @@ def plot_data(
         config (Dict[str, Any]): Plotly styling settings, including:
             - 'plot': dict of Scatter style settings.
             - 'outliers': dict of outliers highlighting settings.
-            - 'layout', 'grid', and other Plotly configuration options.
+            - 'layout', 'grid', and other Plotly configuration parameters.
         file_path (str): Path to the directory where the image will be saved.
         titles (Tuple[str], optional): Titles for each subplot.
 
@@ -38,65 +38,39 @@ def plot_data(
     # Determine the number of subplots
     n_subplots = len(data)
     # Create a figure with subplots
-    fig, n_cols, n_rows = create_figure(n_subplots, config.get("subplots", {}), titles)
-
-    output = []
-    for i in range(n_subplots):
-        if data[i] is None:
-            output.append({})
+    fig, n_cols, n_rows = create_figure(
+        n_subplots,
+        config.get("subplots", {}), titles
+    )
+    data_stats = []
+    for s in range(n_subplots):
+        if data[s] is None:
+            data_stats.append({})
             continue
         # Add data series as a trace to the subplot
         fig.add_trace(
-            Scatter(x=x, y=data[i], **config.get("plot", {})),
-            row=(i // n_cols) + 1, col=(i % n_cols) + 1
+            Scatter(x=x, y=data[s], **config.get("plot", {})),
+            row=(s // n_cols) + 1, col=(s % n_cols) + 1
         )
         # Evaluate data series
-        ed_output, (lower_bound, upper_bound) = evaluate_data(data[i], config)
+        stats, bounds = evaluate_data(data[s], config)
         # Highlight outliers regions using Plotly shapes
-        # if lower and upper boundaries are defined
-        # plot_outliers_boundaries()
-        if lower_bound and upper_bound:
-            shape = (
-                (data[i].min(), lower_bound),
-                (upper_bound, data[i].max())
-            )
-            for s in range(len(shape)):
-                fig.add_shape(
-                    x0=min(x), x1=max(x), y0=shape[s][0], y1=shape[s][1],
-                    **config.get("outliers", {}).get("style", {}),
-                    row=(i // n_cols) + 1, col=(i % n_cols) + 1
-                )
+        fig = highlight_outliers(
+            fig, s, x, data[s], bounds,
+            config.get("outliers", {}).get("style", {})
+        )
+        data_stats.append({
+            **{"title": fig.layout.annotations[s].text},
+            **stats})
 
-        output.append({
-            **{"title": fig.layout.annotations[i].text},
-            **ed_output})
+    # Adjust figure parameters
+    fig = adjust_figure(fig, n_cols, n_rows, config)
 
-    # Change figure size, layout, and axes
-    # adjust_figure()
-    layout = config.get("layout", {}).copy()
-    height = layout.get("height", 512)
-    layout.update({
-        "width": height * n_cols *
-        config.get("misc", {}).get("width_scale_factor", 1),
-        "height": height * n_rows *
-        config.get("misc", {}).get("height_scale_factor", 1)
-        if n_rows > 1 else height
-    })
-    fig.update_layout(layout)
-    fig.update_xaxes(
-        tickformat="%Y-%m-%d", **config.get("grid", {}))
-    fig.update_yaxes(**config.get("grid", {}))
-    # Left-align for subplot titles
-    for i, annotation in enumerate(fig.layout.annotations):
-        annotation.update(
-            x=annotation.x + (1 / n_cols) / 2.005,
-            y=annotation.y + 0.005,
-            xanchor="right", yanchor="bottom", font={"weight": "normal"})
     # Save figure as PNG file
     fig.write_image(
         f"{file_path}.png",
         scale=config.get("misc", {}).get("scale", 1))
-    return output
+    return data_stats
 
 
 @exception_handler()
@@ -219,7 +193,7 @@ def create_figure(
 
     Args:
         n_subplots (int): Total number of subplots in the subplot grid.
-        config (Dict[str, float]): Plotly styling settings for subplots.
+        config (Dict[str, Any]): Plotly styling settings for subplots.
         titles (Tuple[str], optional): Titles for each subplot.
 
     Returns:
@@ -241,34 +215,76 @@ def create_figure(
 
 
 @exception_handler()
-def plot_outliers_boundaries(fig, lower_bound, upper_bound) -> Figure:
+def highlight_outliers(
+    fig: Figure,
+    s: int,
+    x: Sequence[Any],
+    data: Sequence[Any],
+    bounds: Tuple[float],
+    n_cols: int,
+    config: Dict[str, Any]
+) -> Figure:
     """
+    Highlight outliers regions using Plotly shapes.
 
+    This function add shapes to highlight outliers on plots
+    if boundaries were determined by `evaluate_data_outliers` function.
+
+    Args:
+        fig (Figure): Plotly figure object.
+        s (int): Subplot index.
+        x (Sequence[Any]): x-axis data.
+        data (Sequence[Any]): y-axis data.
+        bounds (Tuple[float]): Tuple with lower and upper boundaries.
+        n_cols (int): Number of columns in the subplot grid.
+        config (Dict[str, Any]): Plotly styling settings for outliers.
+
+    Returns:
+        Figure: Plotly figure with added shapes.
     """
-    # Highlight outliers regions using Plotly shapes
-    # if lower and upper boundaries are defined
-    if lower_bound and upper_bound:
+    # If lower and upper boundaries are not None
+    if None not in bounds:
+        lower_bound, upper_bound = bounds
         shape = (
-            (data[i].min(), lower_bound),
-            (upper_bound, data[i].max())
+            (data.min(), lower_bound),
+            (upper_bound, data.max())
         )
-        for s in range(len(shape)):
+        for i in range(len(shape)):
             fig.add_shape(
-                x0=min(x), x1=max(x), y0=shape[s][0], y1=shape[s][1],
-                **config.get("outliers", {}).get("style", {}),
-                row=(i // n_cols) + 1, col=(i % n_cols) + 1
-            )
+                x0=min(x), x1=max(x), y0=shape[i][0], y1=shape[i][1],
+                **config,
+                row=(s // n_cols) + 1, col=(s % n_cols) + 1)
     return fig
 
 
 @exception_handler()
-def adjust_figure(fig, n_cols, n_rows, config) -> Figure:
+def adjust_figure(
+    fig: Figure,
+    n_cols: int,
+    n_rows: int,
+    config: Dict[str, Any]
+) -> Figure:
     """
+    Adjust Plotly figure parameters.
 
+    This function changes figure width and height based on
+    the number of rows and cols and settings specified in the configuration.
+    It formats tick labels for x-axis, add grid if specified in the configuration,
+    align subplot titles to the left side of plots.
+
+    Args:
+        fig (Figure): Plotly figure object.
+        n_cols (int): Number of columns in the subplot grid.
+        n_rows (int): Number of rows in the subplot grid.
+        config (Dict[str, Any]): Plotly figure configation parameters.
+
+    Returns:
+        Figure: Adjusted Plotly figure.
     """
-    # Change figure size, layout, and axes
-    layout = config.get("layout", {}).copy()
+    layout = config.get("layout", {})
     height = layout.get("height", 512)
+
+    # Scale figure size based on the number of rows and cols
     layout.update({
         "width": height * n_cols *
         config.get("misc", {}).get("width_scale_factor", 1),
@@ -277,11 +293,14 @@ def adjust_figure(fig, n_cols, n_rows, config) -> Figure:
         if n_rows > 1 else height
     })
     fig.update_layout(layout)
+
+    # Alter x-axis tick format, add grid
     fig.update_xaxes(
         tickformat="%Y-%m-%d", **config.get("grid", {}))
     fig.update_yaxes(**config.get("grid", {}))
-    # Left-align for subplot titles
-    for i, annotation in enumerate(fig.layout.annotations):
+
+    # Align subplot titles to the left
+    for annotation in fig.layout.annotations:
         annotation.update(
             x=annotation.x + (1 / n_cols) / 2.005,
             y=annotation.y + 0.005,
