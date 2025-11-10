@@ -5,7 +5,6 @@ from typing import Dict, List, Union, Any, Tuple
 from polars import DataFrame
 from plot import plot_data
 from utility import exception_handler
-from utility import MAPPING as mapping
 
 
 @exception_handler()
@@ -15,7 +14,7 @@ def make_report(
         config: Dict[str, Any]
 ) -> None:
     """
-    Generate a markdown report with plots and tables.
+    Generate markdown report with plots and tables.
 
     This function handles the report generation by processing input data
     for plotting, collecting and producing output as a single markdown file
@@ -23,7 +22,8 @@ def make_report(
 
     Args:
         df (DataFrame): Aggregated data for report assembling.
-        metadata (Dict[str, Union[Tuple[str], str]]): Metadata describing columns in aggregated data.
+        metadata (Dict[str, Union[Tuple[str], str]]): Dict of columns
+            indicating types of numeric columns.
         config (Dict[str, Any]): Configuration dictionary specifying
             data source name, markdown options, and plotting options.
 
@@ -36,6 +36,7 @@ def make_report(
     )
     Path(output).mkdir(exist_ok=True)  # Creates output directory if not exists
 
+    # separate function for configuration
     # Markdown configuration
     precision = config.get("markdown", {}).get("float_precision")
     style = config.get("markdown", {}).get("css_style")
@@ -50,49 +51,46 @@ def make_report(
     # Create overview plot and get evaluations from input data
     col = "__overview"
     stats = plot_data(
-        df["__date"],
-        df["__count"],
-        df["__target"] if "__target" in df.columns else None,
+        df.select(
+            ["__date"] + [
+                item for item in df.columns
+                if item.startswith(" __")]
+        ),
         config=plotly_config,
-        file_path=f"{output}/{col}",
-        titles=(
-            "Number of values",
-            "Target average" if "__target" in df.columns else None)
+        file_path=f"{output}/{col}"
     )
     collect_md_content(col, stats, md_toc, md_content, precision)
 
     # Create plots and get evaluations for each column in metadata
     for col in metadata:
         stats = plot_data(
-            df["__date"],
-            *[
-                df[col + metadata[col]["common"][i]]
-                for i in range(len(metadata[col]["common"]))
-            ],
+            df.select(
+                ["__date"] + [
+                    item for item in df.columns
+                    if item.startswith(f"__ {col} __")]
+            ),
             config=plotly_config,
             file_path=f"{output}/{col}",
-            titles=[mapping.get(el, el) for el in metadata[col]["common"]]
         )
         collect_md_content(col, stats, md_toc, md_content, precision)
 
         # Proceed with numeric information if column datatype is numeric
-        if metadata[col].get("numeric"):
+        if metadata.get(col):
             stats = plot_data(
-                df["__date"],
-                *[
-                    df[col + metadata[col]["numeric"][i]]
-                    for i in range(len(metadata[col]["numeric"]))
-                ],
+                df.select(
+                    ["__date"] + [
+                        item for item in df.columns
+                        if item.startswith(f"n__ {col} __")]
+                ),
                 config=plotly_config,
-                file_path=f"{output}/{col}__numeric",
-                titles=[mapping.get(el, el) for el in metadata[col]["numeric"]]
+                file_path=f"{output}/{col}__numeric"
             )
             collect_md_content(
                 col, stats,
                 md_toc, md_content,
                 suffix="__numeric",
                 precision=precision,
-                dtype=metadata[col]["dtype"])
+                dtype=metadata[col])
 
         # Add backlink to the Table of contents
         md_content.append("[Back to the TOC](#toc)\n")
