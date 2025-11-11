@@ -1,10 +1,11 @@
 from typing import Sequence, Dict, Tuple, Union
+from polars import DataFrame
 from utility import exception_handler
 
 
 @exception_handler()
 def evaluate_data(
-        data: Sequence[float],
+        data: DataFrame,
         config: Dict[str, Union[int, float]]
 ) -> Tuple[Dict[str, float], Tuple[float]]:
     """
@@ -30,24 +31,31 @@ def evaluate_data(
             - Tuple with boundaries for outliers to be highlighted on plots.
 
     """
-    # Calculate mean and standard deviation, first and third quartile
-    mean, std = data.mean(), data.std()
-    q1, q3 = data.quantile(0.25), data.quantile(0.75)
+    data_evals, outliers_bounds = [], []
 
-    outliers_iqr, outliers_zscore, bounds = evaluate_data_outliers(
-        data, mean, std, q1, q3, config
-    )
-    return {
-        "μ±σ": (mean, std),
-        "Range [Min]": data.min(),
-        "Range [Max]": data.max(),
-        "Range": data.max() - data.min(),
-        "IQR [Q1]": q1,
-        "IQR [Q3]": q3,
-        "IQR": q3 - q1,
-        "Anomalies [IQR]": 100 * outliers_iqr / len(data),
-        "Anomalies [Z-score]": 100 * outliers_zscore / len(data),
-    }, bounds
+    for col in data.columns[1:]:
+        # Calculate mean and standard deviation, first and third quartile
+        mean, std = data[col].mean(), data[col].std()
+        q1, q3 = data[col].quantile(0.25), data[col].quantile(0.75)
+
+        outliers_iqr, outliers_zscore, bounds = evaluate_data_outliers(
+            data[col], mean, std, q1, q3, config
+        )
+        data_evals.append({
+            "title": col.split(" __")[-1],
+            "μ±σ": (mean, std),
+            "Range [Min]": data[col].min(),
+            "Range [Max]": data[col].max(),
+            "Range": data[col].max() - data[col].min(),
+            "IQR [Q1]": q1,
+            "IQR [Q3]": q3,
+            "IQR": q3 - q1,
+            "Anomalies [IQR]": 100 * outliers_iqr / data.shape[0],
+            "Anomalies [Z-score]": 100 * outliers_zscore / data.shape[0],
+        })
+        outliers_bounds.append(bounds)
+
+    return data_evals, outliers_bounds
 
 
 @exception_handler()
@@ -70,7 +78,7 @@ def evaluate_data_outliers(
         std (float): Standard deviation.
         q1 (float): First quartile.
         q3 (float): Third quartile.
-        config (Dict[str, Union[int, float]]): Configuration with parameters for outlier detection:
+        config (Dict[str, Union[int, float]]): Parameters for outliers detection:
             - 'multiplier' (float): IQR multiplier (default 1.5).
             - 'threshold' (float): Z-score threshold (default 3.0).
 
