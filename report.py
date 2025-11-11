@@ -18,7 +18,7 @@ def make_report(
 
     This function handles the report generation by processing input data
     for plotting, collecting and producing output as a single markdown file
-    taking into account settings specified in the configuration file.
+    taking into account parameters specified in the configuration file.
 
     Args:
         df (DataFrame): Aggregated data for report assembling.
@@ -33,11 +33,13 @@ def make_report(
     # Get key variables to make the report
     output, toc, content, precision, plotly = get_report_variables(config)
 
-    # Create overview plot and get evaluations from input data
+    # Create overview plot and get evaluations for columns
+    # representing general aggregations of source data:
+    # number of values and target average
     col = "__overview"
     stats = plot_data(
         df.select(
-            ["__date"] + [  # Columns
+            ["__date"] + [
                 item for item in df.columns
                 if item.startswith(" __")]
         ),
@@ -45,7 +47,9 @@ def make_report(
     )
     collect_md_content(col, stats, toc, content, precision)
 
-    # Create plots and get evaluations for each column in metadata
+    # Create plots and get evaluations for columns
+    # representing aggregations for a column in source data:
+    # number of unique values and ratio of null values
     for col in metadata:
         stats = plot_data(
             df.select(
@@ -57,7 +61,9 @@ def make_report(
         )
         collect_md_content(col, stats, toc, content, precision)
 
-        # Proceed with numeric information if column datatype is numeric
+        # Create extra plots and get evaluations for columns
+        # representing specific aggregations for a numeric column in source data:
+        # min, max, mean, median, and standard deviation
         if metadata.get(col):
             stats = plot_data(
                 df.select(
@@ -81,6 +87,7 @@ def make_report(
         config.get("markdown", {}).get("name"))
 
 
+@exception_handler()
 def get_report_variables(config: Dict[str, Any]):
     """
     Get key variables to make the report using the configuration provided.
@@ -95,7 +102,7 @@ def get_report_variables(config: Dict[str, Any]):
 
     Returns:
         Tuple(Any):
-            - Output directory to store markdown file and plots.
+            - Output directory to store report file and plots.
             - List for markdown table-of-contents.
             - List for markdown file content.
             - Precision to format floats in markdown tables.
