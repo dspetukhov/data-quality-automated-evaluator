@@ -1,10 +1,11 @@
 import os
-from tabulate import tabulate
-from pathlib import Path
 from typing import Dict, List, Union, Any, Tuple
 from polars import DataFrame
-from plot import plot_data
+from pathlib import Path
 from utility import exception_handler
+from evaluate import evaluate_data
+from plot import plot_data
+from tabulate import tabulate
 
 
 @exception_handler()
@@ -30,76 +31,65 @@ def make_report(
     Returns:
         None: Function writes the report to disk.
     """
-    columns, stats = [], []
     # Get key variables to make the report
-    output, toc, content, precision, plotly = get_report_variables(config)
+    output, content, precision, outliers, plotly = get_report_variables(config)
 
-    # Split into evaluate_data, plot_data, collect_markdown, report writing
-
-    # Create overview plot and get evaluations for columns
+    data_evals = {}
+    # Get evaluations and create overview plot for columns
     # representing general aggregations of source data:
     # number of values and target average
     data = df.select(
-            ["__date"] + [
-                item for item in df.columns if item.startswith(" __")])
-    # Evaluate data
-    bounds = []
-    col = "__overview"
-    for col in data.columns[1:]:
-        s, b = evaluate_data(data[col], config)
-        stats.append(s)
-        bounds.append(b)
-    plot_data(data, bounds=bounds, config=plotly, file_path=f"{output}/{col}")
-    columns
-    col = "__overview"
-    stats = plot_data(
-        df.select(
-            ["__date"] + [
-                item for item in df.columns
-                if item.startswith(" __")]
-        ),
-        config=plotly, file_path=f"{output}/{col}"
+        ["__date"] + [
+            item for item in df.columns if item.startswith(" __")]
     )
-    collect_md_content(col, stats, toc, content, precision)
+    col = "__overview"
+    # Evaluate data
+    evals, bounds = evaluate_data(data, outliers)
+    data_evals[col] = {"evals": evals}
+    # Plot data
+    plot_data(data, bounds=bounds, config=plotly, file_path=f"{output}/{col}")
 
-    # Create plots and get evaluations for columns
+    # Get evaluations and create plots for columns
     # representing aggregations for a column in source data:
     # number of unique values and ratio of null values
     for col in metadata:
-        stats = plot_data(
-            df.select(
+        data = df.select(
+            ["__date"] + [
+                item for item in df.columns
+                if item.startswith(f"__ {col} __")]
+        )
+        evals, bounds = evaluate_data(data, outliers)
+        data_evals[col] = {"evals": evals}
+        plot_data(
+            data,
+            bounds=bounds,
+            config=plotly,
+            file_path=f"{output}/{col}")
+
+        # Get evaluations and create plots for columns
+        # representing extra aggregations for a numeric column in source data:
+        # minimum, maximum, mean, median, and standard deviation
+        if metadata.get(col):
+            data = df.select(
                 ["__date"] + [
                     item for item in df.columns
-                    if item.startswith(f"__ {col} __")]
-            ),
-            config=plotly, file_path=f"{output}/{col}",
-        )
-        collect_md_content(col, stats, toc, content, precision)
-
-        # Create plots and get evaluations for columns
-        # representing extra aggregations for a numeric column in source data:
-        # min, max, mean, median, and standard deviation
-        if metadata.get(col):
-            stats = plot_data(
-                df.select(
-                    ["__date"] + [
-                        item for item in df.columns
-                        if item.startswith(f"n__ {col} __")]
-                ),
-                config=plotly, file_path=f"{output}/{col}__numeric"
+                    if item.startswith(f"n__ {col} __")]
             )
-            collect_md_content(
-                col, stats, toc, content, precision,
-                dtype=metadata[col], suffix="__numeric")
+            evals, bounds = evaluate_data(data, outliers)
+            data_evals[col].update(
+                {"evals_numeric": evals, "dtype": metadata[col]})
+            plot_data(
+                data,
+                bounds=bounds,
+                config=plotly,
+                file_path=f"{output}/{col}__numeric")
 
-        # Add backlink to the Table-of-contents
-        content.append("[Back to the TOC](#toc)\n")
+    # Collect markdown content
+    content = collect_md_content(
+        data_evals, content, config["source"], precision)
 
-    # Write collected markdown content as a markdown file
-    write_md_file(
-        toc, content,
-        output, config["source"],
-        config.get("markdown", {}).get("name"))
+    # Write content as a markdown file
+    write_md_file(content, output, config.get("markdown", {}).get("name"))
 
 
 @exception_handler()
@@ -109,8 +99,8 @@ def get_report_variables(config: Dict[str, Any]):
 
     This function creates variables necessary for making markdown report
     based on the specified configuration. They include: output directory name,
-    markdown table style, precision to format floats in markdown tables,
-    Plotly parameters for plots.
+    style for markdown tables, precision to format floats in markdown tables,
+    outliers detection parameters, Plotly parameters for plots.
 
     Args:
         config (Dict[str, Any]): Configuration dictionary.
@@ -118,9 +108,8 @@ def get_report_variables(config: Dict[str, Any]):
     Returns:
         Tuple(Any):
             - Output directory to store report file and plots.
-            - List for markdown table-of-contents.
-            - List for markdown file content.
             - Precision to format floats in markdown tables.
+            - Outliers detection parameters.
             - Plotly configration for plots.
     """
     # Determine the name of the output directory using `output` parameter
@@ -132,7 +121,6 @@ def get_report_variables(config: Dict[str, Any]):
     # Create output directory
     Path(output_dir).mkdir(exist_ok=True)
 
-    md_toc = []  # Table-of-contents
     # Style for markdown tables
     style = config.get("markdown", {}).get("css_style")
     md_content = [
@@ -141,15 +129,22 @@ def get_report_variables(config: Dict[str, Any]):
     # Number of decimal places to format numbers in markdown tables
     precision = config.get("markdown", {}).get("float_precision")
 
+    # Outliers detection parameters
+    outliers_config = config.get("outliers", {})
+
     # Plotly configuration
     plotly_config = config.get("plotly", {})
-    plotly_config.update(config.get("outliers", {}))
 
-    return output_dir, md_toc, md_content, precision, plotly_config
+    return output_dir, md_content, precision, outliers_config, plotly_config
 
 
 @exception_handler()
-def collect_md_content(col, data, toc, content, precision=4, **kwargs) -> None:
+def collect_md_content(
+    data: Dict[str, Any],
+    content: List[str],
+    source: str,
+    precision: int = 4
+) -> List[str]:
     """
     Process data to create markdown content
     by updating table-of-contents and content lists.
@@ -158,38 +153,53 @@ def collect_md_content(col, data, toc, content, precision=4, **kwargs) -> None:
     and appends formatted markdown string to the content list.
 
     Args:
-        col (str): Section name.
-        data (List[dict]): Data to create a table using `make_md_table`.
-        toc (List): List to be updated with new table-of-contents entry.
-        content (List): List to be updated with new markdown content.
+        data (Dict[str, Any]): Data to create a table using `make_md_table`.
+        content (List[str]): List with markdown table style string.
         precision (int, optional): Number of decimal places to format numbers.
-        **kwargs: Additional keyword arguments for numeric data types
-            to alter content formation logic.
 
     Returns:
-        None: Function updates lists in-place.
+        List[str]: List of strings to be written in file.
     """
-    # Split into TOC/content helpers
-    # Get section title (`alias`)
-    alias = kwargs.get("dtype", "Overview" if col == "__overview" else col)
-    suffix = kwargs.get("suffix", "")
+    toc = []
+    for col in data:
+        # Get section title (`alias`)
+        alias = "Overview" if col == "__overview" else col
 
-    if not suffix:
-        # Add new section to the table-of-contents with anchor
-        toc.append((col, alias))
+        if not data[col].get("dtype"):
+            # Add new section to the table-of-contents with anchor
+            toc.append(f"- [{alias}](#{col})")
 
-    # Add new entry to the content: section with anchor, plot, and table
-    content.append((
-        "{level} <a name='{col}'></a> `{alias}`\n"
-        "![{col}]({col}{suffix}.png)\n"
-        "{table}"
-    ).format(
-        level="###" if suffix else "##",
-        col=col,
-        alias=alias,
-        suffix=suffix,
-        table=make_md_table(data, precision)
-    ))
+        # Add new entry to the content: section with anchor, plot, and table
+        content.append((
+            "## <a name='{col}'></a> `{alias}`\n"
+            "![{col}]({col}.png)\n"
+            "{table}"
+        ).format(
+            col=col, alias=alias,
+            table=make_md_table(data[col]["evals"], precision))
+        )
+        # Add extra section for numeric columns
+        if data[col].get("dtype"):
+            content.append((
+                "### <a name='{col}'></a> `{alias}`\n"
+                "![{col}]({col}__numeric.png)\n"
+                "{table}"
+            ).format(
+                col=col, alias=data[col]["dtype"],
+                table=make_md_table(data[col]["evals_numeric"], precision))
+            )
+        # Add backlink to the Table-of-contents
+        content.append("[Back to the TOC](#toc)\n")
+
+    toc = "\n".join(toc)
+    content = "\n".join(content)
+
+    md_output = [
+        f"# Preliminary analysis for **`{source}`**\n\n",
+        f"## Table of contents<a name='toc'></a>\n{toc}\n\n",
+        content
+    ]
+    return md_output
 
 
 @exception_handler()
@@ -209,12 +219,11 @@ def make_md_table(data, precision) -> str:
     Returns:
         str: Markdown table.
     """
-    sample = next((el for el in data if el))
     # Compose formatted table content
     rows = [
         [" " if key == "title" else f"**{key}**"] +
         [format_number(el.get(key, ""), precision) for el in data]
-        for key in sample
+        for key in data[0]
     ]
     # Create markdown table using `tabulate`
     return tabulate(
@@ -227,10 +236,8 @@ def make_md_table(data, precision) -> str:
 
 @exception_handler(exit_on_error=True)
 def write_md_file(
-        toc: List[Tuple[str, str]],
         content: List[str],
         output: str,
-        source: str,
         file_name: str = None
 ) -> None:
     """
@@ -244,24 +251,13 @@ def write_md_file(
     defaults to README.md.
 
     Args:
-        toc (List[Tuple[str, str]]): List of tuples (section name, anchor)
-            for the table-of-contents.
         content (List[str]): List of strings for each markdown section.
         output (str): Output directory path where markdown file will be saved.
-        source (str): Source file path to be referenced in the report.
         file_name (str): Name of the markdown file.
 
     Returns:
         None: Function writes markdown file to disk.
     """
-    # split file writing from content generation
-    # Make `Table of contents` with links
-    toc = "\n".join([
-        f"- [{section}](#{anchor})"
-        for anchor, section in toc
-    ])
-    # Concatenate content
-    content = "\n".join(content)
     # Adjust file_name if it is not None
     if file_name and not file_name.endswith(".md"):
         file_name += ".md"
@@ -269,11 +265,7 @@ def write_md_file(
     with open(
         os.path.join(output, file_name or "README.md"), "w", encoding="utf-8"
     ) as f:
-        f.writelines([
-            f"# Preliminary analysis for **`{source}`**\n\n",
-            f"## Table of contents<a name='toc'></a>\n{toc}\n\n",
-            content
-        ])
+        f.writelines(content)
 
 
 @exception_handler()
