@@ -30,36 +30,20 @@ def make_report(
     Returns:
         None: Function writes the report to disk.
     """
-    output = config.get(
-        "output",
-        Path(config["source"]).name.split(".")[0]
-    )
-    Path(output).mkdir(exist_ok=True)  # Creates output directory if not exists
-
-    # separate function for configuration
-    # Markdown configuration
-    precision = config.get("markdown", {}).get("float_precision")
-    style = config.get("markdown", {}).get("css_style")
-    md_toc = []
-    md_content = [
-        f"<link rel='stylesheet' href='{style}'>\n" if style else ""]
-
-    # Plotly configuration
-    plotly_config = config.get("plotly", {})
-    plotly_config.update(config.get("outliers", {}))
+    # Get key variables to make the report
+    output, toc, content, precision, plotly = get_report_variables(config)
 
     # Create overview plot and get evaluations from input data
     col = "__overview"
     stats = plot_data(
         df.select(
-            ["__date"] + [
+            ["__date"] + [  # Columns
                 item for item in df.columns
                 if item.startswith(" __")]
         ),
-        config=plotly_config,
-        file_path=f"{output}/{col}"
+        config=plotly, file_path=f"{output}/{col}"
     )
-    collect_md_content(col, stats, md_toc, md_content, precision)
+    collect_md_content(col, stats, toc, content, precision)
 
     # Create plots and get evaluations for each column in metadata
     for col in metadata:
@@ -69,10 +53,9 @@ def make_report(
                     item for item in df.columns
                     if item.startswith(f"__ {col} __")]
             ),
-            config=plotly_config,
-            file_path=f"{output}/{col}",
+            config=plotly, file_path=f"{output}/{col}",
         )
-        collect_md_content(col, stats, md_toc, md_content, precision)
+        collect_md_content(col, stats, toc, content, precision)
 
         # Proceed with numeric information if column datatype is numeric
         if metadata.get(col):
@@ -82,24 +65,65 @@ def make_report(
                         item for item in df.columns
                         if item.startswith(f"n__ {col} __")]
                 ),
-                config=plotly_config,
-                file_path=f"{output}/{col}__numeric"
+                config=plotly, file_path=f"{output}/{col}__numeric"
             )
             collect_md_content(
-                col, stats,
-                md_toc, md_content,
-                suffix="__numeric",
-                precision=precision,
-                dtype=metadata[col])
+                col, stats, toc, content, precision,
+                dtype=metadata[col], suffix="__numeric")
 
-        # Add backlink to the Table of contents
-        md_content.append("[Back to the TOC](#toc)\n")
+        # Add backlink to the Table-of-contents
+        content.append("[Back to the TOC](#toc)\n")
 
     # Write collected markdown content as a markdown file
     write_md_file(
-        md_toc, md_content,
+        toc, content,
         output, config["source"],
         config.get("markdown", {}).get("name"))
+
+
+def get_report_variables(config: Dict[str, Any]):
+    """
+    Get key variables to make the report using the configuration provided.
+
+    This function creates variables necessary for making markdown report
+    based on the specified configuration. They include: output directory name,
+    markdown table style, precision to format floats in markdown tables,
+    Plotly parameters for plots.
+
+    Args:
+        config (Dict[str, Any]): Configuration dictionary.
+
+    Returns:
+        Tuple(Any):
+            - Output directory to store markdown file and plots.
+            - List for markdown table-of-contents.
+            - List for markdown file content.
+            - Precision to format floats in markdown tables.
+            - Plotly configration for plots.
+    """
+    # Determine the name of the output directory using `output` parameter
+    # in configuration or using the name of the source without extension
+    output_dir = config.get(
+        "output",
+        Path(config["source"]).name.split(".")[0]
+    )
+    # Create output directory
+    Path(output_dir).mkdir(exist_ok=True)
+
+    md_toc = []  # Table-of-contents
+    # Style for markdown tables
+    style = config.get("markdown", {}).get("css_style")
+    md_content = [
+        f"<link rel='stylesheet' href='{style}'>\n" if style else ""]
+
+    # Number of decimal places to format numbers in markdown tables
+    precision = config.get("markdown", {}).get("float_precision")
+
+    # Plotly configuration
+    plotly_config = config.get("plotly", {})
+    plotly_config.update(config.get("outliers", {}))
+
+    return output_dir, md_toc, md_content, precision, plotly_config
 
 
 @exception_handler()
@@ -205,7 +229,7 @@ def write_md_file(
         file_name (str): Name of the markdown file.
 
     Returns:
-        None: Function writes the markdown file to disk.
+        None: Function writes markdown file to disk.
     """
     # Make `Table of contents` with links
     toc = "\n".join([
