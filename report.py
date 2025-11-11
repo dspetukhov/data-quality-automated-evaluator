@@ -61,8 +61,8 @@ def make_report(
         )
         collect_md_content(col, stats, toc, content, precision)
 
-        # Create extra plots and get evaluations for columns
-        # representing specific aggregations for a numeric column in source data:
+        # Create plots and get evaluations for columns
+        # representing extra aggregations for a numeric column in source data:
         # min, max, mean, median, and standard deviation
         if metadata.get(col):
             stats = plot_data(
