@@ -1,16 +1,15 @@
 from typing import Sequence, Any, Dict, Tuple, List
-from itertools import zip_longest
 from polars import DataFrame
-from plotly.subplots import make_subplots
 from plotly.graph_objs import Scatter
 from plotly.graph_objs._figure import Figure
+from plotly.subplots import make_subplots
 from utility import exception_handler
-from evaluate import evaluate_data
 
 
 @exception_handler()
 def plot_data(
     data: DataFrame,
+    bounds: List[Tuple[float]],
     config: Dict[str, Any],
     file_path: str,
 ) -> Dict[str, float]:
@@ -24,6 +23,7 @@ def plot_data(
 
     Args:
         data (DataFrame): Data to plot.
+        bounds (List[Tuple[float]]): List of boundaries to highlight outliers.
         config (Dict[str, Any]): Plotly styling settings, including:
             - 'plot': dict of Scatter style settings.
             - 'outliers': dict of outliers highlighting settings.
@@ -31,8 +31,7 @@ def plot_data(
         file_path (str): Path to the directory where the image will be saved.
 
     Returns:
-        List[Dict[str, float]]: List of dictionaries
-            with descriptive statistics for each data series.
+        None
     """
     # Determine the number of subplots
     # which can't be less than two
@@ -43,26 +42,17 @@ def plot_data(
         config.get("subplots", {}),
         titles=data.columns[1:]
     )
-    data_stats = []
-    for s, col in zip_longest(range(n_subplots), data.columns[1:]):
-        if not col:
-            data_stats.append({})
-            continue
+    for i, col in enumerate(data.columns[1:]):
         # Add data series as a trace to the subplot
         fig.add_trace(
             Scatter(x=data["__date"], y=data[col], **config.get("plot", {})),
-            row=(s // n_cols) + 1, col=(s % n_cols) + 1
+            row=(i // n_cols) + 1, col=(i % n_cols) + 1
         )
-        # Evaluate data series
-        stats, bounds = evaluate_data(data[col], config)
         # Highlight outliers regions using Plotly shapes
         fig = highlight_outliers(
-            fig, s, data["__date"], data[col], bounds, n_cols,
+            fig, i, data["__date"], data[col], bounds[i], n_cols,
             config.get("outliers", {}).get("style", {})
         )
-        data_stats.append({
-            **{"title": fig.layout.annotations[s].text},
-            **stats})
 
     # Adjust figure parameters
     fig = adjust_figure(fig, n_cols, n_rows, config)
@@ -71,7 +61,6 @@ def plot_data(
     fig.write_image(
         f"{file_path}.png",
         scale=config.get("misc", {}).get("scale", 1))
-    return data_stats
 
 
 @exception_handler()
