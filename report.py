@@ -30,12 +30,27 @@ def make_report(
     Returns:
         None: Function writes the report to disk.
     """
+    columns, stats = [], []
     # Get key variables to make the report
     output, toc, content, precision, plotly = get_report_variables(config)
+
+    # Split into evaluate_data, plot_data, collect_markdown, report writing
 
     # Create overview plot and get evaluations for columns
     # representing general aggregations of source data:
     # number of values and target average
+    data = df.select(
+            ["__date"] + [
+                item for item in df.columns if item.startswith(" __")])
+    # Evaluate data
+    bounds = []
+    col = "__overview"
+    for col in data.columns[1:]:
+        s, b = evaluate_data(data[col], config)
+        stats.append(s)
+        bounds.append(b)
+    plot_data(data, bounds=bounds, config=plotly, file_path=f"{output}/{col}")
+    columns
     col = "__overview"
     stats = plot_data(
         df.select(
@@ -154,6 +169,7 @@ def collect_md_content(col, data, toc, content, precision=4, **kwargs) -> None:
     Returns:
         None: Function updates lists in-place.
     """
+    # Split into TOC/content helpers
     # Get section title (`alias`)
     alias = kwargs.get("dtype", "Overview" if col == "__overview" else col)
     suffix = kwargs.get("suffix", "")
@@ -238,6 +254,7 @@ def write_md_file(
     Returns:
         None: Function writes markdown file to disk.
     """
+    # split file writing from content generation
     # Make `Table of contents` with links
     toc = "\n".join([
         f"- [{section}](#{anchor})"
