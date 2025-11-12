@@ -2,8 +2,8 @@
     "source": "../datasets/metaverse_transactions_dataset.csv",
     "date_column": "timestamp",
     "output": "metaverse_transactions_dataset",
-    "filtration": "amount > 0",
-    "transformation": {
+    "filter": "amount > 0",
+    "transformations": {
         "target_column": "(anomaly = 'high_risk')::int"
     },
     "outliers": {
