@@ -87,58 +87,57 @@ def make_preprocessing(
 
 @exception_handler()
 def apply_filter(
-        lf: pl.LazyFrame, ft: Union[str, Dict[str, str]], f: bool = False
+        lf: pl.LazyFrame, filter_str: str
 ) -> pl.LazyFrame:
     """
-    Apply filters and transformations to a Polars LazyFrame.
+    Apply filter to Polars LazyFrame.
 
-    This function applies SQL-based filters and transformations as specified in
-    the configuration dictionary. If 'f' is True, a filter applied
-    to make a slice of data, otherwise transformation applied
-    to alter an existing column.
+    This function applies SQL filter to make a slice of data
+    as specified in the configuration.
 
     Args:
-        lf (pl.LazyFrame): Input data as a LazyFrame.
-        ft (Union[str, Dict[str, str]]): Filter or transformation.
-        f (bool): If True, treat as a filter; otherwise, as a transformation.
+        lf (pl.LazyFrame): Input data as Polars LazyFrame.
+        filter_str (str): SQL expression to filter data.
 
     Returns:
-        pl.LazyFrame: Filtered or transformed LazyFrame.
+        pl.LazyFrame: Filtered LazyFrame.
     """
+    if isinstance(filter_str, str):
+        lf = lf.filter(pl.sql_expr(filter_str))
+        logging.info(f"Filter applied: {filter_str}")
     return lf
 
 
 @exception_handler()
 def apply_transformations(
-        lf: pl.LazyFrame, ft: Union[str, Dict[str, str]], f: bool = False
+        lf: pl.LazyFrame, transformations: List[Dict[str, str]]
 ) -> pl.LazyFrame:
     """
-    Apply filters and transformations to a Polars LazyFrame.
+    Apply transformations to Polars LazyFrame.
 
-    This function applies SQL-based filters and transformations as specified in
-    the configuration dictionary. If 'f' is True, a filter applied
-    to make a slice of data, otherwise transformation applied
-    to alter an existing column.
+    This function applies SQL transformations to alter LazyFrame columns
+    as specified in the configuration.
+    It can create a new column or replace an existing one
+    if its name will match the key in a single transformation.
 
     Args:
         lf (pl.LazyFrame): Input data as a LazyFrame.
-        ft (Union[str, Dict[str, str]]): Filter or transformation.
-        f (bool): If True, treat as a filter; otherwise, as a transformation.
+        transformations (List[Dict[str]]): List of dicts:
+            each dict contains column name as a key
+            and SQL expression to transform LazyFrame as a value.
 
     Returns:
-        pl.LazyFrame: Filtered or transformed LazyFrame.
+        pl.LazyFrame: LazyFrame with transformed columns.
     """
-    if f and isinstance(ft, str):
-        lf = lf.filter(pl.sql_expr(ft))
-        logging.info(f"Filter applied: {ft}")
-    elif not f and isinstance(ft, dict):
+    if isinstance(transformations, dict):
         # Iterate over transformations specified in configuration file
-        for alias, expr in ft.items():
+        for alias, expr in transformations.items():
             lf = lf.with_columns(pl.sql_expr(expr).alias(alias))
             logging.info(f"Transformation applied: {expr}")
     else:
-        logging.warning(f"Unrecognized transformation: {ft}")
+        logging.warning(f"Unrecognized transformations: {transformations}")
     return lf
+
 
 # TO DO: modify
 @exception_handler()
