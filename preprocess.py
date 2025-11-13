@@ -9,18 +9,18 @@ def make_preprocessing(
         lf: Union[pl.LazyFrame, pl.DataFrame], config: Dict[str, Any]
 ) -> Tuple[pl.DataFrame, Dict[str, Dict[str, str]]]:
     """
-    Preprocess data for evaluation through per-column aggregation by dates.
+    Preprocess data for evaluation through aggregation by dates.
 
-    This function processes input data frame by applying filtration
-    and transformation as specified by SQL expressions in the configuration.
-    It then validates date_column to ensure data aggregation over dates,
-    collects aggregation steps and constructs metadata for each column,
-    performs aggregation and returns its result with metadata.
+    This function processes input data frame by applying filter
+    and transformations as specified by SQL expressions in the configuration.
+    Then it gets date_column to ensure data aggregation by dates,
+    collects aggregation expressions and metadata for each column,
+    and performs aggregation.
 
     Args:
         lf (Union[pl.LazyFrame, pl.DataFrame]): Input data frame.
         config (Dict[str, Any]): Configuration dictionary specifying
-            extra variables, filtration, and transformation parameters.
+            extra variables, filter, and transformations.
 
     Returns:
         Tuple[pl.DataFrame, Dict[str, Dict[str, str]]:
@@ -29,56 +29,44 @@ def make_preprocessing(
 
     Raises:
         SystemExit: In case of failed data aggregation
-            or inconsistent data in date_column.
+            or inconsistencies in date_column.
     """
+    # Convert DataFrame to LazyFrame if necessary
     if isinstance(lf, pl.DataFrame):
         lf = lf.lazy()
 
+    # Apply filter for rows
     lf = apply_filter(lf, config.get("filter"))
-    # if "filtration" in config:
-    #     # Apply filter for rows
-    #     lf = apply_transformation(lf, config["filtration"], f=True)
-    # if "transformation" in config:
-        # Apply transformation for columns
+    # Apply transformation for columns
     lf = apply_transformations(lf, config["transformations"])
 
+    # Get LazyFrame schema
     schema = lf.collect_schema()
-    # ! rethink date_column preparation 
-    # Get date_column from configuration or try to find it in data
-    # separate into single function
-    # get_date_column()
-    date_column = config.get("date_column", find_date_column(schema))
+
+    # Get date_column
+    date_column = get_date_column(config, schema)
     if date_column:
         # Check date_column type and convert it if necessary
         if schema.get(date_column) not in (pl.Date, pl.Datetime):
             lf = lf.with_columns(
                 pl.col(date_column).str.to_datetime(strict=True))
-        # Convert date_column to Polars date type
+        # Convert date_column to Polars date type and rename it
+        # to ensure pipeline consistency
         lf = lf.with_columns(pl.col(date_column).dt.date().alias("__date"))
+        logging.info(f"Date column: `{date_column}`")
     else:
-        logging.error("No date columns for data preprocessing")
-        return (None, None)
+        raise ValueError("There is not date_column for data preprocessing")
 
-    logging.warning(f"base date column: {date_column}")
-
-    # Start with common aggregation expression for the number of values
-    aggs = [pl.count().alias(" __Number of values")]
-
-    # add a separate function for target_column
-    # If target column was specified in configuration,
-    # compute its mean (class balance or target average)
-    # ! separate into single function
+    # Get target_column
     target_column = config.get("target_column", "target_column")
-    if schema.get(target_column):
-        aggs.append(
-            pl.col(target_column).mean().alias(" __Target average"))
-    else:
+    if not schema.get(target_column):
+        target_column = None
         logging.warning("Target column wasn't found")
 
     # Collect aggregation expressions for all columns except date_column
-    aggs, metadata = collect_aggregations(aggs, schema)
+    aggs, metadata = collect_aggregations(schema, date_column, target_column)
 
-    # Aggregate data by date column
+    # Aggregate data by dates
     lf_agg = lf.group_by("__date").agg(aggs).sort("__date")
     lf_agg.explain()
     lf_agg = lf_agg.collect()
@@ -139,62 +127,78 @@ def apply_transformations(
     return lf
 
 
-# TO DO: modify
 @exception_handler()
-def get_date_column(schema: pl.LazyFrame.schema) -> Union[str, None]:
+def get_date_column(
+    config: Dict[str, Any],
+    schema: pl.LazyFrame.schema
+) -> Union[str, None]:
     """
-    Find the first date column in data schema.
+    Determine date_column for data aggregation.
 
-    This function iterates through data schema
-    and returns the first column of date or datetime type.
+    This function looks for date_column in configuration
+    taking `date_column` as a default name. If it is not found in schema,
+    it gets the first column of date or datetime type from data schema.
+    Returns None if nothing is found.
 
     Args:
+        config (Dict[str, Any]): Configuration dictionary.
         schema (polars.LazyFrame.schema): Data schema provided by Polars.
 
     Returns:
-        Union[str, None]: Name of the first date or datetime column found,
+        Union[str, None]: Name of the date column found,
             or None if no such column exists.
     """
-    for col, dtype in schema.items():
-        if dtype in (pl.Date, pl.Datetime):
-            return col
+    date_column = config.get("date_column", "date_column")
+    if schema.get(date_column):
+        return date_column
+    else:
+        for col, dtype in schema.items():
+            if dtype in (pl.Date, pl.Datetime):
+                return col
 
 
 @exception_handler()
-def get_target_column(schema: pl.LazyFrame.schema) -> Union[str, None]:
+def collect_aggregations(
+    schema: pl.LazyFrame.schema,
+    date_column: str,
+    target_column: str
+) -> Tuple[List[str], Dict[str]]:
     """
-    Find the first date column in data schema.
+    Collect aggregation expressions.
 
-    This function iterates through data schema
-    and returns the first column of date or datetime type.
+    This function collects expressions to perform data aggregation by dates.
+    The first expression calculates the number of values per date,
+    the rest are column-wise statistics.
+    Numeric columns marked in metadata dictionary by their types.
 
     Args:
-        schema (polars.LazyFrame.schema): Data schema provided by Polars.
+        schema (pl.LazyFrame.schema): Data schema provided by Polars.
+        date_column (str): Date column to be excluded.
+        target_column (str): Target column to compute target average.
 
     Returns:
-        Union[str, None]: Name of the first date or datetime column found,
-            or None if no such column exists.
+        Tuple[List[str], Dict[str]]:
+            - aggs (List[str]): Aggregation expressions.
+            - metadata (Dict[str]): Dict of aggregated columns
+                indicating types for numeric columns
     """
-    for col, dtype in schema.items():
-        if dtype in (pl.Date, pl.Datetime):
-            return col
-        
+    # Start with common aggregation expression for the number of values
+    aggs = [pl.count().alias(" __Number of values")]
 
-@exception_handler()
-def collect_aggregations(aggs: List[str], schema, date) -> Tuple[List[str], Dict[str]]:
-    """
+    # If target column was found in schema,
+    # calculate its mean (i.e. class balance in binary classification problems)
+    if target_column:
+        aggs.append(
+            pl.col(target_column).mean().alias(" __Target average"))
 
-    """
     metadata = {}
     for col in schema.names():
         if col == date_column:
             continue
         # Add common statistics for the column
         aggs.extend([
-            # Number of unique values
             pl.col(col).n_unique().alias(
                 f"__ {col} __Number of unique values"),
-            # Ratio of null values
             pl.col(col).is_null().mean().alias(
                 f"__ {col} __Ratio of null values"),
         ])
