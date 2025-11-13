@@ -23,8 +23,8 @@ def make_report(
 
     Args:
         df (DataFrame): Aggregated data for report assembling.
-        metadata (Dict[str, Union[Tuple[str], str]]): Dict of columns
-            indicating types of numeric columns.
+        metadata (Dict[str]): Dict of aggregated columns
+            indicating types for numeric columns.
         config (Dict[str, Any]): Configuration dictionary specifying
             data source name, markdown options, and plotting options.
 
