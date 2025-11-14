@@ -13,7 +13,7 @@ def make_preprocessing(
 
     This function processes input data frame by applying filter
     and transformations as specified by SQL expressions in the configuration.
-    Then it gets date_column to ensure data aggregation by dates,
+    Then it gets and validates date_column to ensure data aggregation by dates,
     collects aggregation expressions and metadata for each column,
     and performs aggregation.
 
@@ -38,24 +38,15 @@ def make_preprocessing(
     # Apply filter for rows
     lf = apply_filter(lf, config.get("filter"))
     # Apply transformation for columns
-    lf = apply_transformations(lf, config["transformations"])
+    lf = apply_transformations(lf, config.get("transformations"))
 
     # Get LazyFrame schema
     schema = lf.collect_schema()
 
     # Get date_column
     date_column = get_date_column(config, schema)
-    if date_column:
-        # Check date_column type and convert it if necessary
-        if schema.get(date_column) not in (pl.Date, pl.Datetime):
-            lf = lf.with_columns(
-                pl.col(date_column).str.to_datetime(strict=True))
-        # Convert date_column to Polars date type and rename it
-        # to ensure pipeline consistency
-        lf = lf.with_columns(pl.col(date_column).dt.date().alias("__date"))
-        logging.info(f"Date column: `{date_column}`")
-    else:
-        raise ValueError("There is not date_column for data preprocessing")
+    # Validate date_column
+    lf, schema = validate_date_column(lf, schema, date_column)
 
     # Get target_column
     target_column = config.get("target_column", "target_column")
@@ -64,11 +55,11 @@ def make_preprocessing(
         logging.warning("Target column wasn't found")
 
     # Collect aggregation expressions for all columns except date_column
-    aggs, metadata = collect_aggregations(schema, date_column, target_column)
+    aggs, metadata = collect_aggregations(schema, target_column)
 
     # Aggregate data by dates
     lf_agg = lf.group_by("__date").agg(aggs).sort("__date")
-    lf_agg.explain()
+    # lf_agg.explain()  # uncomment to get the query plan or turn off/on optimizations
     lf_agg = lf_agg.collect()
     return lf_agg, metadata
 
@@ -84,7 +75,7 @@ def apply_filter(
     as specified in the configuration.
 
     Args:
-        lf (pl.LazyFrame): Input data as Polars LazyFrame.
+        lf (pl.LazyFrame): Input data.
         filter_str (str): SQL expression to filter data.
 
     Returns:
@@ -109,7 +100,7 @@ def apply_transformations(
     if its name will match the key in a single transformation.
 
     Args:
-        lf (pl.LazyFrame): Input data as a LazyFrame.
+        lf (pl.LazyFrame): Input data.
         transformations (List[Dict[str]]): List of dicts:
             each dict contains column name as a key
             and SQL expression to transform LazyFrame as a value.
@@ -122,7 +113,7 @@ def apply_transformations(
         for alias, expr in transformations.items():
             lf = lf.with_columns(pl.sql_expr(expr).alias(alias))
             logging.info(f"Transformation applied: {expr}")
-    else:
+    elif transformations is not None:
         logging.warning(f"Unrecognized transformations: {transformations}")
     return lf
 
@@ -142,7 +133,7 @@ def get_date_column(
 
     Args:
         config (Dict[str, Any]): Configuration dictionary.
-        schema (polars.LazyFrame.schema): Data schema provided by Polars.
+        schema (pl.LazyFrame.schema): Data schema provided by Polars.
 
     Returns:
         Union[str, None]: Name of the date column found,
@@ -157,12 +148,56 @@ def get_date_column(
                 return col
 
 
+@exception_handler(exit_on_error=True)
+def validate_date_column(
+    lf: pl.LazyFrame,
+    schema: pl.LazyFrame.schema,
+    date_column: str
+) -> pl.LazyFrame:
+    """
+    Validate date_column type and make conversion if necessary.
+
+    This function checks date_column type in schema, makes conversion
+    to date type if necessary, and renames it as `__date`
+    to ensure consistency in data evaluation pipeline.
+
+    Args:
+        lf (pl.LazyFrame): Input data.
+        schema (pl.LazyFrame.schema): Data schema provided by Polars.
+        date_column (str): Data schema provided by Polars.
+
+    Returns:
+        Tuple[pl.LazyFrame, pl.LazyFrame.schema]:
+            - LazyFrame with date column processed.
+            - Updated data schema.
+
+    Raises:
+        SystemExit: If data cannot be loaded.
+    """
+    if date_column:
+        # Check date_column type and convert it to Polars date type
+        if isinstance(schema.get(date_column), pl.String):
+            lf = lf.with_columns(
+                pl.col(date_column).str.to_date(strict=True))
+        elif isinstance(schema.get(date_column), pl.Datetime):
+            lf = lf.with_columns(pl.col(date_column).dt.date())
+
+        # Rename date_column as `__date`
+        lf = lf.rename({date_column: "__date"})
+        logging.info(f"Date column: `{date_column}`")
+        return lf, lf.collect_schema()
+    else:
+        schema_str = "\n".join(
+            f"{col}: {dtype}" for col, dtype in schema.items())
+        logging.info(f"Data schema:\n{schema_str}")
+        raise SystemExit("There is no date_column for data preprocessing")
+
+
 @exception_handler()
 def collect_aggregations(
     schema: pl.LazyFrame.schema,
-    date_column: str,
     target_column: str
-) -> Tuple[List[str], Dict[str]]:
+) -> Tuple[List[str], Dict[str, str]]:
     """
     Collect aggregation expressions.
 
@@ -173,11 +208,10 @@ def collect_aggregations(
 
     Args:
         schema (pl.LazyFrame.schema): Data schema provided by Polars.
-        date_column (str): Date column to be excluded.
         target_column (str): Target column to compute target average.
 
     Returns:
-        Tuple[List[str], Dict[str]]:
+        Tuple[List[str], Dict[str, str]]:
             - aggs (List[str]): Aggregation expressions.
             - metadata (Dict[str]): Dict of aggregated columns
                 indicating types for numeric columns
@@ -193,7 +227,7 @@ def collect_aggregations(
 
     metadata = {}
     for col in schema.names():
-        if col == date_column:
+        if col == "__date":
             continue
         # Add common statistics for the column
         aggs.extend([
