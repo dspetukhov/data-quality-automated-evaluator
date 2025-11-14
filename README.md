@@ -20,7 +20,18 @@
 
 - [Online Retail Transaction Data](https://www.kaggle.com/datasets/thedevastator/online-retail-transaction-data)
 
-
+```json
+    "source": {
+        "file_path": "online_retail.csv",
+        "schema_overrides": {
+            "InvoiceNo": "String"
+        }
+    },
+    "date_column": "InvoiceDate",
+    "transformations": {
+        "InvoiceDate": "DATE(InvoiceDate, '%m/%d/%Y %H:%M')"
+    }
+```
 
 - [Credit Card Fraud Prediction](https://www.kaggle.com/datasets/kelvinkelue/credit-card-fraud-prediction)
 
