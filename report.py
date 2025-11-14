@@ -116,7 +116,7 @@ def get_report_variables(config: Dict[str, Any]):
     # in configuration or using the name of the source without extension
     output_dir = config.get(
         "output",
-        Path(config["source"]).name.split(".")[0]
+        Path(config["source"]["file_path"]).name.split(".")[0]
     )
     # Create output directory
     Path(output_dir).mkdir(exist_ok=True)
