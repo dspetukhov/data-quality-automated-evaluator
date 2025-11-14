@@ -33,7 +33,7 @@ def main():
 
     # Proceed if configuration was loaded and contains `source`
     if config.get("source"):
-        source_data = read_source(config["source"])
+        source_data = read_source(config.get("source"))
         # Preprocess data
         df, metadata = make_preprocessing(source_data, config)
         # Generate a report if preprocessing was successful
