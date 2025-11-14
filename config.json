@@ -6,6 +6,9 @@
         }
     },
     "date_column": "InvoiceDate",
+    "transformations": {
+        "InvoiceDate": "DATE(InvoiceDate, '%m/%d/%Y %H:%M')"
+    },
     "outliers": {
         "criterion": "IQR",
         "multiplier": 1.5,
