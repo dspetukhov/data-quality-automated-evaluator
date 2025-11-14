@@ -36,7 +36,7 @@ def exception_handler(exit_on_error: bool = False):
             return "{0}: {1}#{2}: {3}: {4}".format(
                 exc_type.__name__,
                 summary.filename, summary.lineno, summary.line,
-                str(exc_obj).lower())
+                str(exc_obj))
 
         @wraps(func)
         def wrapper(*args, **kwargs):
