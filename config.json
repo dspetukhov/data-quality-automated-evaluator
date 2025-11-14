@@ -1,11 +1,11 @@
 {
-    "source": "../datasets/metaverse_transactions_dataset.csv",
-    "date_column": "timestamp",
-    "output": "metaverse_transactions_dataset",
-    "filter": "amount > 0",
-    "transformations": {
-        "target_column": "(anomaly = 'high_risk')::int"
+    "source": {
+        "file_path": "../datasets/online_retail.csv",
+        "schema_overrides": {
+            "InvoiceNo": "String"
+        }
     },
+    "date_column": "InvoiceDate",
     "outliers": {
         "criterion": "IQR",
         "multiplier": 1.5,

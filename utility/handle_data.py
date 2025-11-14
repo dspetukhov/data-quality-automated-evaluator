@@ -1,5 +1,5 @@
 import polars as pl
-from typing import Union, Dict
+from typing import Union, Any, Dict
 from .handle_exceptions import exception_handler
 
 # {file extension: read function} mapping
@@ -46,6 +46,8 @@ def read_source(source: Union[str, Dict[str, str]]) -> pl.LazyFrame:
         elif "file_path" in source:
             # Get storage_options to read from cloud providers
             storage_options = source.get("storage_options")
+            # Get schema_overrides to alter schema dtypes for csv / xlsx
+            schema_overrides = source.get("schema_overrides")
             # Get read function if extension parameter was specified
             read = read_source_func.get(source.get("extension"))
             # If extension wasn't specified or read function wasn't found
@@ -57,9 +59,11 @@ def read_source(source: Union[str, Dict[str, str]]) -> pl.LazyFrame:
                     source["file_path"],
                     storage_options=storage_options).lazy()
         else:
-            raise ValueError(f"Incorrect source specification: {source}")
+            raise SystemExit(f"Incorrect source specification: {source}")
     elif isinstance(source, str):
         return get_read_source_func(source)
+    else:
+        raise SystemExit("No source specification")
 
 
 @exception_handler(exit_on_error=True)
@@ -72,7 +76,7 @@ def get_read_source_func(
 
     This function iterates through `read_source_func` keys
     matching them with source extension. If there is match,
-    it reads the source, otherwise ValueError raised.
+    it reads the source, otherwise SystemExit raised.
 
     Args:
         source (str): Data source name.
@@ -88,4 +92,12 @@ def get_read_source_func(
         if source.endswith(extension):
             return read(source, storage_options=storage_options).lazy()
     # Raise exception if source ending didn't match supported file extensions
-    raise ValueError(f"Unsupported source: {source}")
+    raise SystemExit(f"Unsupported source: {source}")
+
+
+@exception_handler()
+def handle_schema_overrides(data) -> Dict[str, Any]:
+    """
+    
+    """
+    return data
