@@ -13,7 +13,7 @@
     "date_column": "timestamp",
     "transformations": {
         "target_column": "(anomaly = 'high_risk')::int"
-    }
+    },
 ```
 
 - [IBM Transactions for Anti Money Laundering (AML)](https://www.kaggle.com/datasets/ealtman2019/ibm-transactions-for-anti-money-laundering-aml)
@@ -30,7 +30,7 @@
     "date_column": "InvoiceDate",
     "transformations": {
         "InvoiceDate": "DATE(InvoiceDate, '%m/%d/%Y %H:%M')"
-    }
+    },
 ```
 
 - [Credit Card Fraud Prediction](https://www.kaggle.com/datasets/kelvinkelue/credit-card-fraud-prediction)
@@ -59,5 +59,15 @@
 - [Ecommerce Counterfeit Products Dataset](https://www.kaggle.com/datasets/aimlveera/counterfeit-product-detection-dataset)
 
 ```json
-json
+    "source": {
+        "file_path": "../datasets/_counterfeit_transactions.csv"
+    },
+    "date_column": "transaction_date",
+    "target_column": "involves_counterfeit",
+    "transformations": {
+        "transaction_date": "DATE(transaction_date, '%Y-%m-%d %H:%M:%s')",
+        "involves_counterfeit": "involves_counterfeit::int"
+    },
 ```
+
+**TO DO:** add columns to exclude, columns to select in configuration

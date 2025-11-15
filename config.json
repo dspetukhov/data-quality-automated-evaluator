@@ -1,11 +1,12 @@
 {
     "source": {
-        "file_path": "../datasets/fraud test.csv"
+        "file_path": "../datasets/_counterfeit_transactions.csv"
     },
-    "date_column": "trans_date_trans_time",
-    "target_column": "is_fraud",
+    "date_column": "transaction_date",
+    "target_column": "involves_counterfeit",
     "transformations": {
-        "trans_date_trans_time": "DATE(trans_date_trans_time, '%d/%m/%Y %H:%M')"
+        "transaction_date": "DATE(transaction_date, '%Y-%m-%d %H:%M:%s')",
+        "involves_counterfeit": "involves_counterfeit::int"
     },
     "outliers": {
         "criterion": "IQR",
