@@ -47,7 +47,11 @@ def make_report(
     evals, bounds = evaluate_data(data, outliers)
     data_evals[col] = {"evals": evals}
     # Plot data
-    plot_data(data, bounds=bounds, config=plotly, file_path=f"{output}/{col}")
+    plot_data(
+        data,
+        bounds=bounds,
+        config=plotly,
+        file_path=os.path.join(output, col))
 
     # Get evaluations and create plots for columns
     # representing aggregations for a column in source data:
@@ -64,7 +68,7 @@ def make_report(
             data,
             bounds=bounds,
             config=plotly,
-            file_path=f"{output}/{col}")
+            file_path=os.path.join(output, col))
 
         # Get evaluations and create plots for columns
         # representing extra aggregations for a numeric column in source data:
@@ -82,11 +86,11 @@ def make_report(
                 data,
                 bounds=bounds,
                 config=plotly,
-                file_path=f"{output}/{col}__numeric")
+                file_path=os.path.join(output, f"{col}__numeric"))
 
     # Collect markdown content
     content = collect_md_content(
-        data_evals, content, config["source"], precision)
+        data_evals, content, config["source"]["file_path"], precision)
 
     # Write content as a markdown file
     write_md_file(content, output, config.get("markdown", {}).get("name"))
@@ -289,4 +293,6 @@ def format_number(value, precision):
             value = f"{value:,.{precision}f}"
     elif isinstance(value, tuple):
         value = " ± ".join([f"{v:,.{precision}f}" for v in value])
-    return str(value)
+    elif isinstance(value, int):
+        value = f"{value:,}"
+    return value
