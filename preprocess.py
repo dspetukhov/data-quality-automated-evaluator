@@ -226,8 +226,9 @@ def collect_aggregations(
             pl.col(target_column).mean().alias(" __Target average"))
 
     metadata = {}
+
     for col in schema.names():
-        if col == "__date":
+        if not col or col == "__date":
             continue
         # Add common statistics for the column
         aggs.extend([
