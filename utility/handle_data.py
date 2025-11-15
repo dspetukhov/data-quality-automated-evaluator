@@ -97,7 +97,7 @@ def _read_source(
         # Try to match file extension with supported file formats
         for ff, rf in read_source_func.items():
             if source.endswith(ff):
-                logging.warning(f"Selected file format to read: {ff}")
+                logging.info(f"Identified file format: {ff}")
                 file_format, read_func = ff, rf
 
     if file_format in ("csv", "xlsx"):
@@ -120,11 +120,11 @@ def handle_schema_overrides(data) -> Dict[str, Any]:
     Replace string data type representation into Polars data type.
 
     Args:
-        data (Dict[str, str]): Mapping of types representation
-            with Polars data types.
+        data (Dict[str, str]): Dict of types representation
+            to be mapped with Polars data types.
 
     Returns:
-        Dict[str, Any]:
+        Dict[str, Any]: Mapping of types representation to Polars data types.
     """
     dtypes = {
         "String": pl.String,
