@@ -35,6 +35,29 @@
 
 - [Credit Card Fraud Prediction](https://www.kaggle.com/datasets/kelvinkelue/credit-card-fraud-prediction)
 
+```json
+    "source": {
+        "file_path": "../datasets/fraud test.csv"
+    },
+    "date_column": "trans_date_trans_time",
+    "target_column": "is_fraud",
+    "transformations": {
+        "trans_date_trans_time": "DATE(trans_date_trans_time, '%d/%m/%Y %H:%M')"
+    },
+```
+
 - [Is this a bad transaction?](https://www.kaggle.com/datasets/podsyp/fraud-transactions-detection)
 
+```json
+    "source": {
+        "file_path": "fraud.csv"
+    },
+    "date_column": "rep_loan_date",
+    "target_column": "bad_flag",
+```
+
 - [Ecommerce Counterfeit Products Dataset](https://www.kaggle.com/datasets/aimlveera/counterfeit-product-detection-dataset)
+
+```json
+json
+```

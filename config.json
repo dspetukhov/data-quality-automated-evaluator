@@ -1,13 +1,11 @@
 {
     "source": {
-        "file_path": "../datasets/online_retail.csv",
-        "schema_overrides": {
-            "InvoiceNo": "String"
-        }
+        "file_path": "../datasets/fraud test.csv"
     },
-    "date_column": "InvoiceDate",
+    "date_column": "trans_date_trans_time",
+    "target_column": "is_fraud",
     "transformations": {
-        "InvoiceDate": "DATE(InvoiceDate, '%m/%d/%Y %H:%M')"
+        "trans_date_trans_time": "DATE(trans_date_trans_time, '%d/%m/%Y %H:%M')"
     },
     "outliers": {
         "criterion": "IQR",
