@@ -3,14 +3,6 @@ from typing import Union, Any, Dict
 from .handle_exceptions import exception_handler
 from .setup_logging import logging
 
-# {file format: read function} mapping
-read_source_func = {
-    "csv": pl.scan_csv,
-    "parquet": pl.scan_parquet,
-    "iceberg": pl.scan_iceberg,
-    "xlsx": pl.read_excel
-}
-
 
 @exception_handler(exit_on_error=True)
 def read_source(source: Union[str, Dict[str, str]]) -> pl.LazyFrame:
@@ -22,7 +14,7 @@ def read_source(source: Union[str, Dict[str, str]]) -> pl.LazyFrame:
     it terminates the main program.
     There is no need in specifying `storage_options` explicitly
     as Polars can read corresponding environmental variables,
-    e.g. `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_REGION`.
+    e.g. `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION`.
 
     Args:
         source (Union[str, Dict[str, str]]): Data source specification.
@@ -91,6 +83,13 @@ def _read_source(
     Raises:
         SystemExit: If there is no read function for the file format provided.
     """
+    # {file format: read function} mapping
+    read_source_func = {
+        "csv": pl.scan_csv,
+        "parquet": pl.scan_parquet,
+        "iceberg": pl.scan_iceberg,
+        "xlsx": pl.read_excel
+    }
     if file_format in read_source_func:
         read_func = read_source_func[file_format]
     else:
