@@ -16,23 +16,6 @@
     },
 ```
 
-- [IBM Transactions for Anti Money Laundering (AML)](https://www.kaggle.com/datasets/ealtman2019/ibm-transactions-for-anti-money-laundering-aml)
-
-- [Online Retail Transaction Data](https://www.kaggle.com/datasets/thedevastator/online-retail-transaction-data)
-
-```json
-    "source": {
-        "file_path": "online_retail.csv",
-        "schema_overrides": {
-            "InvoiceNo": "String"
-        }
-    },
-    "date_column": "InvoiceDate",
-    "transformations": {
-        "InvoiceDate": "DATE(InvoiceDate, '%m/%d/%Y %H:%M')"
-    },
-```
-
 - [Credit Card Fraud Prediction](https://www.kaggle.com/datasets/kelvinkelue/credit-card-fraud-prediction)
 
 ```json
@@ -69,3 +52,19 @@
         "involves_counterfeit": "involves_counterfeit::int"
     },
 ```
+
+- [Financial Transactions Dataset for Fraud Detection](https://www.kaggle.com/datasets/aryan208/financial-transactions-dataset-for-fraud-detection)
+
+```json
+    "source": {
+        "file_path": "../datasets/financial_fraud_detection_dataset.csv",
+        "schema_overrides": {
+            "timestamp": "Datetime"
+        }
+    },
+    "filter": "select * from self where timestamp::date > '2023-01-01' and timestamp::date < '2024-01-01'",
+    "date_column": "timestamp",
+    "target_column": "is_fraud",
+```
+
+### `HuggingFace`
