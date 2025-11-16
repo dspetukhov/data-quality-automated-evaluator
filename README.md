@@ -69,5 +69,3 @@
         "involves_counterfeit": "involves_counterfeit::int"
     },
 ```
-
-**TO DO:** add columns to exclude, columns to select in configuration

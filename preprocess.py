@@ -35,7 +35,7 @@ def make_preprocessing(
     if isinstance(lf, pl.DataFrame):
         lf = lf.lazy()
 
-    # Apply filter for rows
+    # Apply filter for rows and columns
     lf = apply_filter(lf, config.get("filter"))
     # Apply transformation for columns
     lf = apply_transformations(lf, config.get("transformations"))
@@ -54,8 +54,11 @@ def make_preprocessing(
         target_column = None
         logging.warning("Target column wasn't found")
 
-    # Collect aggregation expressions for all columns except date_column
-    aggs, metadata = collect_aggregations(schema, target_column)
+    # Collect aggregation expressions for each column except excluded ones
+    aggs, metadata = collect_aggregations(
+        schema,
+        target_column,
+        config.get("columns_to_exclude", []))
 
     # Aggregate data by dates
     lf_agg = lf.group_by("__date").agg(aggs).sort("__date")
@@ -71,7 +74,7 @@ def apply_filter(
     """
     Apply filter to Polars LazyFrame.
 
-    This function applies SQL filter to make a slice of data
+    This function applies SQL expression to make a slice of data
     as specified in the configuration.
 
     Args:
@@ -82,7 +85,7 @@ def apply_filter(
         pl.LazyFrame: Filtered LazyFrame.
     """
     if isinstance(filter_str, str):
-        lf = lf.filter(pl.sql_expr(filter_str))
+        lf = lf.sql(filter_str)
         logging.info(f"Filter applied: {filter_str}")
     return lf
 
@@ -196,7 +199,8 @@ def validate_date_column(
 @exception_handler()
 def collect_aggregations(
     schema: pl.LazyFrame.schema,
-    target_column: str
+    target_column: str,
+    columns_to_exclude: List[str]
 ) -> Tuple[List[str], Dict[str, str]]:
     """
     Collect aggregation expressions.
@@ -228,7 +232,7 @@ def collect_aggregations(
     metadata = {}
 
     for col in schema.names():
-        if not col or col == "__date":
+        if col == "__date" or col in columns_to_exclude:
             continue
         # Add common statistics for the column
         aggs.extend([
