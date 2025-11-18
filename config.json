@@ -1,15 +1,10 @@
 {
     "source": {
-        "file_path": "../datasets/_counterfeit_transactions.csv",
-        "schema_overrides": {
-            "transaction_date": "Datetime"
-        }
+        "file_path": "hf://datasets/Ransaka/fraud_prediction_300K/data_50K.parquet"
     },
-    "date_column": "transaction_date",
-    "target_column": "involves_counterfeit",
-    "transformations": {
-        "involves_counterfeit": "involves_counterfeit::int"
-    },
+    "date_column": "S_2",
+    "target_column": "target",
+    "columns_to_exclude": ["customer_ID"],
     "outliers": {
         "criterion": "IQR",
         "multiplier": 1.5,

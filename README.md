@@ -102,29 +102,52 @@ It is also possible to replace `"transaction_date": "DATE(transaction_date, '%Y-
 - [saifhmb/FraudPaymentData](https://huggingface.co/datasets/saifhmb/FraudPaymentData)
 
 ```json
-
+    "source": {
+        "file_path": "FraudPaymentData.parquet"
+    },
+    "date_column": "Time_step",
+    "target_column": "Label",
+    "transformations": {
+        "Time_step": "DATE(Time_step, '%m/%d/%Y %H:%M')"
+    },
 ```
 
-- []()
+**Note:** downloaded by `ds = load_dataset("saifhmb/FraudPaymentData")`, then saved `ds["train"].to_parquet("FraudPaymentData.parquet")`
+
+- [Ransaka/fraud_prediction_300K](https://huggingface.co/datasets/Ransaka/fraud_prediction_300K)
 
 ```json
-
+    "source": {
+        "file_path": "hf://datasets/Ransaka/fraud_prediction_300K/data_50K.parquet"
+    },
+    "date_column": "S_2",
+    "target_column": "target",
+    "columns_to_exclude": ["customer_ID"],
 ```
 
-- []()
+- [Phoenix21/mock_fraud-detection-dataset](https://huggingface.co/datasets/Phoenix21/mock_fraud-detection-dataset)
 
 ```json
-
+    "source": {
+        "file_path": "hf://datasets/Phoenix21/mock_fraud-detection-dataset/transactions.csv",
+        "schema_overrides": {
+            "timestamp": "Datetime"
+        }
+    },
+    "date_column": "timestamp",
+    "target_column": "is_fraud",
+    "columns_to_exclude": ["transaction_id"],
 ```
 
-- []()
+- [Nooha/cc_fraud_detection_dataset](https://huggingface.co/datasets/Nooha/cc_fraud_detection_dataset)
 
 ```json
-
+    "source": {
+        "file_path": "../datasets/cc_fraud_detection_dataset.parquet"
+    },
+    "date_column": "trans_date",
+    "target_column": "is_fraud",
+    "columns_to_exclude": ["trans_time", "unix_time"],
 ```
 
-- []()
-
-```json
-
-```
+**Note:** downloaded by `ds = load_dataset("Nooha/cc_fraud_detection_dataset")`, then saved `ds["train"].to_parquet("cc_fraud_detection_dataset.parquet")`
