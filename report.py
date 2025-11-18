@@ -169,9 +169,8 @@ def collect_md_content(
         # Get section title (`alias`)
         alias = "Overview" if col == "__overview" else col
 
-        if not data[col].get("dtype"):
-            # Add new section to the table-of-contents with anchor
-            toc.append(f"- [{alias}](#{col})")
+        # Add new section to the table-of-contents with anchor
+        toc.append(f"- [{alias}](#{col})")
 
         # Add new entry to the content: section with anchor, plot, and table
         content.append((
