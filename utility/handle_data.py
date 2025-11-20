@@ -1,11 +1,11 @@
 import polars as pl
-from typing import Union, Any, Dict
+from typing import Any, Dict
 from .handle_exceptions import exception_handler
 from .setup_logging import logging
 
 
 @exception_handler(exit_on_error=True)
-def read_source(source: Union[str, Dict[str, str]]) -> pl.LazyFrame:
+def read_source(source: Dict[str, str]) -> pl.LazyFrame:
     """
     Read specified source of data as Polars LazyFrame.
 
@@ -17,15 +17,15 @@ def read_source(source: Union[str, Dict[str, str]]) -> pl.LazyFrame:
     e.g. `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION`.
 
     Args:
-        source (Union[str, Dict[str, str]]): Data source specification.
-            Can be a string, a dictionary with `query` and `uri` keys
+        source (Dict[str, str]): Data source specification.
+            Can be a dictionary with `query` and `uri` keys
             to read from a PostgreSQL database,
-            a dictionary with `file_path` key
+            or a dictionary with `file_path` key
             to read from hard drive / Google Drive / S3
-            (`storage_options` and `extension` are optional).
+            (`storage_options` and `file_format` are optional).
 
     Returns:
-        LazyFrame: Polars lazy data frame.
+        pl.LazyFrame: Polars lazy data frame.
 
     Raises:
         SystemExit: If data cannot be loaded.
@@ -36,6 +36,7 @@ def read_source(source: Union[str, Dict[str, str]]) -> pl.LazyFrame:
             lf = pl.read_database_uri(
                 query=source["query"], uri=source["uri"]
             ).lazy()
+
         elif source.get("file_path"):
             # Get storage_options to read from cloud providers
             storage_options = source.get("storage_options")
@@ -78,7 +79,7 @@ def _read_source(
             during schema inference.
 
     Returns:
-        LazyFrame: Polars lazy data frame.
+        pl.LazyFrame: Polars lazy data frame.
 
     Raises:
         SystemExit: If there is no read function for the file format provided.
@@ -93,7 +94,7 @@ def _read_source(
     if file_format in read_source_func:
         read_func = read_source_func[file_format]
     else:
-        # Try to match file extension with supported file formats
+        # Try to match source ending with supported file formats
         for ff, rf in read_source_func.items():
             if source.endswith(ff):
                 logging.info(f"Identified file format: {ff}")
@@ -114,7 +115,7 @@ def _read_source(
 
 
 @exception_handler()
-def handle_schema_overrides(data) -> Dict[str, Any]:
+def handle_schema_overrides(data: Dict[str, str]) -> Dict[str, Any]:
     """
     Replace string data type representation into Polars data type.
 

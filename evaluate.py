@@ -1,4 +1,4 @@
-from typing import Sequence, Dict, Tuple, Union
+from typing import Sequence, Any, Dict, List, Tuple, Union
 from polars import DataFrame
 from utility import exception_handler
 
@@ -6,8 +6,8 @@ from utility import exception_handler
 @exception_handler()
 def evaluate_data(
         data: DataFrame,
-        config: Dict[str, Union[int, float]]
-) -> Tuple[Dict[str, float], Tuple[float]]:
+        config: Dict[str, Union[str, float]]
+) -> Tuple[List[Dict[str, Any]], List[Tuple[float, float]]]:
     """
     Evaluates descriptive statistic and detects outliers in data.
 
@@ -16,20 +16,21 @@ def evaluate_data(
     IQR multiplier and Z-score threshold for outliers detection.
 
     Args:
-        data (Sequence[float]): Data as Polars series.
-        config (Dict[str, Union[int, float]]): Configuration with parameters for outlier detection:
-            - 'multiplier' (float): IQR multiplier (default 1.5).
+        data (DataFrame): Input data.
+        config (Dict[str, Union[str, float]]): Configuration with parameters for outlier detection:
+            - 'criterion' (str): Outlier detection criterion (IQR or Z-score),
+            - 'multiplier' (float): IQR multiplier (default 1.5),
             - 'threshold' (float): Z-score threshold (default 3.0).
 
     Returns:
-        Tuple[Dict[str, float], Tuple[float]]:
-            - Dictionary with statistics:
-                - Mean and standard deviation,
-                - Range of values,
-                - Q1 and Q3,
-                - Outliers percentage according to IQR and Z-score criteria.
-            - Tuple with boundaries for outliers to be highlighted on plots.
-
+        Tuple[List[Dict[str, Any]], List[Tuple[float, float]]]:
+            - List of dictionaries with description of each column in data:
+                - name of the column,
+                - mean and standard deviation,
+                - range of values,
+                - Q1, Q3, and IQR,
+                - outliers percentage according to IQR and Z-score criteria.
+            - List of boundaries for outliers to be highlighted on plots.
     """
     data_evals, outliers_bounds = [], []
 
@@ -64,7 +65,7 @@ def evaluate_data_outliers(
         mean: float, std: float,
         q1: float, q3: float,
         config: Dict[str, Union[int, float]]
-) -> Tuple[int, Tuple[float]]:
+) -> Tuple[int, Tuple[float, float]]:
     """
     Evaluates outliers in data.
 
@@ -78,13 +79,15 @@ def evaluate_data_outliers(
         std (float): Standard deviation.
         q1 (float): First quartile.
         q3 (float): Third quartile.
-        config (Dict[str, Union[int, float]]): Parameters for outliers detection:
-            - 'multiplier' (float): IQR multiplier (default 1.5).
+        config (Dict[str, Union[str, float]]): Parameters for outliers detection:
+            - 'criterion' (str): Outlier detection criterion (IQR or Z-score),
+            - 'multiplier' (float): IQR multiplier (default 1.5),
             - 'threshold' (float): Z-score threshold (default 3.0).
 
     Returns:
-        Tuple[int, Tuple[float]]: Number of outliers based on IQR and Z-score,
-            boundaries to highlight outliers on plots.
+        Tuple[int, Tuple[float, float]]:
+            - number of outliers based on IQR and Z-score,
+            - boundaries to highlight outliers on a plot.
     """
     # Count the number of outliers based on Z-score
     if std == 0:
