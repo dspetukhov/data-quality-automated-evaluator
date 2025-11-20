@@ -1,8 +1,21 @@
 # Data quality automated evaluation [`DQ-AE`]
 
-**Description:** tool for data quality (`DQ`) automated evaluation using Polars library. Purposefully designed for sequential data to ensure and assurace data consistency over time for machine learning projects.
+**Description:** tool for data quality (`DQ`) automated evaluation using Polars library. Purposefully designed for sequential data to check data consistency over time for machine learning projects.
+
+**Motivation:**
+
+- check data quality and identify data sources disruptions followed by performace degradation of a production system,
+- be aware of and ensure governance over data changes over time.
+
+## Documentation
+
+## Project structure
+
+- like a tree
 
 ## Datasets
+
+These are the datasets tested:
 
 ### [Kaggle](https://www.kaggle.com/datasets?search=fraud&sort=votes&tags=13302-Classification&minUsabilityRating=9.00+or+higher)
 
