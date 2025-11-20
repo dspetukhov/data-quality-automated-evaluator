@@ -125,10 +125,14 @@ def get_report_variables(config: Dict[str, Any]):
     # Create output directory
     Path(output_dir).mkdir(exist_ok=True)
 
-    # Style for markdown tables
-    style = config.get("markdown", {}).get("css_style")
-    md_content = [
-        f"<link rel='stylesheet' href='{style}'>\n" if style else ""]
+    # Initialize markdown content list
+    md_content = []
+
+    # CSS style for markdown tables
+    css_style = config.get("markdown", {}).get("css_style")
+    if os.path.isfile(css_style):
+        md_content = [
+            f"<link rel='stylesheet' href='{os.path.abspath(css_style)}'>\n"]
 
     # Number of decimal places to format numbers in markdown tables
     precision = config.get("markdown", {}).get("float_precision")
