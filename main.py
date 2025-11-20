@@ -6,7 +6,7 @@ from report import make_report
 
 
 @exception_handler()
-def main():
+def main() -> None:
     """
     Main function to execute the data quality evaluation pipeline.
     Requires `config.json` correct preset.
