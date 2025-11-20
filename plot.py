@@ -34,7 +34,7 @@ def plot_data(
         None
     """
     # Determine the number of subplots
-    # which can't be less than two
+    # with at least 2 subplots due to possible absence of "Target average"
     n_subplots = max(2, data.shape[1] - 1)
     # Create a figure with subplots
     fig, n_cols, n_rows = create_figure(
