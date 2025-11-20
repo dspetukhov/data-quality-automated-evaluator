@@ -171,15 +171,16 @@ def collect_md_content(
     toc = []
     for col in data:
         # Get section title (`alias`)
-        alias = "Overview" if col == "__overview" else col
+        alias = "Overview" if col == "__overview" else f"`{col}`"
 
         # Add new section to the table-of-contents with anchor
-        toc.append(f"- [{alias}](#{col})")
+        toc.append(
+            f"- [{alias}](#{'overview' if col == '__overview' else col})")
 
         # Add new entry to the content: section with anchor, plot, and table
         content.append((
-            "## <a name='{col}'></a> `{alias}`\n"
-            "![{col}]({col}.png)\n"
+            "## {alias}\n\n"
+            "![{col}]({col}.png)\n\n"
             "{table}"
         ).format(
             col=col, alias=alias,
@@ -188,22 +189,22 @@ def collect_md_content(
         # Add extra section for numeric columns
         if data[col].get("dtype"):
             content.append((
-                "### <a name='{col}'></a> `{alias}`\n"
-                "![{col}]({col}__numeric.png)\n"
+                "### `{alias}`\n\n"
+                "![{col}]({col}__numeric.png)\n\n"
                 "{table}"
             ).format(
                 col=col, alias=data[col]["dtype"],
                 table=make_md_table(data[col]["evals_numeric"], precision))
             )
-        # Add backlink to the Table-of-contents
-        content.append("[Back to the TOC](#toc)\n")
+        # Add backlink to the Table-of-contents at the end of each section
+        content.append("[Back to table of contents](#table-of-contents)\n")
 
     toc = "\n".join(toc)
     content = "\n".join(content)
 
     md_output = [
         f"# Preliminary analysis for **`{source}`**\n\n",
-        f"## Table of contents<a name='toc'></a>\n{toc}\n\n",
+        f"## Table of contents\n\n{toc}\n\n",
         content
     ]
     return md_output
@@ -226,6 +227,11 @@ def make_md_table(data, precision) -> str:
     Returns:
         str: Markdown table.
     """
+    # Ensure at least 2 columns due to possible absence of "Target average"
+    # and match the minimun number of subplots
+    while len(data) < 2:
+        data.append({})
+
     # Compose formatted table content
     rows = [
         [" " if key == "title" else f"**{key}**"] +
