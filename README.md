@@ -1,6 +1,6 @@
 # Data quality automated evaluation [`DQ-AE`]
 
-A configurable Python tool for evaluating the quality of sequential data using Polars library.
+A configurable Python tool for evaluating quality of sequential data using **[Polars](https://docs.pola.rs/)** library.
 
 **Why:**
 
@@ -19,7 +19,12 @@ A configurable Python tool for evaluating the quality of sequential data using P
 
 ## Table of contents
 
-- []()
+- [Quick start](#quick-start)
+- [Features](#features)
+- [Project overview](#project-overview)
+- [Datasets](#datasets)
+  - [Kaggle](#kaggle)
+  - [Hugging Face](#hugging-face)
 
 ## Quick Start
 
@@ -42,6 +47,8 @@ A configurable Python tool for evaluating the quality of sequential data using P
     python main.py
     ```
 
+[Back to table of contents](#table-of-contents)
+
 ## Features
 
 - **Comprehensive data quality evaluation**: A robust set of statistics as quality metrics to evaluate data over time.
@@ -50,6 +57,8 @@ A configurable Python tool for evaluating the quality of sequential data using P
 - **Pretty visualizations**: Creates customized plots with outliers highlighted using Plotly.
 - **Professional markdown reports**: Produces professional markdown report with stylish tables and plots.
 - **Configurable via JSON**: Primary preprocessing and reporting options are specified through a single, human-readable configuration file.
+
+[Back to table of contents](#table-of-contents)
 
 ## Project overview
 
@@ -62,24 +71,27 @@ A configurable Python tool for evaluating the quality of sequential data using P
 | `report.py`                    | Produces structured markdown report with tables and plots embedded                |
 | `config.json`                  | Configuration                                                                     |
 | `style.css`                    | Report and table styling                                                          |
+| `utility/__init__.py`          | Default Plotly template, utility imports                                          |
 | `utility/handle_data.py`       | Reads data from file, cloud, or database into a Polars LazyFrame                  |
 | `utility/handle_exceptions.py` | Decorator to handle exceptions                                                    |
 | `utility/setup_logging.py`     | Logging configuration                                                             |
 
 The project uses a single JSON configuration file (`config.json`) with the following main sections:
 
-| Section         | Description                        | Key fields                                                        |
-|-----------------|------------------------------------|-------------------------------------------------------------------|
-| `source`        | Data input configuration           | `file_path`, `file_format`, `storage_options`, `schema_overrides` |
-| `date_column`   | Column to aggregate data by dates  |                                                                   |
-| `target_column` | Column to calculate target average |                                                                   |
-| `outliers`      | Outlier detection settings         | `criterion`, `multiplier`, `threshold`                            |
-| `markdown`      | Markdown report settings           | `name`, `css_style`, `float_precision`                            |
-| `plotly`        | Plotly styling settings            | `plot`, `outliers`, `layout`, `grid`, `subplots`, `misc`          |
+| Section         | Description                                   | Key fields                                                        |
+|-----------------|-----------------------------------------------|-------------------------------------------------------------------|
+| `source`        | Data input configuration                      | `file_path`, `file_format`, `storage_options`, `schema_overrides` |
+| `date_column`   | Column to aggregate data by dates             |                                                                   |
+| `target_column` | Column to calculate target average (Optional) |                                                                   |
+| `outliers`      | Outlier detection settings (Optional)         | `criterion`, `multiplier`, `threshold`                            |
+| `markdown`      | Markdown report settings (Optional)           | `name`, `css_style`, `float_precision`                            |
+| `plotly`        | Plotly styling settings (Optional)            | `plot`, `outliers`, `layout`, `grid`, `subplots`, `misc`          |
+
+[Back to table of contents](#table-of-contents)
 
 ## Datasets
 
-These are the datasets tested:
+Here listed the datasets tested:
 
 ### [Kaggle](https://www.kaggle.com/datasets?search=fraud&sort=votes&tags=13302-Classification&minUsabilityRating=9.00+or+higher)
 
@@ -161,7 +173,9 @@ It is also possible to replace `"transaction_date": "DATE(transaction_date, '%Y-
     "target_column": "is_fraud",
 ```
 
-### [HiggingFace](https://huggingface.co/datasets?size_categories=or:%28size_categories:10K%3Cn%3C100K,size_categories:100K%3Cn%3C1M,size_categories:1M%3Cn%3C10M,size_categories:10M%3Cn%3C100M,size_categories:100M%3Cn%3C1B,size_categories:1B%3Cn%3C10B,size_categories:10B%3Cn%3C100B,size_categories:100B%3Cn%3C1T,size_categories:n%3E1T%29&sort=trending&search=fraud)
+[Back to table of contents](#table-of-contents)
+
+### [Hugging Face](https://huggingface.co/datasets?size_categories=or:%28size_categories:10K%3Cn%3C100K,size_categories:100K%3Cn%3C1M,size_categories:1M%3Cn%3C10M,size_categories:10M%3Cn%3C100M,size_categories:100M%3Cn%3C1B,size_categories:1B%3Cn%3C10B,size_categories:10B%3Cn%3C100B,size_categories:100B%3Cn%3C1T,size_categories:n%3E1T%29&sort=trending&search=fraud)
 
 - [Tichies/card-fraud](https://huggingface.co/datasets/Tichies/card-fraud)
 
@@ -228,3 +242,5 @@ It is also possible to replace `"transaction_date": "DATE(transaction_date, '%Y-
 ```
 
 **Note:** downloaded by `ds = load_dataset("Nooha/cc_fraud_detection_dataset")`, then saved `ds["train"].to_parquet("cc_fraud_detection_dataset.parquet")`
+
+[Back to table of contents](#table-of-contents)
