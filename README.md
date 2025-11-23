@@ -1,17 +1,81 @@
 # Data quality automated evaluation [`DQ-AE`]
 
-**Description:** tool for data quality (`DQ`) automated evaluation using Polars library. Purposefully designed for sequential data to check data consistency over time for machine learning projects.
+A configurable Python tool for evaluating the quality of sequential data using Polars library.
 
-**Motivation:**
+**Why:**
 
-- check data quality and identify data sources disruptions followed by performace degradation of a production system,
+- check data consistency and identify data sources disruptions followed by performace degradation of a production system,
 - be aware of and ensure governance over data changes over time.
 
-## Documentation
+**How it works:**
 
-## Project structure
+1. Read source of data as Polars LazyFrame.
+2. Identify date column as a base for data aggregation by dates.
+3. Collect aggregation expressions and perform aggregation.
+4. Evaluate statistics on aggregated data and produce plots.
+5. Collect evaluation results to produce structured markdown report.
 
-- like a tree
+**NB**: A method of close look is expected to be applied manually to verify data consistency, validity, and overall quality.
+
+## Table of contents
+
+- []()
+
+## Quick Start
+
+1. **Specify source of data:**
+
+    Edit `config.json`:
+
+    ```json
+    {
+        "source": {
+            "file_path": "path/to/your/dataset.csv"
+        },
+        "date_column": "timestamp"
+    }
+    ```
+
+2. **Run Analysis**
+
+    ```bash
+    python main.py
+    ```
+
+## Features
+
+- **Comprehensive data quality evaluation**: A robust set of statistics as quality metrics to evaluate data over time.
+- **Flexible preprocessing**: Data filtering and transformations using SQL syntax handled by Polars.
+- **Outlier analysis**: Evaluation and visualization of anomalous data points based on IQR and Z-score criteria.
+- **Pretty visualizations**: Creates customized plots with outliers highlighted using Plotly.
+- **Professional markdown reports**: Produces professional markdown report with stylish tables and plots.
+- **Configurable via JSON**: Primary preprocessing and reporting options are specified through a single, human-readable configuration file.
+
+## Project overview
+
+| Module                         | Description                                                                       |
+|--------------------------------|-----------------------------------------------------------------------------------|
+| `main.py`                      | Entry point: loads configuration, reads data, preprocesses, generates report      |
+| `preprocess.py`                | Preprocesses data by applying filter and transformations, aggregates data by date |
+| `evaluate.py`                  | Computes statistics and detects outliers based on IQR and Z-score criteria        |
+| `plot.py`                      | Produces plots with outliers highlighted                                          |
+| `report.py`                    | Produces structured markdown report with tables and plots embedded                |
+| `config.json`                  | Configuration                                                                     |
+| `style.css`                    | Report and table styling                                                          |
+| `utility/handle_data.py`       | Reads data from file, cloud, or database into a Polars LazyFrame                  |
+| `utility/handle_exceptions.py` | Decorator to handle exceptions                                                    |
+| `utility/setup_logging.py`     | Logging configuration                                                             |
+
+The project uses a single JSON configuration file (`config.json`) with the following main sections:
+
+| Section         | Description                        | Key fields                                                        |
+|-----------------|------------------------------------|-------------------------------------------------------------------|
+| `source`        | Data input configuration           | `file_path`, `file_format`, `storage_options`, `schema_overrides` |
+| `date_column`   | Column to aggregate data by dates  |                                                                   |
+| `target_column` | Column to calculate target average |                                                                   |
+| `outliers`      | Outlier detection settings         | `criterion`, `multiplier`, `threshold`                            |
+| `markdown`      | Markdown report settings           | `name`, `css_style`, `float_precision`                            |
+| `plotly`        | Plotly styling settings            | `plot`, `outliers`, `layout`, `grid`, `subplots`, `misc`          |
 
 ## Datasets
 
