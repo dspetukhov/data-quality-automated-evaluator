@@ -7,7 +7,7 @@ from utility import logging, exception_handler
 @exception_handler(exit_on_error=True)
 def make_preprocessing(
         lf: Union[pl.LazyFrame, pl.DataFrame], config: Dict[str, Any]
-) -> Tuple[pl.DataFrame, Dict[str, Dict[str, str]]]:
+) -> Tuple[pl.DataFrame, Dict[str, str]]:
     """
     Preprocess data for evaluation through aggregation by dates.
 
@@ -23,7 +23,7 @@ def make_preprocessing(
             extra variables, filter, and transformations.
 
     Returns:
-        Tuple[pl.DataFrame, Dict[str, Dict[str, str]]:
+        Tuple[pl.DataFrame, Dict[str, str]]:
             - Aggregated data with descriptive statistics for each column.
             - Dictionary of columns indicating types of numeric columns.
 
@@ -92,21 +92,21 @@ def apply_filter(
 
 @exception_handler()
 def apply_transformations(
-        lf: pl.LazyFrame, transformations: List[Dict[str, str]]
+        lf: pl.LazyFrame, transformations: Dict[str, str]
 ) -> pl.LazyFrame:
     """
     Apply transformations to Polars LazyFrame.
 
-    This function applies SQL transformations to alter LazyFrame columns
-    as specified in the configuration.
+    This function applies transformations to alter LazyFrame columns
+    as specified by SQL in the configuration.
     It can create a new column or replace an existing one
     if its name will match the key in a single transformation.
 
     Args:
         lf (pl.LazyFrame): Input data.
-        transformations (List[Dict[str]]): List of dicts:
-            each dict contains column name as a key
-            and SQL expression to transform LazyFrame as a value.
+        transformations (Dict[str, str]): Dictionary where:
+            each key is column name to be created or replaced,
+            each value is SQL expression to transform LazyFrame.
 
     Returns:
         pl.LazyFrame: LazyFrame with transformed columns.
@@ -156,7 +156,7 @@ def validate_date_column(
     lf: pl.LazyFrame,
     schema: pl.LazyFrame.schema,
     date_column: str
-) -> pl.LazyFrame:
+) -> Tuple[pl.LazyFrame, pl.LazyFrame.schema]:
     """
     Validate date_column type and make conversion if necessary.
 
@@ -167,7 +167,7 @@ def validate_date_column(
     Args:
         lf (pl.LazyFrame): Input data.
         schema (pl.LazyFrame.schema): Data schema provided by Polars.
-        date_column (str): Data schema provided by Polars.
+        date_column (str): Name of date column.
 
     Returns:
         Tuple[pl.LazyFrame, pl.LazyFrame.schema]:
@@ -201,7 +201,7 @@ def collect_aggregations(
     schema: pl.LazyFrame.schema,
     target_column: str,
     columns_to_exclude: List[str]
-) -> Tuple[List[str], Dict[str, str]]:
+) -> Tuple[List[pl.Expr], Dict[str, str]]:
     """
     Collect aggregation expressions.
 
@@ -213,12 +213,13 @@ def collect_aggregations(
     Args:
         schema (pl.LazyFrame.schema): Data schema provided by Polars.
         target_column (str): Target column to compute target average.
+        columns_to_exclude (List[str]): List of columns to be excluded from aggregation.
 
     Returns:
-        Tuple[List[str], Dict[str, str]]:
-            - aggs (List[str]): Aggregation expressions.
-            - metadata (Dict[str]): Dict of aggregated columns
-                indicating types for numeric columns
+        Tuple[List[pl.Expr], Dict[str, str]]:
+            - aggs (List[pl.Expr]): Aggregation expressions,
+            - metadata (Dict[str, str]): Dict of aggregated columns
+                indicating types for numeric columns.
     """
     # Start with common aggregation expression for the number of values
     aggs = [pl.count().alias(" __Number of values")]
