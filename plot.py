@@ -14,12 +14,12 @@ def plot_data(
     file_path: str,
 ) -> Dict[str, float]:
     """
-    Plots multiple data series as subplots using Plotly.
+    Plots each column from input data using Plotly.
 
-    Each y-series in *data is plotted in a separate subplot. The function
-    supports custom plot styles, subplot arrangement, and anomaly highlighting
-    (using IQR or Z-score) as specified in the configuration. The plot is
-    saved to disk, and descriptive statistics for each series are returned.
+    Each column from input data is plotted in a separate subplot.
+    The function supports custom plot styles, subplot arrangement,
+    and anomaly highlighting (using IQR or Z-score) as specified
+    in the configuration.
 
     Args:
         data (DataFrame): Data to plot.
@@ -31,7 +31,7 @@ def plot_data(
         file_path (str): Path to the directory where the image will be saved.
 
     Returns:
-        None
+        None: Plot is saved to disk.
     """
     # Determine the number of subplots
     # with at least 2 subplots due to possible absence of "Target average"
