@@ -65,7 +65,7 @@ def evaluate_data_outliers(
         mean: float, std: float,
         q1: float, q3: float,
         config: Dict[str, Union[int, float]]
-) -> Tuple[int, Tuple[float, float]]:
+) -> Tuple[int, int, Tuple[Union[float, None], Union[float, None]]]:
     """
     Evaluates outliers in data.
 
@@ -85,7 +85,7 @@ def evaluate_data_outliers(
             - 'threshold' (float): Z-score threshold (default 3.0).
 
     Returns:
-        Tuple[int, Tuple[float, float]]:
+        Tuple[int, int, Tuple[Union[float, None], Union[float, None]]]:
             - number of outliers based on IQR and Z-score,
             - boundaries to highlight outliers on a plot.
     """

@@ -1,6 +1,6 @@
 import polars as pl
 import polars.selectors as cs
-from typing import Dict, Any, List, Tuple, Union
+from typing import Dict, Any, List, Tuple, Union, Optional
 from utility import logging, exception_handler
 
 
@@ -92,7 +92,7 @@ def apply_filter(
 
 @exception_handler()
 def apply_transformations(
-        lf: pl.LazyFrame, transformations: Dict[str, str]
+        lf: pl.LazyFrame, transformations: Optional[Dict[str, str]]
 ) -> pl.LazyFrame:
     """
     Apply transformations to Polars LazyFrame.
@@ -104,7 +104,7 @@ def apply_transformations(
 
     Args:
         lf (pl.LazyFrame): Input data.
-        transformations (Dict[str, str]): Dictionary where:
+        transformations (Optional[Dict[str, str]]): Dictionary where:
             each key is column name to be created or replaced,
             each value is SQL expression to transform LazyFrame.
 
