@@ -15,7 +15,7 @@ A configurable Python tool for evaluating quality of sequential data using **[Po
 4. Evaluate statistics on aggregated data and produce plots.
 5. Collect evaluation results to produce structured markdown report.
 
-**NB**: A method of close look is expected to be applied manually to verify data consistency, validity, and overall quality.
+**NB**: The final verdict about data consistency, validity, and overall quality is the responsibility of an individual reviewing the markdown report.
 
 ## Table of contents
 
@@ -51,12 +51,12 @@ A configurable Python tool for evaluating quality of sequential data using **[Po
 
 ## Features
 
-- **Comprehensive data quality evaluation**: A robust set of statistics as quality metrics to evaluate data over time.
+- **Comprehensive data quality evaluation**: A robust set of statistics as quality metrics to evaluate data changes over time.
 - **Flexible preprocessing**: Data filtering and transformations using SQL syntax handled by Polars.
 - **Outlier analysis**: Evaluation and visualization of anomalous data points based on IQR and Z-score criteria.
-- **Pretty visualizations**: Creates customized plots with outliers highlighted using Plotly.
-- **Professional markdown reports**: Produces professional markdown report with stylish tables and plots.
-- **Configurable via JSON**: Primary preprocessing and reporting options are specified through a single, human-readable configuration file.
+- **Pretty visualizations**: Customized plots with outliers highlighted using Plotly.
+- **Professional markdown reports**: Produces professional markdown report with stylish tables and plots embedded.
+- **Configurable via JSON**: Main preprocessing and reporting options are specified through a single, human-readable configuration file.
 
 [Back to table of contents](#table-of-contents)
 
