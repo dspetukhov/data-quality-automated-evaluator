@@ -12,8 +12,10 @@ A configurable Python tool for evaluating quality of sequential data using **[Po
 1. Read source of data as Polars LazyFrame.
 2. Identify date column as a base for data aggregation by dates.
 3. Collect aggregation expressions and perform aggregation.
-4. Evaluate statistics on aggregated data and produce plots.
+4. Evaluate statistics on aggregated data and produce charts.
 5. Collect evaluation results to produce structured markdown report.
+
+<!-- More details in Medium article: -->
 
 **NB**: The final verdict about data consistency, validity, and overall quality is the responsibility of an individual reviewing the markdown report.
 
@@ -41,11 +43,13 @@ A configurable Python tool for evaluating quality of sequential data using **[Po
     }
     ```
 
-2. **Run Analysis**
+2. **Run evaluation**
 
     ```bash
     python main.py
     ```
+
+<!-- More details in Medium article + YouTube link -->
 
 [Back to table of contents](#table-of-contents)
 
@@ -54,44 +58,47 @@ A configurable Python tool for evaluating quality of sequential data using **[Po
 - **Comprehensive data quality evaluation**: A robust set of statistics as quality metrics to evaluate data changes over time.
 - **Flexible preprocessing**: Data filtering and transformations using SQL syntax handled by Polars.
 - **Outlier analysis**: Evaluation and visualization of anomalous data points based on IQR and Z-score criteria.
-- **Pretty visualizations**: Customized plots with outliers highlighted using Plotly.
-- **Professional markdown reports**: Produces professional markdown report with stylish tables and plots embedded.
+- **Pretty visualizations**: Customized charts with outliers highlighted using Plotly.
+- **Professional markdown reports**: Produces professional markdown report with stylish tables and charts embedded.
 - **Configurable via JSON**: Main preprocessing and reporting options are specified through a single, human-readable configuration file.
 
 [Back to table of contents](#table-of-contents)
 
 ## Project overview
 
-| Module                         | Description                                                                       |
-|--------------------------------|-----------------------------------------------------------------------------------|
-| `main.py`                      | Entry point: loads configuration, reads data, preprocesses, generates report      |
-| `preprocess.py`                | Preprocesses data by applying filter and transformations, aggregates data by date |
-| `evaluate.py`                  | Computes statistics and detects outliers based on IQR and Z-score criteria        |
-| `plot.py`                      | Produces plots with outliers highlighted                                          |
-| `report.py`                    | Produces structured markdown report with tables and plots embedded                |
-| `config.json`                  | Configuration                                                                     |
-| `style.css`                    | Report and table styling                                                          |
-| `utility/__init__.py`          | Default Plotly template, utility imports                                          |
-| `utility/handle_data.py`       | Reads data from file, cloud, or database into a Polars LazyFrame                  |
-| `utility/handle_exceptions.py` | Decorator to handle exceptions                                                    |
-| `utility/setup_logging.py`     | Logging configuration                                                             |
+| Module                         | Description                                                                                           |
+|--------------------------------|-------------------------------------------------------------------------------------------------------|
+| `main.py`                      | Entry point: loads configuration, reads data, preprocesses, generates report                          |
+| `preprocess.py`                | Preprocesses data by applying filter and transformations, aggregates data by date                     |
+| `evaluate.py`                  | Computes statistics for each aggregated column and detects outliers based on IQR and Z-score criteria |
+| `plot.py`                      | Produces charts with outliers highlighted                                                             |
+| `report.py`                    | Produces structured markdown report with tables and charts embedded                                   |
+| `style.css`                    | Report and table styling                                                                              |
+| `config.json`                  | Configuration                                                                                         |
+| `utility/__init__.py`          | Default Plotly template, utility imports                                                              |
+| `utility/setup_logging.py`     | Logging configuration                                                                                 |
+| `utility/handle_data.py`       | Reads data from file, cloud, or database into Polars LazyFrame                                        |
+| `utility/handle_exceptions.py` | Decorator to handle exceptions                                                                        |
 
 The project uses a single JSON configuration file (`config.json`) with the following main sections:
 
-| Section         | Description                                   | Key fields                                                        |
-|-----------------|-----------------------------------------------|-------------------------------------------------------------------|
-| `source`        | Data input configuration                      | `file_path`, `file_format`, `storage_options`, `schema_overrides` |
-| `date_column`   | Column to aggregate data by dates             |                                                                   |
-| `target_column` | Column to calculate target average (Optional) |                                                                   |
-| `outliers`      | Outlier detection settings (Optional)         | `criterion`, `multiplier`, `threshold`                            |
-| `markdown`      | Markdown report settings (Optional)           | `name`, `css_style`, `float_precision`                            |
-| `plotly`        | Plotly styling settings (Optional)            | `plot`, `outliers`, `layout`, `grid`, `subplots`, `misc`          |
+| Section              | Description                                                     | Key fields                                                        |
+|----------------------|-----------------------------------------------------------------|-------------------------------------------------------------------|
+| `source`             | Configuration to read data                                      | `file_path`, `file_format`, `storage_options`, `schema_overrides` |
+| `filter`             | SQL expression to filter data by rows and by columns (Optional) |                                                                   |
+| `transformations`    | Dict of SQL expressions to transform data by columns (Optional) |                                                                   |
+| `date_column`        | Column to aggregate data by dates (Optional)                    |                                                                   |
+| `target_column`      | Column to calculate target average (Optional)                   |                                                                   |
+| `columns_to_exclude` | List of columns to be excluded from evaluation (Optional)       |                                                                   |
+| `outliers`           | Outlier detection settings (Optional)                           | `criterion`, `multiplier`, `threshold`                            |
+| `markdown`           | Markdown report settings (Optional)                             | `name`, `css_style`, `float_precision`                            |
+| `plotly`             | Plotly styling settings (Optional)                              | `plot`, `outliers`, `layout`, `grid`, `subplots`, `misc`          |
 
 [Back to table of contents](#table-of-contents)
 
 ## Datasets
 
-Here listed the datasets tested:
+Here is the list of the publicly available datasets tested:
 
 ### [Kaggle](https://www.kaggle.com/datasets?search=fraud&sort=votes&tags=13302-Classification&minUsabilityRating=9.00+or+higher)
 
