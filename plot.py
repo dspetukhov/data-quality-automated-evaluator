@@ -14,7 +14,7 @@ def plot_data(
     file_path: str,
 ) -> Dict[str, float]:
     """
-    Plots each column from input data using Plotly.
+    Make charts from input data using Plotly.
 
     Each column from input data is plotted in a separate subplot.
     The function supports custom plot styles, subplot arrangement,
@@ -31,7 +31,7 @@ def plot_data(
         file_path (str): Path to the directory where the image will be saved.
 
     Returns:
-        None: Plot is saved to disk.
+        None: Figure is saved to disk.
     """
     # Determine the number of subplots
     # with at least 2 subplots due to possible absence of "Target average"
