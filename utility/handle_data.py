@@ -21,7 +21,7 @@ def read_source(source: Dict[str, str]) -> pl.LazyFrame:
             Can be a dictionary with `query` and `uri` keys
             to read from a PostgreSQL database,
             or a dictionary with `file_path` key
-            to read from hard drive / Google Drive / S3
+            to read from file, Google Drive, S3
             (`storage_options` and `file_format` are optional).
 
     Returns:
