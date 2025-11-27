@@ -1,4 +1,4 @@
-# Data quality automated evaluation [`DQ-AE`]
+# Data Quality Automated Evaluation - `DQ-AE`
 
 A configurable Python tool for evaluating quality of sequential data using **[Polars](https://docs.pola.rs/)** library.
 
@@ -7,23 +7,24 @@ A configurable Python tool for evaluating quality of sequential data using **[Po
 - check data consistency and identify data sources disruptions followed by performace degradation of a production system,
 - be aware of and ensure governance over data changes over time.
 
-**How it works:**
+**How:**
 
-1. Read source of data as Polars LazyFrame.
-2. Identify date column as a base for data aggregation by dates.
-3. Collect aggregation expressions and perform aggregation.
-4. Evaluate statistics on aggregated data and produce charts.
-5. Collect evaluation results to produce structured markdown report.
+- evaluates descriptive statistics (e.g. `Number of unique values`) for each column in data by dates,
+- collects evaluation results as a structured markdown report with charts and tables that represent changes of these statistics over dates.
 
-<!-- More details in Medium article: -->
+<!-- Detailed text description of `how` with justification available on my **[Medium](https://medium.com/@dspetukhov)** -->
 
-**NB**: The final verdict about data consistency, validity, and overall quality is the responsibility of an individual reviewing the markdown report.
+<!-- Particular video example of report interpretation available on my **[YouTube](https://www.youtube.com/@dspetukhov)** -->
+
+**NB**: final verdict about data consistency, validity, and overall quality is the responsibility of an individual reviewing the markdown report.
 
 ## Table of contents
 
 - [Quick start](#quick-start)
-- [Features](#features)
 - [Project overview](#project-overview)
+  - [Features](#features)
+  - [Structure](#structure)
+  - [Configuration](#configuration)
 - [Datasets](#datasets)
   - [Kaggle](#kaggle)
   - [Hugging Face](#hugging-face)
@@ -43,28 +44,27 @@ A configurable Python tool for evaluating quality of sequential data using **[Po
     }
     ```
 
-2. **Run evaluation**
+2. **Run evaluation:**
 
     ```bash
     python main.py
     ```
 
-<!-- More details in Medium article + YouTube link -->
-
-[Back to table of contents](#table-of-contents)
-
-## Features
-
-- **Comprehensive data quality evaluation**: A robust set of statistics as quality metrics to evaluate data changes over time.
-- **Flexible preprocessing**: Data filtering and transformations using SQL syntax handled by Polars.
-- **Outlier analysis**: Evaluation and visualization of anomalous data points based on IQR and Z-score criteria.
-- **Pretty visualizations**: Customized charts with outliers highlighted using Plotly.
-- **Professional markdown reports**: Produces professional markdown report with stylish tables and charts embedded.
-- **Configurable via JSON**: Main preprocessing and reporting options are specified through a single, human-readable configuration file.
-
 [Back to table of contents](#table-of-contents)
 
 ## Project overview
+
+### Features
+
+- **Comprehensive data quality evaluation**: robust set of descriptive statistics as quality metrics for evaluating data changes over time.
+- **Feature-rich data read**: csv / xlsx, parquet, and iceberg file formats, reading from cloud and PostgreSQL powered by Polars.
+- **Flexible preprocessing**: data filtering and transformation using SQL expressions supported by Polars.
+- **Outlier analysis**: evaluation and visualization of anomalous data points based on IQR and Z-score criteria.
+- **Customized charts**: with outliers highlighted using Plotly.
+- **Professional markdown reports**: with stylish tables and charts embedded.
+- **Configuration in one place**: main preprocessing and reporting options are specified in a single, human-readable JSON file.
+
+### Structure
 
 | Module                         | Description                                                                                           |
 |--------------------------------|-------------------------------------------------------------------------------------------------------|
@@ -80,7 +80,9 @@ A configurable Python tool for evaluating quality of sequential data using **[Po
 | `utility/handle_data.py`       | Reads data from file, cloud, or database into Polars LazyFrame                                        |
 | `utility/handle_exceptions.py` | Decorator to handle exceptions                                                                        |
 
-The project uses a single JSON configuration file (`config.json`) with the following main sections:
+### Configuration
+
+Data evaluation configuration specified in a single JSON file (`config.json`) consisting of the following main sections:
 
 | Section              | Description                                                     | Key fields                                                        |
 |----------------------|-----------------------------------------------------------------|-------------------------------------------------------------------|
@@ -98,7 +100,13 @@ The project uses a single JSON configuration file (`config.json`) with the follo
 
 ## Datasets
 
-Here is the list of the publicly available datasets tested:
+Below you can find the list of the publicly available datasets tested in the following Python environment:
+
+```bash
+# Python 3.10.12
+polars==1.35.2
+plotly==6.3.0
+```
 
 ### [Kaggle](https://www.kaggle.com/datasets?search=fraud&sort=votes&tags=13302-Classification&minUsabilityRating=9.00+or+higher)
 
