@@ -12,7 +12,7 @@ A configurable Python tool for evaluating quality of sequential data using **[Po
 - evaluates descriptive statistics (e.g. `Number of unique values`) for each column in data by the specified time intervals,
 - collects evaluation results as a structured markdown report with charts and tables that represent changes of these statistics over time.
 
-<!-- Detailed text description of `how` with justification available on my **[Medium](https://medium.com/@dspetukhov)** -->
+<!-- Detailed text description with justifications available on my **[Medium](https://medium.com/@dspetukhov)** -->
 
 <!-- Particular video example of report interpretation available on my **[YouTube](https://www.youtube.com/@dspetukhov)** -->
 
@@ -56,7 +56,8 @@ A configurable Python tool for evaluating quality of sequential data using **[Po
 
 ### Features
 
-- **Comprehensive data quality evaluation**: robust set of descriptive statistics as quality metrics for evaluating data changes over time.
+- **Comprehensive data quality evaluation**: robust set of descriptive statistics as quality metrics for evaluating data changes over specified time intervals.
+- **Custom time intervals**: to comprehend data changes over time.
 - **Feature-rich data read**: csv / xlsx, parquet, and iceberg file formats, reading from cloud and PostgreSQL powered by Polars.
 - **Flexible preprocessing**: data filtering and transformation using SQL expressions supported by Polars.
 - **Outlier analysis**: evaluation and visualization of anomalous data points based on IQR and Z-score criteria.
