@@ -39,7 +39,7 @@ def make_report(
     # representing general aggregations of source data:
     # number of values and target average
     data = df.select(
-        ["__date"] + [
+        ["__time_interval"] + [
             item for item in df.columns if item.startswith(" __")]
     )
     col = "__overview"
@@ -58,7 +58,7 @@ def make_report(
     # number of unique values and ratio of null values
     for col in metadata:
         data = df.select(
-            ["__date"] + [
+            ["__time_interval"] + [
                 item for item in df.columns
                 if item.startswith(f"__ {col} __")]
         )
@@ -75,7 +75,7 @@ def make_report(
         # minimum, maximum, mean, median, and standard deviation
         if metadata.get(col):
             data = df.select(
-                ["__date"] + [
+                ["__time_interval"] + [
                     item for item in df.columns
                     if item.startswith(f"n__ {col} __")]
             )

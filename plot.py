@@ -45,12 +45,16 @@ def make_charts(
     for i, col in enumerate(data.columns[1:]):
         # Add data series as a trace to the subplot
         fig.add_trace(
-            Scatter(x=data["__date"], y=data[col], **config.get("plot", {})),
+            Scatter(
+                x=data["__time_interval"],
+                y=data[col],
+                **config.get("plot", {})
+            ),
             row=(i // n_cols) + 1, col=(i % n_cols) + 1
         )
         # Highlight outliers regions using Plotly shapes
         fig = highlight_outliers(
-            fig, i, data["__date"], data[col], bounds[i], n_cols,
+            fig, i, data["__time_interval"], data[col], bounds[i], n_cols,
             config.get("outliers", {}).get("style", {})
         )
 
