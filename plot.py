@@ -7,7 +7,7 @@ from utility import exception_handler
 
 
 @exception_handler()
-def plot_data(
+def make_charts(
     data: DataFrame,
     bounds: List[Tuple[float]],
     config: Dict[str, Any],

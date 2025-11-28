@@ -4,7 +4,7 @@ from polars import DataFrame
 from pathlib import Path
 from utility import exception_handler
 from evaluate import evaluate_data
-from plot import plot_data
+from plot import make_charts
 from tabulate import tabulate
 
 
@@ -15,11 +15,11 @@ def make_report(
         config: Dict[str, Any]
 ) -> None:
     """
-    Generate markdown report with plots and tables.
+    Generate markdown report with charts and tables.
 
-    This function handles the report generation by processing input data
-    for plotting, collecting and producing output as a single markdown file
-    taking into account parameters specified in the configuration file.
+    This function produces a markdown report with charts and tables
+    by processing input data frame and metadata
+    according to the parameters specified in the configuration file.
 
     Args:
         df (DataFrame): Aggregated data for report assembling.
@@ -35,7 +35,7 @@ def make_report(
     output, content, precision, outliers, plotly = get_report_variables(config)
 
     data_evals = {}
-    # Get evaluations and create overview plot for columns
+    # Get evaluations and create overview chart for columns
     # representing general aggregations of source data:
     # number of values and target average
     data = df.select(
@@ -46,14 +46,14 @@ def make_report(
     # Evaluate data
     evals, bounds = evaluate_data(data, outliers)
     data_evals[col] = {"evals": evals}
-    # Plot data
-    plot_data(
+    # Make chart
+    make_charts(
         data,
         bounds=bounds,
         config=plotly,
         file_path=os.path.join(output, col))
 
-    # Get evaluations and create plots for columns
+    # Get evaluations and create charts for columns
     # representing aggregations for a column in source data:
     # number of unique values and ratio of null values
     for col in metadata:
@@ -64,13 +64,13 @@ def make_report(
         )
         evals, bounds = evaluate_data(data, outliers)
         data_evals[col] = {"evals": evals}
-        plot_data(
+        make_charts(
             data,
             bounds=bounds,
             config=plotly,
             file_path=os.path.join(output, col))
 
-        # Get evaluations and create plots for columns
+        # Get evaluations and create charts for columns
         # representing extra aggregations for a numeric column in source data:
         # minimum, maximum, mean, median, and standard deviation
         if metadata.get(col):
@@ -82,7 +82,7 @@ def make_report(
             evals, bounds = evaluate_data(data, outliers)
             data_evals[col].update(
                 {"evals_numeric": evals, "dtype": metadata[col]})
-            plot_data(
+            make_charts(
                 data,
                 bounds=bounds,
                 config=plotly,
@@ -104,17 +104,17 @@ def get_report_variables(config: Dict[str, Any]):
     This function creates variables necessary for making markdown report
     based on the specified configuration. They include: output directory name,
     style for markdown tables, precision to format floats in markdown tables,
-    outliers detection parameters, Plotly parameters for plots.
+    outliers detection parameters, Plotly parameters for charts.
 
     Args:
         config (Dict[str, Any]): Configuration dictionary.
 
     Returns:
         Tuple(Any):
-            - Output directory to store report file and plots.
+            - Output directory to store report file and charts.
             - Precision to format floats in markdown tables.
             - Outliers detection parameters.
-            - Plotly configration for plots.
+            - Plotly configration for charts.
     """
     # Determine the name of the output directory using `output` parameter
     # in configuration or using the name of the source without extension
@@ -177,7 +177,7 @@ def collect_md_content(
         toc.append(
             f"- [{alias}](#{'overview' if col == '__overview' else col})")
 
-        # Add new entry to the content: section with anchor, plot, and table
+        # Add new entry to the content: section with anchor, chart, and table
         content.append((
             "## {alias}\n\n"
             "![{col}]({col}.png)\n\n"
