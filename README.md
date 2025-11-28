@@ -9,8 +9,8 @@ A configurable Python tool for evaluating quality of sequential data using **[Po
 
 **How:**
 
-- evaluates descriptive statistics (e.g. `Number of unique values`) for each column in data by dates,
-- collects evaluation results as a structured markdown report with charts and tables that represent changes of these statistics over dates.
+- evaluates descriptive statistics (e.g. `Number of unique values`) for each column in data by the specified time intervals,
+- collects evaluation results as a structured markdown report with charts and tables that represent changes of these statistics over time.
 
 <!-- Detailed text description of `how` with justification available on my **[Medium](https://medium.com/@dspetukhov)** -->
 
@@ -89,7 +89,8 @@ Data evaluation configuration specified in a single JSON file (`config.json`) co
 | `source`             | Configuration to read data                                      | `file_path`, `file_format`, `storage_options`, `schema_overrides` |
 | `filter`             | SQL expression to filter data by rows and by columns (Optional) |                                                                   |
 | `transformations`    | Dict of SQL expressions to transform data by columns (Optional) |                                                                   |
-| `date_column`        | Column to aggregate data by dates (Optional)                    |                                                                   |
+| `date_column`        | Column to aggregate data by time intervals (Optional)           |                                                                   |
+| `time_interval`      | Time inteval to aggregate data (Optional)                       |                                                                   |
 | `target_column`      | Column to calculate target average (Optional)                   |                                                                   |
 | `columns_to_exclude` | List of columns to be excluded from evaluation (Optional)       |                                                                   |
 | `outliers`           | Outlier detection settings (Optional)                           | `criterion`, `multiplier`, `threshold`                            |
