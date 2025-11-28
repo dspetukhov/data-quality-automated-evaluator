@@ -44,7 +44,7 @@ def make_preprocessing(
     schema = lf.collect_schema()
 
     # Prepare date_column for data aggregation
-    date_column = get_date_column(config, schema)
+    date_column = config.get("date_column", "date_column")
     lf, schema = validate_date_column(
         lf, schema,
         date_column, config.get("time_interval", "1d")
@@ -123,36 +123,6 @@ def apply_transformations(
     return lf
 
 
-@exception_handler()
-def get_date_column(
-    config: Dict[str, Any],
-    schema: Dict[str, pl.DataType]
-) -> Union[str, None]:
-    """
-    Determine date_column for data aggregation.
-
-    This function looks for date_column in configuration
-    taking `date_column` as a default name. If it is not found in schema,
-    it gets the first column of date or datetime type from data schema.
-    Returns None if nothing is found.
-
-    Args:
-        config (Dict[str, Any]): Configuration dictionary.
-        schema (Dict[str, pl.DataType]): Data schema provided by Polars.
-
-    Returns:
-        Union[str, None]: Name of the date column found,
-            or None if no such column exists.
-    """
-    date_column = config.get("date_column", "date_column")
-    if schema.get(date_column):
-        return date_column
-    else:
-        for col, dtype in schema.items():
-            if dtype in (pl.Date, pl.Datetime):
-                return col
-
-
 @exception_handler(exit_on_error=True)
 def validate_date_column(
     lf: pl.LazyFrame,
@@ -161,12 +131,13 @@ def validate_date_column(
     time_interval: str
 ) -> Tuple[pl.LazyFrame, Dict[str, pl.DataType]]:
     """
-    Validate date_column type and make conversion if necessary.
+    Check date_column presence in schema and validate its type.
 
     This function checks date_column type in schema, makes conversion
     to datetime type if necessary, and renames it as `__time_interval`
     to ensure consistency in data evaluation pipeline.
     Division by time intervals implemented with polars.Expr.dt.truncate.
+    Raises SystemExit if date_column is not found in schema.
 
     Args:
         lf (pl.LazyFrame): Input data.
@@ -183,7 +154,7 @@ def validate_date_column(
     Raises:
         SystemExit: If data cannot be loaded.
     """
-    if date_column:
+    if schema.get(date_column):
         # Check date_column type and convert it to Polars date type
         if isinstance(schema.get(date_column), pl.String):
             lf = lf.with_columns(
