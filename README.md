@@ -113,6 +113,9 @@ Here are agreements for each section in configuration listed below:
 
 #### `date_column`
 
+This value defines the column in data to calculate target average, which is class balance in machine learning binary classification problems. The calculation result will be shown in the `Overview` section of the markdown report.
+It is not obligatory to specify this value.
+
 #### `time_interval`
 
 This value is used to divide the date or datetime range in `date_column` into equal intervals. The division implemented with [polars.Expr.dt.truncate](https://docs.pola.rs/api/python/stable/reference/expressions/api/polars.Expr.dt.truncate.html).
@@ -120,7 +123,13 @@ It is not obligatory to specify `time_interval` as the default value is "1d".
 
 #### `target_column`
 
+This value defines the column in data to calculate target average, which is class balance in machine learning binary classification problems. The calculation result will be shown in the `Overview` section of the markdown report.
+If data contain `target_column` it will be picked up to calculate target average. So it is possible to make `target_column` via `transformations` and do not specify value explicitly in this configuration section.
+It is also not obligatory to specify this value at all.
+
 #### `columns_to_exclude`
+
+This value defines a list of columns that will be excluded from evaluation.
 
 #### `outliers`
 
