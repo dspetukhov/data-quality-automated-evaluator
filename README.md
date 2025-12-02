@@ -138,7 +138,15 @@ This value defines a list of columns that will be excluded from evaluation.
 
 #### `outliers`
 
+- `criterion` defines method for outlier detection: IQR or Z-score.
+- `multiplier` defines value to detect outliers with IQR method.
+- `threshold` defines value to detect outliers with Z-score method.
+
 #### `markdown`
+
+- `name` defines the name of the markdown report. Its explicit definition is not obligatory as the default value is `README.md`.
+- `css_style` defines path to the file with CSS style for tables.
+- `float_precision` defines the number of decimal places to format numbers in markdown tables. Its explicit definition is not obligatory as the default value is 4.
 
 #### `plotly`
 
