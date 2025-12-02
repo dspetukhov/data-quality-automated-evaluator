@@ -101,8 +101,8 @@ def apply_transformations(
 
     This function applies transformations to alter LazyFrame columns
     as specified by SQL in the configuration.
-    It can create a new column or replace an existing one
-    if its name will match the key in a single transformation.
+    If key in transformations matches existing column name,
+    it replaces it, otherwise creates a new column.
 
     Args:
         lf (pl.LazyFrame): Input data.
