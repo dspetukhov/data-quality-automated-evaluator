@@ -57,9 +57,9 @@ A configurable Python tool for evaluating quality of sequential data using **[Po
 ### Features
 
 - **Comprehensive data quality evaluation**: robust set of descriptive statistics as quality metrics for evaluating data changes over specified time intervals.
-- **Custom time intervals**: to comprehend data changes over time.
-- **Feature-rich data read**: csv / xlsx, parquet, and iceberg file formats, reading from cloud and PostgreSQL powered by Polars.
-- **Flexible preprocessing**: data filtering and transformation using SQL expressions supported by Polars.
+- **Custom time intervals**: (e.g. "1h", "13h", "1d", "6d", etc.) to comprehend data changes over time.
+- **Feature-rich data read**: csv / xlsx, parquet, and iceberg file formats as well as reading from cloud and PostgreSQL powered by Polars.
+- **Flexible preprocessing**: data filtering and transformation using SQL expressions powered by Polars.
 - **Outlier analysis**: evaluation and visualization of anomalous data points based on IQR and Z-score criteria.
 - **Customized charts**: with outliers highlighted using Plotly.
 - **Professional markdown reports**: with stylish tables and charts embedded.
@@ -85,7 +85,7 @@ A configurable Python tool for evaluating quality of sequential data using **[Po
 
 Data evaluation configuration specified in a single JSON file (`config.json`) consisting of the following main sections:
 
-| Section              | Description                                                     | Key fields                                                        |
+| Section              | Description                                                     | Expected keys                                                     |
 |----------------------|-----------------------------------------------------------------|-------------------------------------------------------------------|
 | `source`             | Configuration to read data                                      | `file_path`, `file_format`, `storage_options`, `schema_overrides` |
 | `filter`             | SQL expression to filter data by rows and by columns (Optional) |                                                                   |
@@ -97,6 +97,36 @@ Data evaluation configuration specified in a single JSON file (`config.json`) co
 | `outliers`           | Outlier detection settings (Optional)                           | `criterion`, `multiplier`, `threshold`                            |
 | `markdown`           | Markdown report settings (Optional)                             | `name`, `css_style`, `float_precision`                            |
 | `plotly`             | Plotly styling settings (Optional)                              | `plot`, `outliers`, `layout`, `grid`, `subplots`, `misc`          |
+
+Here are agreements for each section in configuration listed below:
+
+#### `source`
+
+- `file_path` is the only must key, which can point to file, cloud, or PostgreSQL database (specified as a dict with `uri` and `query` keys),
+- `file_format` is not obligatory, if the file format matches file extension, otherwise reading is not guaranteed,
+- `storage_options`
+- `schema_overrides` might be required 
+
+#### `filter`
+
+#### `transformations`
+
+#### `date_column`
+
+#### `time_interval`
+
+This value is used to divide the date or datetime range in `date_column` into equal intervals. The division implemented with [polars.Expr.dt.truncate](https://docs.pola.rs/api/python/stable/reference/expressions/api/polars.Expr.dt.truncate.html).
+It is not obligatory to specify `time_interval` as the default value is "1d".
+
+#### `target_column`
+
+#### `columns_to_exclude`
+
+#### `outliers`
+
+#### `markdown`
+
+#### `plotly`
 
 [Back to table of contents](#table-of-contents)
 
