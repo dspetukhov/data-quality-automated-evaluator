@@ -113,8 +113,11 @@ Here are agreements for each section in configuration listed below:
 
 #### `date_column`
 
-This value defines the column in data to calculate target average, which is class balance in machine learning binary classification problems. The calculation result will be shown in the `Overview` section of the markdown report.
-It is not obligatory to specify this value.
+This value defines the column to aggregate data by the specified time interval. It is obligatory to have date column specified and this can be done in a few different ways:
+
+- explicitly in this configuration section,
+- create `date_column` via `transformations`,
+- having column with the name `date_column` in data.
 
 #### `time_interval`
 
@@ -123,8 +126,10 @@ It is not obligatory to specify `time_interval` as the default value is "1d".
 
 #### `target_column`
 
-This value defines the column in data to calculate target average, which is class balance in machine learning binary classification problems. The calculation result will be shown in the `Overview` section of the markdown report.
-If data contain `target_column` it will be picked up to calculate target average. So it is possible to make `target_column` via `transformations` and do not specify value explicitly in this configuration section.
+This value defines column in data to calculate target average, which is class balance in machine learning binary classification problems. The calculation result will be shown in the `Overview` section of the markdown report.
+
+If data contain `target_column` column, it will be picked up to calculate target average. So it is not necessary to specify this value explicitly in this configuration section, it is possible to get `target_column` via `transformations`.
+
 It is also not obligatory to specify this value at all.
 
 #### `columns_to_exclude`
