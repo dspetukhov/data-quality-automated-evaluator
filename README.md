@@ -105,11 +105,15 @@ Here are agreements for each section in configuration listed below:
 - `file_path` is the only must key, which can point to file, cloud, or PostgreSQL database (specified as a dict with `uri` and `query` keys),
 - `file_format` is not obligatory, if the file format matches file extension, otherwise reading is not guaranteed,
 - `storage_options`
-- `schema_overrides` might be required 
+- `schema_overrides` might be required.
 
 #### `filter`
 
+This value defines SQL expression to filter data by rows and/or by columns supported by Polars.
+
 #### `transformations`
+
+This value specifies a dict where each key is a column name and each value is a SQL expression to be applied to one or multiple columns in data. If the column name in key field matches any existing column in data, it replaces it, otherwise it creates a new one.
 
 #### `date_column`
 
