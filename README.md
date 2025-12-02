@@ -98,7 +98,7 @@ Data evaluation configuration specified in a single JSON file (`config.json`) co
 | `markdown`           | Markdown report settings (Optional)                             | `name`, `css_style`, `float_precision`                            |
 | `plotly`             | Plotly styling settings (Optional)                              | `plot`, `outliers`, `layout`, `grid`, `subplots`, `misc`          |
 
-Here are agreements for each section in configuration listed below:
+The agreements for each section in configuration are listed below:
 
 #### `source`
 
@@ -134,22 +134,22 @@ This value defines column in data to calculate target average, which is class ba
 
 If data contain `target_column` column, it will be picked up to calculate target average. So it is not necessary to specify this value explicitly in this configuration section, it is possible to get `target_column` via `transformations`.
 
-It is also not obligatory to specify this value at all.
+This value is not obligatory.
 
 #### `columns_to_exclude`
 
-This value defines a list of columns that will be excluded from evaluation.
+This value defines a list of columns that will be excluded from evaluation. This is optional.
 
 #### `outliers`
 
-- `criterion` defines method for outlier detection: IQR or Z-score.
-- `multiplier` defines value to detect outliers with IQR method.
-- `threshold` defines value to detect outliers with Z-score method.
+- `criterion` defines method for outlier detection: `IQR` or `Z-score`. This value is must if outliers are expected to be shown on charts.
+- `multiplier` defines value to detect outliers with IQR method. This is optional as the default value is 1.5.
+- `threshold` defines value to detect outliers with Z-score method. This is optional as the default value is 3.
 
 #### `markdown`
 
 - `name` defines the name of the markdown report. Its explicit definition is not obligatory as the default value is `README.md`.
-- `css_style` defines path to the file with CSS style for tables.
+- `css_style` defines path to the file with CSS style for tables. It is not obligatory to have one.
 - `float_precision` defines the number of decimal places to format numbers in markdown tables. Its explicit definition is not obligatory as the default value is 4.
 
 #### `plotly`
