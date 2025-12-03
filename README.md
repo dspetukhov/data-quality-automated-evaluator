@@ -109,36 +109,35 @@ The agreements for each section in configuration are listed below:
 
 #### `filter`
 
-This value defines SQL expression to filter data by rows and/or by columns supported by Polars.
+This section specifies a SQL expression to filter data by rows and/or by columns using Polars.
 
 #### `transformations`
 
-This value specifies a dict where each key is a column name and each value is a SQL expression to be applied to one or multiple columns in data. If the column name in key field matches any existing column in data, it replaces it, otherwise it creates a new one.
+This section specifies a dict with at least one key-value pair where key is a column name to be created or replaced and value is a SQL expression to be applied to one or multiple columns in data. If the key matches any existing column name in data, it replaces that column with transformed values, otherwise it creates a new one.
 
 #### `date_column`
 
-This value defines the column to aggregate data by the specified time interval. It is obligatory to have date column specified and this can be done in a few different ways:
+This value defines the column to aggregate data by time intervals. It is obligatory to have date column specified and it is recommended to state this value explicitly in this configuration section.
 
-- explicitly in this configuration section,
-- create `date_column` via `transformations`,
-- having column with the name `date_column` in data.
+Otherwise, column with the name `date_column` is picked up as date column. Therefore, having `date_column` as column in data or creating it through `transformations` will also be working options.
 
 #### `time_interval`
 
 This value is used to divide the date or datetime range in `date_column` into equal intervals. The division implemented with [polars.Expr.dt.truncate](https://docs.pola.rs/api/python/stable/reference/expressions/api/polars.Expr.dt.truncate.html).
-It is not obligatory to specify `time_interval` as the default value is "1d".
+
+The default value is "1d", which corresponds to one day, so any other value required should be stated explicitly.
 
 #### `target_column`
 
 This value defines column in data to calculate target average, which is class balance in machine learning binary classification problems. The calculation result will be shown in the `Overview` section of the markdown report.
 
-If data contain `target_column` column, it will be picked up to calculate target average. So it is not necessary to specify this value explicitly in this configuration section, it is possible to get `target_column` via `transformations`.
+If this value is not stated, column with the name `target_column` is picked up as target column. If there is not `target_column` in the data, it can be created through `transformations`.
 
-This value is not obligatory.
+This section is not obligatory.
 
 #### `columns_to_exclude`
 
-This value defines a list of columns that will be excluded from evaluation. This is optional.
+This section specifies a list of columns that will be excluded from evaluation. This is optional.
 
 #### `outliers`
 
@@ -148,11 +147,18 @@ This value defines a list of columns that will be excluded from evaluation. This
 
 #### `markdown`
 
-- `name` defines the name of the markdown report. Its explicit definition is not obligatory as the default value is `README.md`.
+- `name` defines the name of the markdown report. The default value is `README.md`, any other name requires explicit definition.
 - `css_style` defines path to the file with CSS style for tables. It is not obligatory to have one.
-- `float_precision` defines the number of decimal places to format numbers in markdown tables. Its explicit definition is not obligatory as the default value is 4.
+- `float_precision` defines the number of decimal places to format floats in markdown tables. The default value is 4.
 
 #### `plotly`
+
+- `plot`
+- `outliers`
+- `layout`
+- `grid`
+- `subplots`
+- `misc`
 
 [Back to table of contents](#table-of-contents)
 
