@@ -29,7 +29,7 @@ A configurable Python tool for evaluating quality of sequential data using **[Po
   - [Kaggle](#kaggle)
   - [Hugging Face](#hugging-face)
 
-## Quick Start
+## Quick start
 
 1. **Specify source of data:**
 
@@ -59,7 +59,7 @@ A configurable Python tool for evaluating quality of sequential data using **[Po
 - **Comprehensive data quality evaluation**: robust set of descriptive statistics as quality metrics for evaluating data changes over specified time intervals.
 - **Custom time intervals**: (e.g. "1h", "13h", "1d", "6d", etc.) to comprehend data changes over time.
 - **Feature-rich data reading**: csv / xlsx, parquet, and iceberg file formats as well as reading from cloud and PostgreSQL powered by Polars.
-- **Flexible data preprocessing**: data filtering and transformation using SQL expressions powered by Polars.
+- **Flexible data preprocessing**: data filtering and transformation using SQL expressions supported by Polars.
 - **Outlier analysis**: evaluation and visualization of anomalous data points based on IQR and Z-score criteria.
 - **Customized charts**: with outliers highlighted using Plotly.
 - **Professional markdown reports**: with stylish tables and charts embedded.
