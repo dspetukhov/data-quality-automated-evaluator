@@ -12,7 +12,7 @@ A configurable Python tool for evaluating quality of sequential data using **[Po
 - evaluates descriptive statistics (e.g. `Number of unique values`) for each column in data by the specified time intervals,
 - collects evaluation results as a structured markdown report with charts and tables that represent changes of these statistics over time.
 
-<!-- Detailed text description with justifications available on my **[Medium](https://medium.com/@dspetukhov)** -->
+<!-- Detailed description with justifications available on my **[Medium](https://medium.com/@dspetukhov)** -->
 
 <!-- Particular video example of report interpretation available on my **[YouTube](https://www.youtube.com/@dspetukhov)** -->
 
@@ -96,20 +96,29 @@ Data evaluation configuration specified in a single JSON file (`config.json`) co
 | `columns_to_exclude` | List of columns to be excluded from evaluation (Optional)       |                                                                   |
 | `outliers`           | Outlier detection settings (Optional)                           | `criterion`, `multiplier`, `threshold`                            |
 | `markdown`           | Markdown report settings (Optional)                             | `name`, `css_style`, `float_precision`                            |
-| `plotly`             | Plotly styling settings (Optional)                              | `plot`, `outliers`, `layout`, `grid`, `subplots`, `scale`          |
+| `plotly`             | Plotly styling settings (Optional)                              | `plot`, `outliers`, `layout`, `grid`, `subplots`, `scale_factor`s  |
 
 The agreements for each section in configuration are listed below:
 
 #### `source`
 
-This section specified the source of data.
+This section specifies the source of data and additional properties to handle data reading with Polars.
 
-- `file_path` is the obligatory value defining path to file, cloud, or PostgreSQL database (specified as a dict with `uri` and `query` keys),
-- `file_format` is optional and can be required in cases when file read is not guaranteed:
-  - file format does not match file extension,
-  - file does not have extension.
-- `storage_options` is optional and can 
-- `schema_overrides` is optional and can be required.
+- `file_path` is the obligatory value defining path to file, cloud, or PostgreSQL database. In case of a database the dict is expected:
+
+```json
+{
+    "file_path": {"uri": "postgresql://username:password@server:port/database", "sql": "select * from foo"}  // `uri` can be specified as environmental variable
+}
+```
+
+- `file_format` is optional and can be required in cases when file does not have extension or file extension does not match supported file formats: csv, xlsx, parquet, iceberg.
+- `storage_options` is optional and can be omitted when reading from cloud providers only if the corresponding environmental variables are set correctly, otherwise an explicit definition is required.
+- `schema_overrides` is optional and can be required for csv or xlsx file formats to alter data types for specific columns during schema inference formats:
+  - when date or datetime type column do not match ISO 8601 standard,
+  - when a categorical text type column infered as a numerical one.
+
+Supported types for `schema_overrides` are `String`, `Date` and `Datetime`.
 
 #### `filter`
 
@@ -164,7 +173,7 @@ All these Plotly configuration parameters and styles are optional and can be bro
 - `grid` defines style for grid lines on charts.
 - `layout` defines extra parameters to adjust [layout](https://plotly.com/python/reference/layout/). The default chart height equals to 512 pixels.
 - `subplots` defines extra parameters to adjust spacing in the [subplot grid](https://plotly.com/python-api-reference/generated/plotly.subplots.make_subplots.html).
-- `scale_factor` defines factor to scale chart, defaults to 1.
+- `scale_factor` defines factor to scale a chart, defaults to 1.
 
 [Back to table of contents](#table-of-contents)
 
