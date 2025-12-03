@@ -64,7 +64,7 @@ def make_charts(
     # Save figure as PNG file
     fig.write_image(
         f"{file_path}.png",
-        scale=config.get("misc", {}).get("scale", 1))
+        scale=config.get("scale_factor", 1))
 
 
 @exception_handler()
@@ -171,13 +171,13 @@ def adjust_figure(
     """
     layout = config.get("layout", {}).copy()
     height = layout.get("height", 512)
+    width_scale_factor = layout.pop("width_scale_factor", 1)
+    height_scale_factor = layout.pop("height_scale_factor", 1)
 
     # Scale figure size based on the number of rows and cols
     layout.update({
-        "width": height * n_cols *
-        config.get("misc", {}).get("width_scale_factor", 1),
-        "height": height * n_rows *
-        config.get("misc", {}).get("height_scale_factor", 1)
+        "width": height * n_cols * width_scale_factor,
+        "height": height * n_rows * height_scale_factor
         if n_rows > 1 else height
     })
     fig.update_layout(layout)
