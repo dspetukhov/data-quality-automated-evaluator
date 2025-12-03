@@ -1,5 +1,6 @@
+import os
 import polars as pl
-from typing import Any, Dict
+from typing import Any, Dict, Union
 from .handle_exceptions import exception_handler
 from .setup_logging import logging
 
@@ -34,12 +35,15 @@ def read_source(source: Dict[str, str]) -> pl.LazyFrame:
         if source.get("query") and source.get("uri"):
             # Read from PostgreSQL database
             lf = pl.read_database_uri(
-                query=source["query"], uri=source["uri"]
+                query=source["query"],
+                uri=handle_environment_variables(source["uri"])
             ).lazy()
 
         elif source.get("file_path"):
             # Get storage_options to read from cloud providers
-            storage_options = source.get("storage_options")
+            storage_options = handle_environment_variables(
+                source.get("storage_options")
+            )
             # Get schema_overrides to alter schema dtypes for csv / xlsx
             schema_overrides = handle_schema_overrides(
                 source.get("schema_overrides"))
@@ -135,3 +139,29 @@ def handle_schema_overrides(data: Dict[str, str]) -> Dict[str, Any]:
         data = {key: dtypes[value] for key, value in data.items()}
 
     return data
+
+
+@exception_handler()
+def handle_environment_variables(
+    params: Union[str, Dict[str, str]]
+) -> Union[str, Dict[str, str]]:
+    """
+    Replace environment variable placeholders with actual values.
+
+    Args:
+        params (Union[str, Dict[str, str]]): Input parameters potentially
+            containing environment variable placeholders.
+
+    Returns:
+        Union[str, Dict[str, str]]: Updated parameters
+            with environment variable placeholders replaced by their actual values.
+    """
+    if isinstance(params, str) and params in os.environ:
+        logging.info(f"Environment variable for {params} is found")
+        params = os.getenv(params)
+    elif isinstance(params, dict):
+        for key, value in params.items():
+            if value in os.environ:
+                logging.info(f"Environment variable for {value} is found")
+                params[key] = os.getenv(value)
+    return params
