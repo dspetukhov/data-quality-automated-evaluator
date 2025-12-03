@@ -96,16 +96,20 @@ Data evaluation configuration specified in a single JSON file (`config.json`) co
 | `columns_to_exclude` | List of columns to be excluded from evaluation (Optional)       |                                                                   |
 | `outliers`           | Outlier detection settings (Optional)                           | `criterion`, `multiplier`, `threshold`                            |
 | `markdown`           | Markdown report settings (Optional)                             | `name`, `css_style`, `float_precision`                            |
-| `plotly`             | Plotly styling settings (Optional)                              | `plot`, `outliers`, `layout`, `grid`, `subplots`, `misc`          |
+| `plotly`             | Plotly styling settings (Optional)                              | `plot`, `outliers`, `layout`, `grid`, `subplots`, `scale`          |
 
 The agreements for each section in configuration are listed below:
 
 #### `source`
 
-- `file_path` is the only must key, which can point to file, cloud, or PostgreSQL database (specified as a dict with `uri` and `query` keys),
-- `file_format` is not obligatory, if the file format matches file extension, otherwise reading is not guaranteed,
-- `storage_options`
-- `schema_overrides` might be required.
+This section specified the source of data.
+
+- `file_path` is the obligatory value defining path to file, cloud, or PostgreSQL database (specified as a dict with `uri` and `query` keys),
+- `file_format` is optional and can be required in cases when file read is not guaranteed:
+  - file format does not match file extension,
+  - file does not have extension.
+- `storage_options` is optional and can 
+- `schema_overrides` is optional and can be required.
 
 #### `filter`
 
@@ -153,12 +157,14 @@ This section specifies a list of columns that will be excluded from evaluation. 
 
 #### `plotly`
 
-- `plot`
-- `outliers`
-- `layout`
-- `grid`
-- `subplots`
-- `misc`
+All these Plotly configuration parameters and styles are optional and can be brought into line with your perceptions.
+
+- `plot` defines style for [plotly.graph_objs.Scatter](https://plotly.com/python-api-reference/generated/plotly.graph_objects.Scatter.html#plotly.graph_objects.Scatter), which renders evaluated statistics over time.
+- `outliers` defines style to highlight outliers with Plotly shapes.
+- `grid` defines style for grid lines on charts.
+- `layout` defines extra parameters to adjust [layout](https://plotly.com/python/reference/layout/). The default chart height equals to 512 pixels.
+- `subplots` defines extra parameters to adjust spacing in the [subplot grid](https://plotly.com/python-api-reference/generated/plotly.subplots.make_subplots.html).
+- `scale_factor` defines factor to scale chart, defaults to 1.
 
 [Back to table of contents](#table-of-contents)
 
