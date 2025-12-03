@@ -58,8 +58,8 @@ A configurable Python tool for evaluating quality of sequential data using **[Po
 
 - **Comprehensive data quality evaluation**: robust set of descriptive statistics as quality metrics for evaluating data changes over specified time intervals.
 - **Custom time intervals**: (e.g. "1h", "13h", "1d", "6d", etc.) to comprehend data changes over time.
-- **Feature-rich data read**: csv / xlsx, parquet, and iceberg file formats as well as reading from cloud and PostgreSQL powered by Polars.
-- **Flexible preprocessing**: data filtering and transformation using SQL expressions powered by Polars.
+- **Feature-rich data reading**: csv / xlsx, parquet, and iceberg file formats as well as reading from cloud and PostgreSQL powered by Polars.
+- **Flexible data preprocessing**: data filtering and transformation using SQL expressions powered by Polars.
 - **Outlier analysis**: evaluation and visualization of anomalous data points based on IQR and Z-score criteria.
 - **Customized charts**: with outliers highlighted using Plotly.
 - **Professional markdown reports**: with stylish tables and charts embedded.
@@ -106,9 +106,9 @@ This section specifies the source of data and additional properties to handle da
 
 - `file_path` is the obligatory value defining path to file, cloud, or PostgreSQL database. In case of a database the dict is expected:
 
-```json
+```python
 {
-    "file_path": {"uri": "postgresql://username:password@server:port/database", "sql": "select * from foo"}  // `uri` can be specified as environmental variable
+    "file_path": {"uri": "postgresql://username:password@server:port/database", "sql": "select * from foo"}  # `uri` can be specified as environmental variable
 }
 ```
 
@@ -174,6 +174,8 @@ All these Plotly configuration parameters and styles are optional and can be bro
 - `layout` defines extra parameters to adjust [layout](https://plotly.com/python/reference/layout/). The default chart height equals to 512 pixels.
 - `subplots` defines extra parameters to adjust spacing in the [subplot grid](https://plotly.com/python-api-reference/generated/plotly.subplots.make_subplots.html).
 - `scale_factor` defines factor to scale a chart, defaults to 1.
+
+Plotly theme `plotly_white` is set in [utility](utility/__init__.py#6) module.
 
 [Back to table of contents](#table-of-contents)
 
