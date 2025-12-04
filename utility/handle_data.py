@@ -13,9 +13,11 @@ def read_source(source: Dict[str, str]) -> pl.LazyFrame:
     Supports CSV, Parquet, Iceberg, XLSX, and database URIs.
     Returns LazyFrame for preprocessing. If loading fails,
     it terminates the main program.
-    There is no need in specifying `storage_options` explicitly
-    as Polars can read corresponding environmental variables,
-    e.g. `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION`.
+    In case of reading from cloud providers `storage_options` definition
+    is expected, otherwise Polars will try to infer credentials implicitly
+    from environment variables, e.g. AWS_REGION in case of S3.
+    `uri` and `storage_options` values can be read from environment variables
+    if they are specified with a $ sign at the beginning.
 
     Args:
         source (Dict[str, str]): Data source specification.
@@ -148,6 +150,9 @@ def handle_environment_variables(
     """
     Replace environment variable placeholders with actual values.
 
+    "$" sign as a first symbol in placeholders is expected
+    to search and replace placeholders with actual values.
+
     Args:
         params (Union[str, Dict[str, str]]): Input parameters potentially
             containing environment variable placeholders.
@@ -156,12 +161,16 @@ def handle_environment_variables(
         Union[str, Dict[str, str]]: Updated parameters
             with environment variable placeholders replaced by their actual values.
     """
-    if isinstance(params, str) and params in os.environ:
-        logging.info(f"Environment variable for {params} is found")
-        params = os.getenv(params)
+    if isinstance(params, str) and params.startswith("$"):
+        params = params[1:]
+        if params in os.environ:
+            logging.info(f"Environment variable for {params} is found")
+            params = os.getenv(params)
     elif isinstance(params, dict):
         for key, value in params.items():
-            if value in os.environ:
-                logging.info(f"Environment variable for {value} is found")
-                params[key] = os.getenv(value)
+            if value.startswith("$"):
+                value = value[1:]
+                if value in os.environ:
+                    logging.info(f"Environment variable for {value} is found")
+                    params[key] = os.getenv(value)
     return params
