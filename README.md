@@ -9,7 +9,7 @@ A configurable Python tool for evaluating quality of sequential data using **[Po
 
 **How:**
 
-- evaluates descriptive statistics (e.g. `Number of unique values`) for each column in data by the specified time intervals,
+- evaluates descriptive statistics (e.g. the number of unique values) for each column in data by the specified time intervals,
 - collects evaluation results as a structured markdown report with charts and tables that represent changes of these statistics over time.
 
 <!-- Detailed description with justifications available on my **[Medium](https://medium.com/@dspetukhov)** -->
@@ -57,7 +57,7 @@ A configurable Python tool for evaluating quality of sequential data using **[Po
 ### Features
 
 - **Comprehensive data quality evaluation**: robust set of descriptive statistics as quality metrics for evaluating data changes over specified time intervals.
-- **Custom time intervals**: (e.g. "1h", "13h", "1d", "6d", etc.) to comprehend data changes over time.
+- **Custom time intervals**: (e.g. 1h, 13h, 1d, 6d, etc.) to comprehend data changes over time.
 - **Feature-rich data reading**: csv / xlsx, parquet, and iceberg file formats as well as reading from cloud and PostgreSQL powered by Polars.
 - **Flexible data preprocessing**: data filtering and transformation using SQL expressions supported by Polars.
 - **Outlier analysis**: evaluation and visualization of anomalous data points based on IQR and Z-score criteria.
@@ -83,7 +83,7 @@ A configurable Python tool for evaluating quality of sequential data using **[Po
 
 ### Configuration
 
-Data evaluation configuration specified in a single JSON file (`config.json`) consisting of the following main sections:
+Data evaluation configuration specified in a single JSON file (`config.json`) by the following sections:
 
 | Section              | Description                                                     | Expected keys                                                     |
 |----------------------|-----------------------------------------------------------------|-------------------------------------------------------------------|
@@ -96,29 +96,39 @@ Data evaluation configuration specified in a single JSON file (`config.json`) co
 | `columns_to_exclude` | List of columns to be excluded from evaluation (Optional)       |                                                                   |
 | `outliers`           | Outlier detection settings (Optional)                           | `criterion`, `multiplier`, `threshold`                            |
 | `markdown`           | Markdown report settings (Optional)                             | `name`, `css_style`, `float_precision`                            |
-| `plotly`             | Plotly styling settings (Optional)                              | `plot`, `outliers`, `layout`, `grid`, `subplots`, `scale_factor`s  |
+| `plotly`             | Plotly styling settings (Optional)                              | `plot`, `outliers`, `layout`, `grid`, `subplots`, `scale_factor`  |
 
-The agreements for each section in configuration are listed below:
+The agreements for each of these sections are listed below:
 
 #### `source`
 
-This section specifies the source of data and additional properties to handle data reading with Polars.
+This section specifies properties to read the source of data with Polars.
 
-- `file_path` is the obligatory value defining path to file, cloud, or PostgreSQL database. In case of a database the dict is expected:
+- `file_path` is the obligatory value that defines path to the file(s) to read.
+- `file_format` is optional and can be required in cases when file to read does not have extension or file extension does not match supported file formats: csv, xlsx, parquet, iceberg.
+- `storage_options` is required for reading from could providers. If these options are not provided, Polars will implicitly try to get relevant credentials from environment variables like `AWS_REGION`, so explicit definition is recommended:
 
 ```python
-{
-    "file_path": {"uri": "postgresql://username:password@server:port/database", "sql": "select * from foo"}  # `uri` can be specified as environmental variable
+storage_options = {
+    "aws_access_key_id": "$S3_KEY_ID",  # definition with `$` sign as a first symbol is expected for environment variables
+    ...
 }
 ```
 
-- `file_format` is optional and can be required in cases when file does not have extension or file extension does not match supported file formats: csv, xlsx, parquet, iceberg.
-- `storage_options` is optional and can be omitted when reading from cloud providers only if the corresponding environmental variables are set correctly, otherwise an explicit definition is required.
-- `schema_overrides` is optional and can be required for csv or xlsx file formats to alter data types for specific columns during schema inference formats:
+- `schema_overrides` is optional and can be required for csv or xlsx files to alter data types of columns during schema inference:
   - when date or datetime type column do not match ISO 8601 standard,
   - when a categorical text type column infered as a numerical one.
 
 Supported types for `schema_overrides` are `String`, `Date` and `Datetime`.
+
+In case of reading from a PostgreSQL database all parameters above replaced by `uri` and `query`:
+
+```python
+{
+    "uri": "postgresql://username:password@server:port/database",  # `uri` can be specified as environmental variable, e.g. "$PG_URI"
+    "sql": "select * from foo"
+}
+```
 
 #### `filter`
 
