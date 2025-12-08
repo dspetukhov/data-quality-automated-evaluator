@@ -110,7 +110,8 @@ This section specifies properties to read the source of data with Polars.
 
 ```python
 storage_options = {
-    "aws_access_key_id": "$S3_KEY_ID",  # definition with `$` sign as a first symbol is expected for environment variables
+    # definition with `$` sign as a first symbol is expected for environment variables
+    "aws_access_key_id": "$S3_KEY_ID",
     ...
 }
 ```
@@ -125,7 +126,8 @@ In case of reading from a PostgreSQL database all parameters above replaced by `
 
 ```python
 {
-    "uri": "postgresql://username:password@server:port/database",  # `uri` can be specified as environmental variable, e.g. "$PG_URI"
+    # `uri` can be specified as environmental variable, e.g. "$PG_URI"
+    "uri": "postgresql://username:password@server:port/database",
     "sql": "select * from foo"
 }
 ```
@@ -258,7 +260,7 @@ It is also possible to replace `"transaction_date": "DATE(transaction_date, '%Y-
 
 ```json
     "source": {
-        "file_path": "../datasets/_counterfeit_transactions.csv",
+        "file_path": "_counterfeit_transactions.csv",
         "schema_overrides": {
             "transaction_date": "Datetime"
         }
@@ -269,7 +271,7 @@ It is also possible to replace `"transaction_date": "DATE(transaction_date, '%Y-
 
 ```json
     "source": {
-        "file_path": "../datasets/financial_fraud_detection_dataset.csv",
+        "file_path": "financial_fraud_detection_dataset.csv",
         "schema_overrides": {
             "timestamp": "Datetime"
         }
@@ -340,7 +342,7 @@ It is also possible to replace `"transaction_date": "DATE(transaction_date, '%Y-
 
 ```json
     "source": {
-        "file_path": "../datasets/cc_fraud_detection_dataset.parquet"
+        "file_path": "cc_fraud_detection_dataset.parquet"
     },
     "date_column": "trans_date",
     "target_column": "is_fraud",
