@@ -56,7 +56,7 @@ A configurable Python tool for evaluating quality of sequential data using **[Po
 
 ### Features
 
-- **Comprehensive data quality evaluation**: robust set of descriptive statistics as quality metrics for evaluating data changes over specified time intervals.
+- **Comprehensive data quality evaluation**: full set of descriptive statistics as quality metrics for evaluating data changes over specified time intervals.
 - **Custom time intervals**: (e.g. 1h, 13h, 1d, 6d, etc.) to comprehend data changes over time.
 - **Feature-rich data reading**: csv / xlsx, parquet, and iceberg file formats as well as reading from cloud and PostgreSQL powered by Polars.
 - **Flexible data preprocessing**: data filtering and transformation using SQL expressions supported by Polars.
@@ -104,9 +104,9 @@ The agreements for each of these sections are listed below:
 
 This section specifies properties to read the source of data with Polars.
 
-- `file_path` is the obligatory value that defines path to the file(s) to read.
+- `file_path` is the obligatory value that defines the path to the file(s) to read.
 - `file_format` is optional and can be required in cases when file to read does not have extension or file extension does not match supported file formats: csv, xlsx, parquet, iceberg.
-- `storage_options` is required for reading from could providers. If these options are not provided, Polars will implicitly try to get relevant credentials from environment variables like `AWS_REGION`, so explicit definition is recommended:
+- `storage_options` is required for reading from cloud providers. If these options are not provided, Polars will implicitly try to get relevant credentials from environment variables like `AWS_REGION`, so explicit definition is recommended:
 
 ```python
 storage_options = {
@@ -118,7 +118,7 @@ storage_options = {
 
 - `schema_overrides` is optional and can be required for csv or xlsx files to alter data types of columns during schema inference:
   - when date or datetime type column do not match ISO 8601 standard,
-  - when a categorical text type column infered as a numerical one.
+  - when a categorical text type column inferred as a numerical one.
 
 Supported types for `schema_overrides` are `String`, `Date` and `Datetime`.
 
@@ -144,19 +144,19 @@ This section specifies a dict with at least one key-value pair where key is a co
 
 This value defines the column to aggregate data by time intervals. It is obligatory to have date column specified and it is recommended to state this value explicitly in this configuration section.
 
-Otherwise, column with the name `date_column` is picked up as date column. Therefore, having `date_column` as column in data or creating it through `transformations` will also be working options.
+Otherwise, a column with the name `date_column` is picked up as a date column. Therefore, having `date_column` as column in data or creating it through `transformations` will also be working options.
 
 #### `time_interval`
 
-This value is used to divide the date or datetime range in `date_column` into equal intervals. The division implemented with [polars.Expr.dt.truncate](https://docs.pola.rs/api/python/stable/reference/expressions/api/polars.Expr.dt.truncate.html).
+This value is used to divide the date or datetime range in `date_column` into equal intervals. The division is implemented with [polars.Expr.dt.truncate](https://docs.pola.rs/api/python/stable/reference/expressions/api/polars.Expr.dt.truncate.html).
 
 The default value is "1d", which corresponds to one day, so any other value required should be stated explicitly.
 
 #### `target_column`
 
-This value defines column in data to calculate target average, which is class balance in machine learning binary classification problems. The calculation result will be shown in the `Overview` section of the markdown report.
+This value defines a column in data to calculate target average, which is class balance in machine learning binary classification problems. The calculation result will be shown in the `Overview` section of the markdown report.
 
-If this value is not stated, column with the name `target_column` is picked up as target column. If there is not `target_column` in the data, it can be created through `transformations`.
+If this value is not stated, a column with the name `target_column` is picked up as target column. If there is no `target_column` in the data, it can be created through `transformations`.
 
 This section is not obligatory.
 
@@ -168,12 +168,12 @@ This section specifies a list of columns that will be excluded from evaluation. 
 
 - `criterion` defines method for outlier detection: `IQR` or `Z-score`. This value is must if outliers are expected to be shown on charts.
 - `multiplier` defines value to detect outliers with IQR method. This is optional as the default value is 1.5.
-- `threshold` defines value to detect outliers with Z-score method. This is optional as the default value is 3.
+- `threshold` defines value to detect outliers with the Z-score method. This is optional as the default value is 3.
 
 #### `markdown`
 
 - `name` defines the name of the markdown report. The default value is `README.md`, any other name requires explicit definition.
-- `css_style` defines path to the file with CSS style for tables. It is not obligatory to have one.
+- `css_style` defines a path to the file with CSS style for tables. It is not obligatory to have one.
 - `float_precision` defines the number of decimal places to format floats in markdown tables. The default value is 4.
 
 #### `plotly`
@@ -183,8 +183,8 @@ All these Plotly configuration parameters and styles are optional and can be bro
 - `plot` defines style for [plotly.graph_objs.Scatter](https://plotly.com/python-api-reference/generated/plotly.graph_objects.Scatter.html#plotly.graph_objects.Scatter), which renders evaluated statistics over time.
 - `outliers` defines style to highlight outliers with Plotly shapes.
 - `grid` defines style for grid lines on charts.
-- `layout` defines extra parameters to adjust [layout](https://plotly.com/python/reference/layout/). The default chart height equals to 512 pixels.
-- `subplots` defines extra parameters to adjust spacing in the [subplot grid](https://plotly.com/python-api-reference/generated/plotly.subplots.make_subplots.html).
+- `layout` defines extra parameters to adjust [layout](https://plotly.com/python/reference/layout/). The default chart height equals 512 pixels.
+- `subplots` define extra parameters to adjust spacing in the [subplot grid](https://plotly.com/python-api-reference/generated/plotly.subplots.make_subplots.html).
 - `scale_factor` defines factor to scale a chart, defaults to 1.
 
 Plotly theme `plotly_white` is set in [utility](utility/__init__.py#6) module.
