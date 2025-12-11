@@ -88,6 +88,7 @@ Data evaluation configuration specified in a single JSON file (`config.json`) by
 | Section              | Description                                                     | Expected keys                                                     |
 |----------------------|-----------------------------------------------------------------|-------------------------------------------------------------------|
 | `source`             | Configuration to read data                                      | `file_path`, `file_format`, `storage_options`, `schema_overrides` |
+| `output`             | Directory to save report and charts (Optional)                  |                                                                   |
 | `filter`             | SQL expression to filter data by rows and by columns (Optional) |                                                                   |
 | `transformations`    | Dict of SQL expressions to transform data by columns (Optional) |                                                                   |
 | `date_column`        | Column to aggregate data by time intervals (Optional)           |                                                                   |
@@ -131,6 +132,10 @@ In case of reading from a PostgreSQL database all parameters above replaced by `
     "sql": "select * from foo"
 }
 ```
+
+#### `output`
+
+This value defines the directory name where report and charts will be saved. It defaults to the name of the file in case of reading from file or to `output` in case of reading from a PostgreSQL database.
 
 #### `filter`
 

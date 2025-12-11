@@ -90,7 +90,9 @@ def make_report(
 
     # Collect markdown content
     content = collect_md_content(
-        data_evals, content, config["source"]["file_path"], precision)
+        data_evals, content,
+        config["source"].get("file_path", config["source"].get("sql")),
+        precision)
 
     # Write content as a markdown file
     write_md_file(content, output, config.get("markdown", {}).get("name"))
@@ -121,6 +123,7 @@ def get_report_variables(config: Dict[str, Any]):
     output_dir = config.get(
         "output",
         Path(config["source"]["file_path"]).name.split(".")[0]
+        if config["source"].get("file_path") else "output"
     )
     # Create output directory
     Path(output_dir).mkdir(exist_ok=True)
@@ -203,7 +206,7 @@ def collect_md_content(
     content = "\n".join(content)
 
     md_output = [
-        f"# Preliminary analysis for **`{source}`**\n\n",
+        f"#**`{source}`**\n\n",
         f"## Table of contents\n\n{toc}\n\n",
         content
     ]
