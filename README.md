@@ -135,7 +135,9 @@ In case of reading from a PostgreSQL database all parameters above replaced by `
 
 #### `output`
 
-This value defines the directory name where report and charts will be saved. It defaults to the name of the file in case of reading from file or to `output` in case of reading from a PostgreSQL database.
+This value defines the directory name where the report and charts will be saved. It defaults to the name of the file in case of reading from file or to `postgresql` in case of reading from a PostgreSQL database.
+
+It is recommended to define this value.
 
 #### `filter`
 
