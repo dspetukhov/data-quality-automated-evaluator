@@ -1,12 +1,13 @@
 import polars as pl
 import polars.selectors as cs
-from typing import Dict, Any, List, Tuple, Union, Optional
+from typing import Dict, Any, List, Tuple, Optional
 from utility import logging, exception_handler
 
 
 @exception_handler(exit_on_error=True)
 def make_preprocessing(
-        lf: Union[pl.LazyFrame, pl.DataFrame], config: Dict[str, Any]
+        lf: pl.LazyFrame,
+        config: Dict[str, Any]
 ) -> Tuple[pl.DataFrame, Dict[str, str]]:
     """
     Preprocess data for evaluation through aggregation by dates.
@@ -18,7 +19,7 @@ def make_preprocessing(
     and performs aggregation.
 
     Args:
-        lf (Union[pl.LazyFrame, pl.DataFrame]): Input data frame.
+        lf (pl.LazyFrame): Input data.
         config (Dict[str, Any]): Configuration dictionary specifying
             extra variables, filter, and transformations.
 
@@ -31,10 +32,6 @@ def make_preprocessing(
         SystemExit: In case of failed data aggregation
             or inconsistencies in date_column.
     """
-    # Convert DataFrame to LazyFrame if necessary
-    if isinstance(lf, pl.DataFrame):
-        lf = lf.lazy()
-
     # Apply filter for rows and columns
     lf = apply_filter(lf, config.get("filter"))
     # Apply transformations for columns
