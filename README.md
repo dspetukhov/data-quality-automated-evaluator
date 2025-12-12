@@ -149,7 +149,7 @@ This section specifies a dict with at least one key-value pair where key is a co
 
 #### `date_column`
 
-This value defines the column to aggregate data by time intervals. It is obligatory to have date column specified and it is recommended to state this value explicitly in this configuration section.
+This value defines the column to aggregate data by time intervals. It is obligatory to have date column in data and it is recommended to define this value explicitly in this configuration section.
 
 Otherwise, a column with the name `date_column` is picked up as a date column. Therefore, having `date_column` as column in data or creating it through `transformations` will also be working options.
 
