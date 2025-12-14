@@ -1,15 +1,15 @@
 {
     "source": {
-        "file_path": "../datasets/metaverse_transactions_dataset.csv",
-        "schema_overrides": {
-            "timestamp": "Datetime"
-        }
+        "file_path": "../datasets/metaverse_transactions_dataset.csv"
     },
     "date_column": "timestamp",
+    "transformations": {
+        "timestamp": "DATE(timestamp, '%Y-%m-%d %H:%M:%S')"
+    },
     "outliers": {
         "criterion": "IQR",
-        "multiplier": 1.5,
-        "threshold": 3.0
+        "multiplier_iqr": 1.5,
+        "multiplier_z_score": 3.0
     },
     "markdown": {
         "name": "README.md",

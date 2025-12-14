@@ -218,7 +218,7 @@ def collect_aggregations(
             pl.col(col).n_unique().alias(
                 f"__ {col} __Number of unique values"),
             pl.col(col).is_null().mean().alias(
-                f"__ {col} __Ratio of null values"),
+                f"__ {col} __Proportion of missing values"),
         ])
 
         # Add extra statistics if column is of numeric data type

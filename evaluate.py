@@ -11,16 +11,15 @@ def evaluate_data(
     """
     Evaluates descriptive statistic and detects outliers in data.
 
-    This function calculates descriptive statistics and detects outliers
-    in data using IQR and Z-score criteria. Configuration dictionary specifies
-    IQR multiplier and Z-score threshold for outliers detection.
+    This function calculates descriptive statistics and
+    detects outliers based on IQR and Z-score criteria for each column in data.
 
     Args:
         data (DataFrame): Input data.
-        config (Dict[str, Union[str, float]]): Configuration with parameters for outlier detection:
-            - 'criterion' (str): Outlier detection criterion (IQR or Z-score),
-            - 'multiplier' (float): IQR multiplier (default 1.5),
-            - 'threshold' (float): Z-score threshold (default 3.0).
+        config (Dict[str, Union[str, float]]): Parameters for detecting outliers:
+            - 'criterion' (str): IQR or Z-score,
+            - 'multiplier_iqr' (float): multiplier for IQR criterion (defaults to 1.5).
+            - 'multiplier_z_score' (float): multiplier for Z-score criterion (defaults to 3.0).
 
     Returns:
         Tuple[List[Dict[str, Any]], List[Tuple[float, float]]]:
@@ -51,8 +50,8 @@ def evaluate_data(
             "IQR [Q1]": q1,
             "IQR [Q3]": q3,
             "IQR": q3 - q1,
-            "Anomalies [IQR]": 100 * outliers_iqr / data.shape[0],
-            "Anomalies [Z-score]": 100 * outliers_zscore / data.shape[0],
+            "Outliers [IQR]": 100 * outliers_iqr / data.shape[0],
+            "Outliers [Z-score]": 100 * outliers_zscore / data.shape[0],
         })
         outliers_bounds.append(bounds)
 
@@ -79,10 +78,10 @@ def evaluate_data_outliers(
         std (float): Standard deviation.
         q1 (float): First quartile.
         q3 (float): Third quartile.
-        config (Dict[str, Union[str, float]]): Parameters for outliers detection:
-            - 'criterion' (str): Outlier detection criterion (IQR or Z-score),
-            - 'multiplier' (float): IQR multiplier (default 1.5),
-            - 'threshold' (float): Z-score threshold (default 3.0).
+        config (Dict[str, Union[str, float]]): Parameters for detecting outliers:
+            - 'criterion' (str): IQR or Z-score,
+            - 'multiplier_iqr' (float): multiplier for IQR criterion (defaults to 1.5).
+            - 'multiplier_z_score' (float): multiplier for Z-score criterion (defaults to 3.0).
 
     Returns:
         Tuple[int, int, Tuple[Union[float, None], Union[float, None]]]:
@@ -94,12 +93,12 @@ def evaluate_data_outliers(
         outliers_zscore = 0
     else:
         outliers_zscore = (
-            ((data - mean) / std).abs() > config.get("threshold", 3.0)
+            ((data - mean) / std).abs() > config.get("multiplier_z_score", 3.0)
         ).sum()
 
     # Determine boundaries for outliers based on IQR
-    lower_bound = q1 - config.get("multiplier", 1.5) * (q3 - q1)
-    upper_bound = q3 + config.get("multiplier", 1.5) * (q3 - q1)
+    lower_bound = q1 - config.get("multiplier_iqr", 1.5) * (q3 - q1)
+    upper_bound = q3 + config.get("multiplier_iqr", 1.5) * (q3 - q1)
     # Count the number of outliers
     outliers_iqr = ((data < lower_bound) | (data > upper_bound)).sum()
 
@@ -107,8 +106,8 @@ def evaluate_data_outliers(
     # if criterion was specified in configuration
     if config.get("criterion") == "Z-score":
         bounds = (
-            mean - config.get("threshold", 3.0) * std,
-            mean + config.get("threshold", 3.0) * std
+            mean - config.get("multiplier_z_score", 3.0) * std,
+            mean + config.get("multiplier_z_score", 3.0) * std
         )
     elif config.get("criterion") == "IQR":
         bounds = (lower_bound, upper_bound)
