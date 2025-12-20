@@ -1,6 +1,6 @@
 # Data Quality Automated Evaluation - `DQ-AE`
 
-A configurable Python tool for evaluating quality of sequential data using **[Polars](https://docs.pola.rs/)** library.
+A configurable Python tool for evaluating quality of temporal data using **[Polars](https://docs.pola.rs/)** library.
 
 **Why:**
 
