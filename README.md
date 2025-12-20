@@ -104,21 +104,22 @@ Each of these sections is described below:
 
 This section specifies properties to read the source of data using Polars.
 
-- `file_path` is the obligatory value defining the path to the file(s) to read.
-- `file_format` is optional and can be required in cases when file to read does not have extension or reading from with directory with partitioned files.
-- `storage_options` is required for reading from cloud providers. If it is not provided, Polars will implicitly try to get relevant credentials from environment variables like `AWS_REGION`, so explicit definition is recommended:
+- `file_path` is the mandatory value defining the path to the file(s) to read.
+- `file_format` is required in cases when file to read is missing an extension at the end of the name or when reading from a directory with partitioned files.
+- `storage_options` is required for reading from cloud providers. If it is not specified, Polars will implicitly try to get relevant credentials from environment variables, so explicit indication of the variables is recommended:
 
 ```python
 storage_options = {
-    # definition with `$` sign as a first symbol is expected for environment variables
+    # definition with `$` sign as a first symbol will be interpreted as an environment variable to be used
+    # definition without `$` sign as a first symbol will be interpreted as a string value
     "aws_access_key_id": "$S3_KEY_ID",
     ...
 }
 ```
 
-- `schema_overrides` is optional and can be required for csv or xlsx files to alter data types of columns during schema inference:
-  - when date or datetime type column do not match ISO 8601 standard,
-  - when a categorical text type column inferred as a numerical one.
+- `schema_overrides` can be required for csv or xlsx files to alter column data types during schema inference:
+  - when a date or datetime column does not match ISO 8601 standard,
+  - when a categorical string column is inferred as a numerical one.
 
 Supported types for `schema_overrides` are `String`, `Date` and `Datetime`.
 
@@ -126,7 +127,7 @@ In case of reading from a PostgreSQL database all parameters above are replaced 
 
 ```python
 {
-    # `uri` can be specified as environmental variable, e.g. "$PG_URI"
+    # `uri` can be specified as an environmental variable, e.g. "$PG_URI"
     "uri": "postgresql://username:password@server:port/database",
     "sql": "select * from foo"
 }
