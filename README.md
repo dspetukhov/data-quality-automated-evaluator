@@ -98,7 +98,7 @@ Data evaluation configuration is defined in a single JSON file (`[config.json](c
 | `markdown`           | Markdown report settings (Optional)                             | `name`, `css_style`, `float_precision`                            |
 | `plotly`             | Plotly styling settings (Optional)                              | `plot`, `outliers`, `layout`, `grid`, `subplots`, `scale_factor`  |
 
-Each of these sections is described below:
+Each of these sections is described below in detail:
 
 #### `source`
 
@@ -145,13 +145,13 @@ This value specifies a SQL expression to filter data by rows and/or by columns u
 
 #### `transformations`
 
-This section specifies a dict with at least one key-value pair where key is a column name to be created or replaced and value is a SQL expression to be applied to one or multiple columns in data. If the key matches any existing column name in data, it replaces that column with transformed values, otherwise it creates a new one.
+This section specifies a dict with at least one key-value pair where key is a column name to be created or replaced and value is a SQL expression to be applied to one or multiple columns in data. If the key matches any existing column name in data, it replaces that column with transformed values, otherwise new column is created.
 
 #### `date_column`
 
 This value defines the column to aggregate data by time intervals. It is obligatory to have date column in data and it is recommended to define this value explicitly in this configuration section.
 
-Otherwise, a column with the name `date_column` is picked up as a date column. Therefore, having `date_column` as column in data or creating it through `transformations` will also be working options.
+If this value is not defined, a column with the name `date_column` will be picked up as a date column. Therefore, having `date_column` in data created with `transformations` is also a working option.
 
 #### `time_interval`
 
