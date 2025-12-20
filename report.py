@@ -55,7 +55,7 @@ def make_report(
 
     # Get evaluations and create charts for columns
     # representing aggregations for a column in source data:
-    # number of unique values and ratio of null values
+    # number of unique values and proportion of missing values
     for col in metadata:
         data = df.select(
             ["__time_interval"] + [
