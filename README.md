@@ -4,17 +4,17 @@ A configurable Python tool for evaluating quality of sequential data using **[Po
 
 **Why:**
 
-- check data consistency and identify data sources disruptions followed by performace degradation of a production system,
+- check and identify data sources disruptions followed by performace degradation of a production system,
 - be aware of and ensure governance over data changes over time.
 
 **How:**
 
-- evaluates descriptive statistics (e.g. the number of unique values) for each column in data by the specified time intervals,
-- collects evaluation results as a structured markdown report with charts and tables that represent changes of these statistics over time.
+- evaluates descriptive statistics (e.g. the number of unique values) for each column in data over specified time intervals,
+- collects evaluation results as a structured markdown report with charts and tables representing changes of these statistics over time.
 
-<!-- Detailed description with justifications available on my **[Medium](https://medium.com/@dspetukhov)** -->
+<!-- Detailed description of this tool is available on my **[Medium](https://medium.com/@dspetukhov)** -->
 
-<!-- Particular video example of report interpretation available on my **[YouTube](https://www.youtube.com/@dspetukhov)** -->
+<!-- Particular video example of data evaluation and report interpretation available on my **[YouTube](https://www.youtube.com/@dspetukhov)** -->
 
 **NB**: final verdict about data consistency, validity, and overall quality is the responsibility of an individual reviewing the markdown report.
 
@@ -56,34 +56,33 @@ A configurable Python tool for evaluating quality of sequential data using **[Po
 
 ### Features
 
-- **Comprehensive data quality evaluation**: full set of descriptive statistics as quality metrics for evaluating data changes over specified time intervals.
-- **Custom time intervals**: (e.g. 1h, 13h, 1d, 6d, etc.) to comprehend data changes over time.
-- **Feature-rich data reading**: csv / xlsx, parquet, and iceberg file formats as well as reading from cloud and PostgreSQL powered by Polars.
+- **Comprehensive quality evaluation**: full set of descriptive statistics as quality metrics to evaluate data changes over custom time intervals.
+- **Custom time intervals**: (e.g. 1h, 13h, 1d, 6d, 1d1h, etc.) to comprehend data changes over time.
+- **Functional data reading**: csv, xlsx, parquet, and iceberg file formats supported as well as reading from cloud providers and PostgreSQL databases.
 - **Flexible data preprocessing**: data filtering and transformation using SQL expressions supported by Polars.
-- **Outlier analysis**: evaluation and visualization of anomalous data points based on IQR and Z-score criteria.
-- **Customized charts**: with outliers highlighted using Plotly.
-- **Professional markdown reports**: with stylish tables and charts embedded.
-- **Configuration in one place**: main preprocessing and reporting options are specified in a single, human-readable JSON file.
+- **Outliers detection**: evaluation and visual representation of anomalous changes based on IQR or Z-score criteria.
+- **Professional markdown reports**: with stylish tables and customized charts embedded.
+- **Configuration in one place**: a variety preprocessing and reporting options specified in a single, human-readable JSON file.
 
 ### Structure
 
-| Module                         | Description                                                                                           |
-|--------------------------------|-------------------------------------------------------------------------------------------------------|
-| `main.py`                      | Entry point: loads configuration, reads data, preprocesses, generates report                          |
-| `preprocess.py`                | Preprocesses data by applying filter and transformations, aggregates data by date                     |
-| `evaluate.py`                  | Computes statistics for each aggregated column and detects outliers based on IQR and Z-score criteria |
-| `plot.py`                      | Produces charts with outliers highlighted                                                             |
-| `report.py`                    | Produces structured markdown report with tables and charts embedded                                   |
-| `style.css`                    | Report and table styling                                                                              |
-| `config.json`                  | Configuration                                                                                         |
-| `utility/__init__.py`          | Default Plotly template, utility imports                                                              |
-| `utility/setup_logging.py`     | Logging configuration                                                                                 |
-| `utility/handle_data.py`       | Reads data from file, cloud, or database into Polars LazyFrame                                        |
-| `utility/handle_exceptions.py` | Decorator to handle exceptions                                                                        |
+| Module                         | Description                                                                                              |
+|--------------------------------|----------------------------------------------------------------------------------------------------------|
+| `main.py`                      | Entry point: loads configuration, reads, preprocesses, and evaluates data, generates report              |
+| `preprocess.py`                | Preprocesses data by applying filter and transformations, aggregates data by date                        |
+| `evaluate.py`                  | Calculates descriptive statistics for aggregated data, detects outliers based on IQR or Z-score criteria |
+| `plot.py`                      | Produces charts with outliers highlighted                                                                |
+| `report.py`                    | Produces structured markdown report with tables and charts embedded                                      |
+| `style.css`                    | Report and table styling                                                                                 |
+| `config.json`                  | Configuration                                                                                            |
+| `utility/__init__.py`          | Default Plotly template, utility imports                                                                 |
+| `utility/setup_logging.py`     | Logging configuration                                                                                    |
+| `utility/handle_data.py`       | Reads data from file, cloud, or database into Polars LazyFrame                                           |
+| `utility/handle_exceptions.py` | Decorator to handle exceptions                                                                           |
 
 ### Configuration
 
-Data evaluation configuration specified in a single JSON file (`config.json`) by the following sections:
+Data evaluation configuration is defined in a single JSON file (`[config.json](config.json)`) by the following sections:
 
 | Section              | Description                                                     | Expected keys                                                     |
 |----------------------|-----------------------------------------------------------------|-------------------------------------------------------------------|
@@ -99,15 +98,15 @@ Data evaluation configuration specified in a single JSON file (`config.json`) by
 | `markdown`           | Markdown report settings (Optional)                             | `name`, `css_style`, `float_precision`                            |
 | `plotly`             | Plotly styling settings (Optional)                              | `plot`, `outliers`, `layout`, `grid`, `subplots`, `scale_factor`  |
 
-The agreements for each of these sections are listed below:
+Each of these sections is described below:
 
 #### `source`
 
-This section specifies properties to read the source of data with Polars.
+This section specifies properties to read the source of data using Polars.
 
-- `file_path` is the obligatory value that defines the path to the file(s) to read.
-- `file_format` is optional and can be required in cases when file to read does not have extension or file extension does not match supported file formats: csv, xlsx, parquet, iceberg.
-- `storage_options` is required for reading from cloud providers. If these options are not provided, Polars will implicitly try to get relevant credentials from environment variables like `AWS_REGION`, so explicit definition is recommended:
+- `file_path` is the obligatory value defining the path to the file(s) to read.
+- `file_format` is optional and can be required in cases when file to read does not have extension or reading from with directory with partitioned files.
+- `storage_options` is required for reading from cloud providers. If it is not provided, Polars will implicitly try to get relevant credentials from environment variables like `AWS_REGION`, so explicit definition is recommended:
 
 ```python
 storage_options = {
@@ -123,7 +122,7 @@ storage_options = {
 
 Supported types for `schema_overrides` are `String`, `Date` and `Datetime`.
 
-In case of reading from a PostgreSQL database all parameters above replaced by `uri` and `query`:
+In case of reading from a PostgreSQL database all parameters above are replaced by `uri` and `query`:
 
 ```python
 {
@@ -135,13 +134,13 @@ In case of reading from a PostgreSQL database all parameters above replaced by `
 
 #### `output`
 
-This value defines the directory name where the report and charts will be saved. It defaults to the name of the file in case of reading from file or to `postgresql` in case of reading from a PostgreSQL database.
+This value defines the directory where the report and charts will be saved. By default this new directory will be created in the current directory with the name that matches the file name in the case of reading from file or `postgresql` in the case of reading from a PostgreSQL database.
 
-It is recommended to define this value.
+It is recommended to speficy this value.
 
 #### `filter`
 
-This section specifies a SQL expression to filter data by rows and/or by columns using Polars.
+This value specifies a SQL expression to filter data by rows and/or by columns using Polars.
 
 #### `transformations`
 
@@ -194,7 +193,7 @@ All these Plotly configuration parameters and styles are optional and can be bro
 - `subplots` define extra parameters to adjust spacing in the [subplot grid](https://plotly.com/python-api-reference/generated/plotly.subplots.make_subplots.html).
 - `scale_factor` defines factor to scale a chart, defaults to 1.
 
-Plotly theme `plotly_white` is set in [utility](utility/__init__.py#6) module.
+Plotly theme, which is `plotly_white` by default, is set in [utility](utility/__init__.py#6) module.
 
 [Back to table of contents](#table-of-contents)
 
