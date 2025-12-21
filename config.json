@@ -49,6 +49,7 @@
             }
         },
         "layout": {
+            "template": "plotly_white",
             "margin": { "l": 20, "r": 20, "t": 30, "b": 20 },
             "showlegend": false,
             "height": 384,

@@ -170,12 +170,14 @@ def adjust_figure(
         Figure: Adjusted Plotly figure.
     """
     layout = config.get("layout", {}).copy()
+    template = layout.get("template", "plotly_white")
     height = layout.get("height", 512)
     width_scale_factor = layout.pop("width_scale_factor", 1)
     height_scale_factor = layout.pop("height_scale_factor", 1)
 
     # Scale figure size based on the number of rows and cols
     layout.update({
+        "template": template,
         "width": height * n_cols * width_scale_factor,
         "height": height * n_rows * height_scale_factor
         if n_rows > 1 else height
