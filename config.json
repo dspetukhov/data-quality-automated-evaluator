@@ -9,7 +9,7 @@
     "outliers": {
         "criterion": "IQR",
         "multiplier_iqr": 1.5,
-        "multiplier_z_score": 3.0
+        "threshold_z_score": 3.0
     },
     "markdown": {
         "name": "README.md",

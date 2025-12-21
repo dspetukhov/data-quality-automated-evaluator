@@ -19,7 +19,7 @@ def evaluate_data(
         config (Dict[str, Union[str, float]]): Parameters for detecting outliers:
             - 'criterion' (str): IQR or Z-score,
             - 'multiplier_iqr' (float): multiplier for IQR criterion (defaults to 1.5).
-            - 'multiplier_z_score' (float): multiplier for Z-score criterion (defaults to 3.0).
+            - 'threshold_z_score' (float): threshold for Z-score criterion (defaults to 3.0).
 
     Returns:
         Tuple[List[Dict[str, Any]], List[Tuple[float, float]]]:
@@ -29,7 +29,7 @@ def evaluate_data(
                 - range of values,
                 - Q1, Q3, and IQR,
                 - outliers percentage according to IQR and Z-score criteria.
-            - List of boundaries for outliers to be highlighted on plots.
+            - List of boundaries for outliers to be highlighted on a chart.
     """
     data_evals, outliers_bounds = [], []
 
@@ -70,7 +70,7 @@ def evaluate_data_outliers(
 
     This function calculates the number of outliers
     according to IQR and Z-score criteria, determines boundaries
-    to highlight outliers on plots if criterion was specified in configuration.
+    to highlight outliers on a chart if criterion was specified in configuration.
 
     Args:
         data (Sequence[float]): Sequence of data as Polars series.
@@ -81,19 +81,19 @@ def evaluate_data_outliers(
         config (Dict[str, Union[str, float]]): Parameters for detecting outliers:
             - 'criterion' (str): IQR or Z-score,
             - 'multiplier_iqr' (float): multiplier for IQR criterion (defaults to 1.5).
-            - 'multiplier_z_score' (float): multiplier for Z-score criterion (defaults to 3.0).
+            - 'threshold_z_score' (float): threshold for Z-score criterion (defaults to 3.0).
 
     Returns:
         Tuple[int, int, Tuple[Union[float, None], Union[float, None]]]:
             - number of outliers based on IQR and Z-score,
-            - boundaries to highlight outliers on a plot.
+            - boundaries to highlight outliers on a chart.
     """
     # Count the number of outliers based on Z-score
     if std == 0:
         outliers_zscore = 0
     else:
         outliers_zscore = (
-            ((data - mean) / std).abs() > config.get("multiplier_z_score", 3.0)
+            ((data - mean) / std).abs() > config.get("threshold_z_score", 3.0)
         ).sum()
 
     # Determine boundaries for outliers based on IQR
@@ -102,12 +102,12 @@ def evaluate_data_outliers(
     # Count the number of outliers
     outliers_iqr = ((data < lower_bound) | (data > upper_bound)).sum()
 
-    # Get boundaries to highlight outliers on plots
+    # Get boundaries to highlight outliers on a chart
     # if criterion was specified in configuration
     if config.get("criterion") == "Z-score":
         bounds = (
-            mean - config.get("multiplier_z_score", 3.0) * std,
-            mean + config.get("multiplier_z_score", 3.0) * std
+            mean - config.get("threshold_z_score", 3.0) * std,
+            mean + config.get("threshold_z_score", 3.0) * std
         )
     elif config.get("criterion") == "IQR":
         bounds = (lower_bound, upper_bound)
