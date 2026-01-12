@@ -62,7 +62,7 @@ def make_preprocessing(
     # Aggregate data by time intervals / buckets
     lf_agg = lf.group_by("__time_interval").agg(aggs).sort("__time_interval")
     # lf_agg.explain()  # uncomment to get the query plan or turn off/on optimizations
-    lf_agg = lf_agg.collect()
+    lf_agg = lf_agg.collect(engine=config.get("engine", "auto"))
     return lf_agg, metadata
 
 

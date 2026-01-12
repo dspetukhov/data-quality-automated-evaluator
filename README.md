@@ -87,6 +87,7 @@ Data evaluation configuration is defined in a single JSON file ([config.json](co
 | Section              | Description                                                     | Expected keys                                                     |
 |----------------------|-----------------------------------------------------------------|-------------------------------------------------------------------|
 | `source`             | Configuration to read data (Required)                           | `file_path`, `file_format`, `storage_options`, `schema_overrides` |
+| `engine`             | Polars engine used to process the data (Optional)               |                                                                   |
 | `output`             | Directory to save report and charts (Optional)                  |                                                                   |
 | `filter`             | SQL expression to filter data by rows and by columns (Optional) |                                                                   |
 | `transformations`    | Dict of SQL expressions to transform data by columns (Optional) |                                                                   |
@@ -133,6 +134,15 @@ In case of reading from a PostgreSQL database, all parameters above are replaced
 }
 ```
 
+#### `engine`
+
+This value specifies the engine used to process the data. By default it equals to `auto`. Possible values include:
+
+- `gpu` for data processing using GPU
+- `streaming` for processing datasets that do not fit entirely in memory.
+
+If data cannot be processed using the specified engine, Polars will use its in-memory engine.
+
 #### `output`
 
 This value specifies the directory where the report and charts will be saved. By default, the output directory:
@@ -156,7 +166,7 @@ This value specifies a date or datetime column to use for aggregating data over 
 
 #### `time_interval`
 
-This value is used to divide the date or datetime range in `date_column` into equal intervals. The division is implemented with [polars.Expr.dt.truncate](https://docs.pola.rs/api/python/stable/reference/expressions/api/polars.Expr.dt.truncate.html). The default value is "1d", which corresponds to one day, so any other value required must be stated explicitly.
+This value is used to divide the date or datetime range in `date_column` into equal time intervals. The division is implemented with [polars.Expr.dt.truncate](https://docs.pola.rs/api/python/stable/reference/expressions/api/polars.Expr.dt.truncate.html). The default value is "1d", which corresponds to one day, so any other value required must be stated explicitly.
 
 #### `target_column`
 

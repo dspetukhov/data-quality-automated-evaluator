@@ -2,10 +2,11 @@
     "source": {
         "file_path": "../datasets/metaverse_transactions_dataset.csv"
     },
-    "date_column": "timestamp",
+    "engine": "streaming",
     "transformations": {
         "timestamp": "DATE(timestamp, '%Y-%m-%d %H:%M:%S')"
     },
+    "date_column": "timestamp",
     "outliers": {
         "criterion": "IQR",
         "multiplier_iqr": 1.5,
@@ -14,7 +15,8 @@
     "markdown": {
         "name": "README.md",
         "css_style": "style.css",
-        "float_precision": 4
+        "float_precision": 4,
+        "show_table": true
     },
     "plotly": {
         "plot": {
