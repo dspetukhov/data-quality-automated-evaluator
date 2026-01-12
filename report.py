@@ -204,7 +204,7 @@ def collect_md_content(
     content = "\n".join(content)
 
     md_output = [
-        f"#**`{source}`**\n\n",
+        f"# **{source}**\n\n",
         f"## Table of contents\n\n{toc}\n\n",
         content
     ]
