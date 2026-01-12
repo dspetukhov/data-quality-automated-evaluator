@@ -1,6 +1,6 @@
 # Data Quality Automated Evaluation - `DQ-AE`
 
-A configurable Python tool for evaluating the quality of temporal data using **[Polars](https://docs.pola.rs/)** library.
+A configurable Python tool for evaluating the quality of temporal data based on **[Polars](https://docs.pola.rs/)** and **[Plotly](https://docs.plotly.com/)** libraries.
 
 **Why:**
 
@@ -12,11 +12,7 @@ A configurable Python tool for evaluating the quality of temporal data using **[
 - evaluates descriptive statistics (e.g. the number of unique values) for each column in data over specified time intervals,
 - composes evaluation results into a structured markdown report with charts and tables representing changes of these statistics over time.
 
-<!-- Detailed description of this tool is available on my **[Medium](https://medium.com/@dspetukhov)** -->
-
-<!-- Particular video example of data evaluation and report interpretation available on my **[YouTube](https://www.youtube.com/@dspetukhov)** -->
-
-**NB**: final verdict about data consistency, validity, and overall quality is the responsibility of an individual reviewing the markdown report.
+Final verdict about data consistency, validity, and overall quality is the responsibility of an individual reviewing the markdown report.
 
 ## Table of contents
 
@@ -25,13 +21,21 @@ A configurable Python tool for evaluating the quality of temporal data using **[
   - [Features](#features)
   - [Structure](#structure)
   - [Configuration](#configuration)
-- [Datasets](#datasets)
+- [Dataset examples](#dataset-examples)
   - [Kaggle](#kaggle)
   - [Hugging Face](#hugging-face)
 
 ## Quick start
 
-1. **Specify source of data:**
+This tool was developed in Python 3.10.12
+
+1. **Install libraries:**
+
+    ```bash
+    pip install polars==1.37.0 plotly==6.3.0
+    ```
+
+2. **Specify source of data and date column:**
 
     Edit `config.json`:
 
@@ -44,11 +48,13 @@ A configurable Python tool for evaluating the quality of temporal data using **[
     }
     ```
 
-2. **Run evaluation:**
+3. **Run evaluation process:**
 
     ```bash
     python main.py
     ```
+
+4. **Review created markdown report**
 
 [Back to table of contents](#table-of-contents)
 
@@ -154,7 +160,7 @@ It is recommended to define this value.
 
 #### `filter`
 
-This value specifies a SQL expression to filter data by rows and/or by columns using Polars.
+This value specifies a SQL expression to filter data by rows and/or by columns.
 
 #### `transformations`
 
@@ -166,7 +172,7 @@ This value specifies a date or datetime column to use for aggregating data over 
 
 #### `time_interval`
 
-This value is used to divide the date or datetime range in `date_column` into equal time intervals. The division is implemented with [polars.Expr.dt.truncate](https://docs.pola.rs/api/python/stable/reference/expressions/api/polars.Expr.dt.truncate.html). The default value is "1d", which corresponds to one day, so any other value required must be stated explicitly.
+This value is used to divide the date or datetime range in `date_column` into equal time intervals. The division is implemented with [polars.Expr.dt.truncate](https://docs.pola.rs/api/python/stable/reference/expressions/api/polars.Expr.dt.truncate.html). The default value is `1d`, which corresponds to one day, so any other value required must be stated explicitly.
 
 #### `target_column`
 
@@ -182,7 +188,7 @@ This optional value specifies a list of columns to be excluded from the evaluati
 
 This section specifies parameters to evaluate outliers and highlight outlier areas on charts:
 
-- `criterion` defines a method for outlier detection: `IQR` or `Z-score`. This value is mandatory if outlier areas are expected to be shown on charts.
+- `criterion` defines a method for outlier detection: `IQR` or `Z-score`. It is mandatory to specify the value if outlier areas are expected to be shown on charts.
 - `multiplier_iqr` defines the multiplier for the IQR range to determine outlier boundaries (defaults to 1.5).
 - `threshold_z_score` defines the Z-score threshold for identifying outliers (defaults to 3.0).
 
@@ -196,7 +202,7 @@ This section specifies parameters related to the markdown report being produced:
 
 #### `plotly`
 
-All these Plotly configuration parameters and styles are optional and can be adjusted to match your preferences:
+This section specifies Plotly configuration parameters and styles, which can be adjusted to match your preferences.
 
 - `plot` defines style for [plotly.graph_objs.Scatter](https://plotly.com/python-api-reference/generated/plotly.graph_objects.Scatter.html#plotly.graph_objects.Scatter), which renders evaluated descriptive statistics over time intervals.
 - `outliers` defines style for Plotly shapes to highlight outliers.
@@ -205,17 +211,13 @@ All these Plotly configuration parameters and styles are optional and can be adj
 - `subplots` define extra parameters to adjust spacing in the [subplot grid](https://plotly.com/python-api-reference/generated/plotly.subplots.make_subplots.html).
 - `scale_factor` defines factor to scale a chart, defaults to 1.
 
+If none of the parameters are specified, Plotly will use its default values.
+
 [Back to table of contents](#table-of-contents)
 
-## Datasets
+## Dataset examples
 
-Below you can find the list of the publicly available datasets tested in the following Python environment:
-
-```bash
-# Python 3.10.12
-polars==1.35.2
-plotly==6.3.0
-```
+Below you can find example configurations for the publicly available datasets tested using the tool:
 
 ### [Kaggle](https://www.kaggle.com/datasets?search=fraud&sort=votes&tags=13302-Classification&minUsabilityRating=9.00+or+higher)
 
