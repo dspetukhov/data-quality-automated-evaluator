@@ -15,7 +15,7 @@
     "markdown": {
         "name": "README.md",
         "css_style": "style.css",
-        "float_precision": 4,
+        "float_precision": 4
     },
     "plotly": {
         "plot": {
