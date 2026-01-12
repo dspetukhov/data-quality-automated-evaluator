@@ -27,17 +27,17 @@ Final verdict about data consistency, validity, and overall quality is the respo
 
 ## Quick start
 
-This tool was developed in Python 3.10.12
-
 1. **Install libraries:**
 
     ```bash
     pip install polars==1.37.0 plotly==6.3.0
     ```
 
+    Python 3.10+ environment is expected.
+
 2. **Specify source of data and date column:**
 
-    Edit `config.json`:
+    Edit **[config.json](config.json)**:
 
     ```json
     {
@@ -48,6 +48,10 @@ This tool was developed in Python 3.10.12
     }
     ```
 
+    Supported file formats include CSV, XLSX, Parquet, and Iceberg. Reading from cloud providers or PostgreSQL databases is possible. The details of `source` specification can be found in the **[source](#source)** section of the configuration description.
+
+    `date_column` is expected to be a column of date or datetime type. Various working approaches to define this value can be found in **[Dataset examples](#dataset-examples)**.
+
 3. **Run evaluation process:**
 
     ```bash
@@ -55,6 +59,10 @@ This tool was developed in Python 3.10.12
     ```
 
 4. **Review created markdown report**
+
+    By default the report will be:
+    - named README.md, which can be changed by the parameter `name` in the **[markdown](#markdown)** section of the configuration description,
+    - saved into the directory with name that will match the file name. This can be altered according to the **[output](#output)** of the configuration description.
 
 [Back to table of contents](#table-of-contents)
 
