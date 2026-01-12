@@ -58,7 +58,6 @@ def evaluate_data(
     return data_evals, outliers_bounds
 
 
-@exception_handler()
 def evaluate_data_outliers(
         data: Sequence[float],
         mean: float, std: float,

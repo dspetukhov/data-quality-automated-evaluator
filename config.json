@@ -16,7 +16,6 @@
         "name": "README.md",
         "css_style": "style.css",
         "float_precision": 4,
-        "show_table": true
     },
     "plotly": {
         "plot": {

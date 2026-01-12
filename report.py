@@ -98,7 +98,6 @@ def make_report(
     write_md_file(content, output, config.get("markdown", {}).get("name"))
 
 
-@exception_handler()
 def get_report_variables(config: Dict[str, Any]):
     """
     Get key variables to make the report using the configuration provided.
@@ -149,7 +148,6 @@ def get_report_variables(config: Dict[str, Any]):
     return output_dir, md_content, precision, outliers_config, plotly_config
 
 
-@exception_handler()
 def collect_md_content(
     data: Dict[str, Any],
     content: List[str],
@@ -213,7 +211,6 @@ def collect_md_content(
     return md_output
 
 
-@exception_handler()
 def make_md_table(data, precision) -> str:
     """
     Create a markdown table from input data.
@@ -284,7 +281,6 @@ def write_md_file(
         f.writelines(content)
 
 
-@exception_handler()
 def format_number(value, precision):
     """
     Format float numbers with specified precision.

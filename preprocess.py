@@ -66,7 +66,6 @@ def make_preprocessing(
     return lf_agg, metadata
 
 
-@exception_handler()
 def apply_filter(
         lf: pl.LazyFrame, filter_str: str
 ) -> pl.LazyFrame:
@@ -89,7 +88,6 @@ def apply_filter(
     return lf
 
 
-@exception_handler()
 def apply_transformations(
         lf: pl.LazyFrame, transformations: Optional[Dict[str, str]]
 ) -> pl.LazyFrame:
@@ -121,7 +119,6 @@ def apply_transformations(
     return lf
 
 
-@exception_handler(exit_on_error=True)
 def validate_date_column(
     lf: pl.LazyFrame,
     schema: Dict[str, pl.DataType],
@@ -173,7 +170,6 @@ def validate_date_column(
         raise SystemExit("There is no date_column for data preprocessing")
 
 
-@exception_handler()
 def collect_aggregations(
     schema: Dict[str, pl.DataType],
     target_column: str,

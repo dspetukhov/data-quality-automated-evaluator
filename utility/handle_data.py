@@ -61,7 +61,6 @@ def read_source(source: Dict[str, str]) -> pl.LazyFrame:
     raise SystemExit(f"Incorrect source specification: {source}")
 
 
-@exception_handler(exit_on_error=True)
 def _read_source(
         source: str,
         file_format: str,
@@ -120,7 +119,6 @@ def _read_source(
     return lf
 
 
-@exception_handler()
 def handle_schema_overrides(data: Dict[str, str]) -> Dict[str, Any]:
     """
     Replace string data type representation into Polars data type.
@@ -143,7 +141,6 @@ def handle_schema_overrides(data: Dict[str, str]) -> Dict[str, Any]:
     return data
 
 
-@exception_handler()
 def handle_environment_variables(
     params: Union[str, Dict[str, str]]
 ) -> Union[str, Dict[str, str]]:

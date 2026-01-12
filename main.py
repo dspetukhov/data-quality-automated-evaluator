@@ -1,11 +1,10 @@
 import os
 import json
-from utility import logging, read_source, exception_handler
+from utility import logging, read_source
 from preprocess import make_preprocessing
 from report import make_report
 
 
-@exception_handler()
 def main() -> None:
     """
     Main function to execute the data quality evaluation pipeline.

@@ -67,7 +67,6 @@ def make_charts(
         scale=config.get("scale_factor", 1))
 
 
-@exception_handler()
 def create_figure(
     n_subplots: int,
     config: Dict[str, Any],
@@ -102,7 +101,6 @@ def create_figure(
     return fig, n_cols, n_rows
 
 
-@exception_handler()
 def highlight_outliers(
     fig: Figure,
     s: int,
@@ -145,7 +143,6 @@ def highlight_outliers(
     return fig
 
 
-@exception_handler()
 def adjust_figure(
     fig: Figure,
     n_cols: int,
