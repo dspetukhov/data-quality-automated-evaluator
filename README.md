@@ -1,18 +1,12 @@
 # Data Quality Automated Evaluation - `DQ-AE`
 
-A configurable Python tool for evaluating the quality of temporal data based on **[Polars](https://docs.pola.rs/)** and **[Plotly](https://docs.plotly.com/)** libraries.
+A configurable Python tool for evaluating the quality of temporal data.
 
-**Why:**
-
-- check and identify data source disruptions followed by performance degradation of a production system,
-- to be aware of and ensure governance over data changes over time.
-
-**How:**
-
-- evaluates descriptive statistics (e.g. the number of unique values) for each column in data over specified time intervals,
-- composes evaluation results into a structured markdown report with charts and tables representing changes of these statistics over time.
+The approach to data quality evaluation is in calculation of descriptive statistics (e.g. the number of unique values) for each column in data over arbitrary time intervals and creating a structured markdown report with charts and tables representing the changes of the calculated statistics over time.
 
 Final verdict about data consistency, validity, and overall quality is the responsibility of an individual reviewing the markdown report.
+
+Implementation is based on **[Polars](https://docs.pola.rs/)** and **[Plotly](https://docs.plotly.com/)** libraries.
 
 ## Table of contents
 
@@ -62,7 +56,7 @@ Final verdict about data consistency, validity, and overall quality is the respo
 
     By default the report will be:
     - named README.md, which can be changed by the parameter `name` in the **[markdown](#markdown)** section of the configuration description,
-    - saved into the directory with name that will match the file name. This can be altered according to the **[output](#output)** of the configuration description.
+    - saved into the directory with name that will match the file name. This can be altered according to the **[output](#output)** section of the configuration description.
 
 [Back to table of contents](#table-of-contents)
 
@@ -205,7 +199,7 @@ This section specifies parameters to evaluate outliers and highlight outlier are
 This section specifies parameters related to the markdown report being produced:
 
 - `name` defines the name of the report (defaults to `README.md`).
-- `css_style` defines a path to the file with CSS style for tables, e.g. [style.css](style.css), which is optional.
+- `css_style` defines a path to the file with CSS style for tables, e.g. [style.css](style.css). Specifying style for tables is not mandatory, but it makes them more appealing to view.
 - `float_precision` defines the number of decimal places to format floats in markdown tables (defaults to 4).
 
 #### `plotly`
