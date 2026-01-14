@@ -15,6 +15,7 @@ Implementation is based on **[Polars](https://docs.pola.rs/)** and **[Plotly](ht
   - [Features](#features)
   - [Structure](#structure)
   - [Configuration](#configuration)
+- [Troubleshooting](#troubleshooting)
 - [Dataset examples](#dataset-examples)
   - [Kaggle](#kaggle)
   - [Hugging Face](#hugging-face)
@@ -126,11 +127,13 @@ storage_options = {
 }
 ```
 
-- `schema_overrides` can be required for csv or xlsx files to alter column data types during schema inference:
+- `schema_overrides` can be required for CSV or XLSX files to alter column data types during schema inference:
   - when a date or datetime column does not match ISO 8601 standard,
   - when a categorical string column is inferred as a numerical one.
 
 Supported types for `schema_overrides` are `String`, `Date` and `Datetime`.
+
+More details of how `schema_overrides` can be useful when reading data can be found in the [Troubleshooting](#troubleshooting) section.
 
 In case of reading from a PostgreSQL database, all parameters above are replaced by `uri` and `query`:
 
@@ -216,6 +219,35 @@ This section specifies Plotly configuration parameters and styles, which can be 
 If none of the parameters are specified, Plotly will use its default values.
 
 [Back to table of contents](#table-of-contents)
+
+## Troubleshooting
+
+This section describes 
+
+Sometimes data has columns with mixed alphanumeric values, which Polars might interpret as integers during schema inference. This raises a `ComputeError` during data processing.
+
+The problem lies in the parameter `infer_schema_length` that defines the maximum number of rows to scan to infer data schema, which defaults to the 100 first rows.
+
+The solution is to explicitly define a type of column as a string at data ingestion:
+
+```python
+   "source": {
+        "file_path": "/path/to/file.csv",
+        "schema_overrides": {
+            "column": "String"
+        }
+    },
+```
+
+In such cases, column type transformations (e.g. `cast(column as text)` or `column::text`) almost always don't work because of the specifics of Polars’ logical plan optimization and lazy execution: it may still use the originally inferred type.
+
+---
+
+Another common situation that causes `ComputeError` is a date or datetime type column being inferred as a string type during CSV file read. In such cases, column type transformation (e.g. `DATE(column, '%Y-%m-%d %H:%M:%S')`) will work if timestamp values are uniform and match ISO 8601 standard supported by Polars.
+
+If the column has mixed format, e.g. with and without fractional seconds, but still consistent with ISO 8601 standard, it is better to handle it by specifying the type of column as date or datetime in `schema_overrides`.
+
+In cases of complex mixed time formats, raising `ComputeError`, manual data cleaning to standardize the formats remains the best solution, although such cases appear to be rare.
 
 ## Dataset examples
 
