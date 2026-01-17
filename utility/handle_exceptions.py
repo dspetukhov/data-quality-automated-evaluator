@@ -30,13 +30,20 @@ def exception_handler(exit_on_error: bool = False):
             ...
     """
     def decorator(func: Callable) -> Callable:
-        def make_message(exc_info) -> str:
+        def make_message(exc_info: tuple) -> str:
             exc_type, exc_obj, tb_obj = exc_info
-            summary = traceback.extract_tb(tb_obj)[1]
-            return "{0}: {1}#{2}: {3}: {4}".format(
-                exc_type.__name__,
-                summary.filename, summary.lineno, summary.line,
-                str(exc_obj))
+            extract_tb = traceback.extract_tb(tb_obj)
+            if extract_tb:
+                summary = extract_tb[-1]
+                return "{0}: {1}#{2}: {3}: {4}".format(
+                    exc_type.__name__,
+                    summary.filename,
+                    summary.lineno,
+                    summary.line,
+                    str(exc_obj)
+                )
+            else:
+                return "{0}: {1}".format(exc_type.__name__, str(exc_obj))
 
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -44,8 +51,8 @@ def exception_handler(exit_on_error: bool = False):
                 return func(*args, **kwargs)
             except Exception:
                 logging.error(make_message(sys.exc_info()))
-            if exit_on_error:
-                sys.exit(1)
-            return args[0] if args else None
+                if exit_on_error:
+                    sys.exit(1)
+                return args[0] if args else None
         return wrapper
     return decorator
