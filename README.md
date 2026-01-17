@@ -67,8 +67,8 @@ Implementation is based on **[Polars](https://docs.pola.rs/)** and **[Plotly](ht
 
 - **Comprehensive quality evaluation**: a full set of descriptive statistics used as quality metrics to evaluate data changes over custom time intervals.
 - **Custom time intervals**: (e.g. 1h, 13h, 1d, 6d, 1d1h, etc.) to comprehend data changes over time.
-- **Various data sources**: CSV, XLSX, Parquet, and Iceberg file formats supported as well as reading from cloud providers and PostgreSQL databases.
-- **Flexible data preprocessing**: data filtering and transformation using SQL expressions supported by Polars.
+- **Various data sources**: CSV, XLSX, Parquet, and Iceberg file formats supported as well as reading from cloud providers or PostgreSQL databases.
+- **Flexible & performant data preprocessing**: data filtering and transformation using SQL expressions powered by Polars with lazy evaluation.
 - **Outliers detection**: evaluation and visual representation of anomalous changes based on IQR or Z-score criteria.
 - **Professional markdown reports**: with formatted tables and customized charts embedded.
 - **Configuration in one place**: a variety of preprocessing and reporting options specified in a single, human-readable JSON file.
@@ -222,13 +222,11 @@ If none of the parameters are specified, Plotly will use its default values.
 
 ## Troubleshooting
 
-This section describes 
+This section describes potential hurdles of processing CSV or XLSX file formats, which raise `ComputeError` exception.
 
-Sometimes data has columns with mixed alphanumeric values, which Polars might interpret as integers during schema inference. This raises a `ComputeError` during data processing.
+The first one is caused by the column with mixed alphanumeric values, which might be interpreted as integers during schema inference. The problem is that by default Polars infers schema from the first 100 rows of CSV and XLSX files, which is defined by the `infer_schema_length` parameter in `scan_cvs` or `read_excel` functions.
 
-The problem lies in the parameter `infer_schema_length` that defines the maximum number of rows to scan to infer data schema, which defaults to the 100 first rows.
-
-The solution is to explicitly define a type of column as a string at data ingestion:
+The solution is to explicitly define the type of the column as a string at data ingestion:
 
 ```python
    "source": {
@@ -243,11 +241,13 @@ In such cases, column type transformations (e.g. `cast(column as text)` or `colu
 
 ---
 
-Another common situation that causes `ComputeError` is a date or datetime type column being inferred as a string type during CSV file read. In such cases, column type transformation (e.g. `DATE(column, '%Y-%m-%d %H:%M:%S')`) will work if timestamp values are uniform and match ISO 8601 standard supported by Polars.
+Another common issue that causes `ComputeError` is a date or datetime type column being inferred as a string type. In such cases, column type transformation (e.g. `DATE(column, '%Y-%m-%d %H:%M:%S')`) will work if timestamp values are uniform and match ISO 8601 standard supported by Polars.
 
-If the column has mixed format, e.g. with and without fractional seconds, but still consistent with ISO 8601 standard, it is better to handle it by specifying the type of column as date or datetime in `schema_overrides`.
+If the column has mixed format, e.g. with and without fractional seconds, but still consistent with ISO 8601 standard, it is better to handle it by specifying the type of the column as date or datetime in `schema_overrides`.
 
-In cases of complex mixed time formats, raising `ComputeError`, manual data cleaning to standardize the formats remains the best solution, although such cases appear to be rare.
+In cases of complex mixed time formats raising `ComputeError`, manual data cleaning to standardize the formats remains the best solution, although such cases appear to be rare.
+
+[Back to table of contents](#table-of-contents)
 
 ## Dataset examples
 
