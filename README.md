@@ -2,11 +2,11 @@
 
 A configurable Python tool for evaluating the quality of temporal data.
 
-The approach to data quality evaluation is in calculation of descriptive statistics (e.g. the number of unique values) for each column in data over arbitrary time intervals and creating a structured markdown report with charts and tables representing the changes of the calculated statistics over time.
+DQ-AE evaluates data quality by calculating descriptive statistics (e.g., number of unique values) for each column in data over arbitrary time intervals. The tool generates a structured markdown report with charts and tables that represent the changes of these statistics over time.
 
-Final verdict about data consistency, validity, and overall quality is the responsibility of an individual reviewing the markdown report.
+The final assessment of data consistency, validity, and overall quality is the responsibility of an individual reviewing the markdown report.
 
-Implementation is based on **[Polars](https://docs.pola.rs/)** and **[Plotly](https://docs.plotly.com/)** libraries.
+Built with **[Polars](https://docs.pola.rs/)** and **[Plotly](https://docs.plotly.com/)**.
 
 ## Table of contents
 
@@ -25,7 +25,7 @@ Implementation is based on **[Polars](https://docs.pola.rs/)** and **[Plotly](ht
 1. **Install libraries:**
 
     ```bash
-    pip install polars==1.37.0 plotly==6.3.0
+    pip install polars>=1.37.0 plotly>=6.3.0
     ```
 
     Python 3.10+ environment is expected.
@@ -43,9 +43,10 @@ Implementation is based on **[Polars](https://docs.pola.rs/)** and **[Plotly](ht
     }
     ```
 
-    Supported file formats include CSV, XLSX, Parquet, and Iceberg. Reading from cloud providers or PostgreSQL databases is possible. The details of `source` specification can be found in the **[source](#source)** section of the configuration description.
+    Supported file formats: CSV, XLSX, Parquet, and Iceberg. Cloud storage and PostgreSQL databases are also supported.
+    The details of `source` specification can be found in the **[source](#source)** section of the configuration description.
 
-    `date_column` is expected to be a column of date or datetime type. Various working approaches to define this value can be found in **[Dataset examples](#dataset-examples)**.
+    `date_column` is expected to be a column of date or datetime type. Various examples to define this value can be found in **[Dataset examples](#dataset-examples)**.
 
 3. **Run evaluation process:**
 
