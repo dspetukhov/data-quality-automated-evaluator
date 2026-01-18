@@ -2,7 +2,7 @@
 
 A configurable Python tool for evaluating the quality of temporal data.
 
-DQ-AE evaluates data quality by calculating descriptive statistics (e.g., number of unique values) for each column in data over arbitrary time intervals. The tool generates a structured markdown report with charts and tables that represent the changes of these statistics over time.
+This tool evaluates data quality by calculating descriptive statistics (e.g., number of unique values) for each column in data over custom time intervals. The tool generates a structured markdown report with charts and tables that represent the changes of these statistics over time.
 
 The final assessment of data consistency, validity, and overall quality is the responsibility of an individual reviewing the markdown report.
 
@@ -16,21 +16,22 @@ Built with **[Polars](https://docs.pola.rs/)** and **[Plotly](https://docs.plotl
   - [Structure](#structure)
   - [Configuration](#configuration)
 - [Troubleshooting](#troubleshooting)
-- [Dataset examples](#dataset-examples)
+- [Dataset reading examples](#dataset-reading-examples)
   - [Kaggle](#kaggle)
   - [Hugging Face](#hugging-face)
 
+## Requirements
+
+```txt
+# Python 3.10 or higher
+
+polars>=1.37.0
+plotly>=6.3.0
+```
+
 ## Quick start
 
-1. **Install libraries:**
-
-    ```bash
-    pip install polars>=1.37.0 plotly>=6.3.0
-    ```
-
-    Python 3.10+ environment is expected.
-
-2. **Specify source of data and date column:**
+1. **Specify source of data and date column name:**
 
     Edit **[config.json](config.json)**:
 
@@ -44,19 +45,19 @@ Built with **[Polars](https://docs.pola.rs/)** and **[Plotly](https://docs.plotl
     ```
 
     Supported file formats: CSV, XLSX, Parquet, and Iceberg. Cloud storage and PostgreSQL databases are also supported.
-    The details of `source` specification can be found in the **[source](#source)** section of the configuration description.
+    Details of the `source` definition are in the **[source](#source)** section of the configuration description.
 
-    `date_column` is expected to be a column of date or datetime type. Various examples to define this value can be found in **[Dataset examples](#dataset-examples)**.
+    `date_column` is expected to be a name of the date or datetime type column. Various examples of defining this parameter are in **[Dataset reading examples](#dataset-reading-examples)**.
 
-3. **Run evaluation process:**
+2. **Run evaluation process:**
 
     ```bash
     python main.py
     ```
 
-4. **Review created markdown report**
+3. **Review generated markdown report**
 
-    By default the report will be:
+    By default, the report will be:
     - named README.md, which can be changed by the parameter `name` in the **[markdown](#markdown)** section of the configuration description,
     - saved into the directory with name that will match the file name. This can be altered according to the **[output](#output)** section of the configuration description.
 
@@ -66,13 +67,13 @@ Built with **[Polars](https://docs.pola.rs/)** and **[Plotly](https://docs.plotl
 
 ### Features
 
-- **Comprehensive quality evaluation**: a full set of descriptive statistics used as quality metrics to evaluate data changes over custom time intervals.
-- **Custom time intervals**: (e.g. 1h, 13h, 1d, 6d, 1d1h, etc.) to comprehend data changes over time.
+- **Comprehensive data evaluation**: a comprehensive set of descriptive statistics to evaluate data changes over custom time intervals.
+- **Custom time intervals**: (e.g., 1h, 13h, 1d, 6d, 1d1h, etc.) to analyze data changes over different time scales.
 - **Various data sources**: CSV, XLSX, Parquet, and Iceberg file formats supported as well as reading from cloud providers or PostgreSQL databases.
 - **Flexible & performant data preprocessing**: data filtering and transformation using SQL expressions powered by Polars with lazy evaluation.
 - **Outliers detection**: evaluation and visual representation of anomalous changes based on IQR or Z-score criteria.
 - **Professional markdown reports**: with formatted tables and customized charts embedded.
-- **Configuration in one place**: a variety of preprocessing and reporting options specified in a single, human-readable JSON file.
+- **Configuration in one place**: various preprocessing and reporting options specified in a single, human-readable JSON file.
 
 ### Structure
 
@@ -115,20 +116,20 @@ Each of these sections is described below in detail:
 
 This section specifies parameters to read the source of data using Polars:
 
-- `file_path` is the mandatory value defining the path to the file(s) to read.
+- `file_path` is the mandatory parameter defining the path to the file(s) to read.
 - `file_format` is required in cases when file to read is missing an extension at the end of the name or when reading from a directory with partitioned files.
 - `storage_options` is required for reading from cloud providers. However, if not explicitly specified, Polars will implicitly try to get relevant credentials from environment variables, so explicit specification of the variables is recommended:
 
 ```python
 storage_options = {
     # definition with `$` sign as a first symbol will be interpreted as an environment variable to be used
-    # definition without `$` sign as a first symbol will be interpreted as a string value
+    # definition without `$` sign as a first symbol will be interpreted as a string
     "aws_access_key_id": "$S3_KEY_ID",
     ...
 }
 ```
 
-- `schema_overrides` can be required for CSV or XLSX files to alter column data types during schema inference:
+- `schema_overrides` may be required for CSV or XLSX files to alter column data types during schema inference:
   - when a date or datetime column does not match ISO 8601 standard,
   - when a categorical string column is inferred as a numerical one.
 
@@ -136,11 +137,11 @@ Supported types for `schema_overrides` are `String`, `Date` and `Datetime`.
 
 More details of how `schema_overrides` can be useful when reading data can be found in the [Troubleshooting](#troubleshooting) section.
 
-In case of reading from a PostgreSQL database, all parameters above are replaced by `uri` and `query`:
+When reading from a PostgreSQL database, all parameters above are replaced by `uri` and `query`:
 
 ```python
 {
-    # `uri` can be specified as an environment variable, e.g. "$PG_URI"
+    # `uri` can be specified as an environment variable, e.g., "$PG_URI"
     "uri": "postgresql://username:password@server:port/database",
     "query": "select * from foo"
 }
@@ -148,53 +149,53 @@ In case of reading from a PostgreSQL database, all parameters above are replaced
 
 #### `engine`
 
-This value specifies the engine used to process the data. By default it equals to `auto`. Possible values include:
+This parameter specifies the engine used to process the data. By default it equals to `auto`. Possible values include:
 
 - `gpu` for data processing using GPU
 - `streaming` for processing datasets that do not fit entirely in memory.
 
-If data cannot be processed using the specified engine, Polars will use its in-memory engine.
+If the data cannot be processed using the specified engine, Polars will use its in-memory engine.
 
 #### `output`
 
-This value specifies the directory where the report and charts will be saved. By default, the output directory:
+This parameter specifies the directory where the report and charts will be saved. By default, the output directory:
 
 - will be created in the current directory,
-- its name will match the file name when reading from a file or `postgresql` when reading from a PostgreSQL database.
+- its name matches the input filename when reading from a file or `postgresql` when reading from a PostgreSQL database.
 
-It is recommended to define this value.
+It is recommended to define this parameter explicitly.
 
 #### `filter`
 
-This value specifies a SQL expression to filter data by rows and/or by columns.
+This parameter specifies a SQL expression to filter data by rows and/or by columns.
 
 #### `transformations`
 
-This section specifies a dict with at least one key-value pair where the key is a column name to be created or replaced and the value is a SQL expression to be applied to one or multiple columns in data. If the key matches any existing column name in data, it replaces that column with transformed values, otherwise a new column is created.
+This section specifies a dictionary with at least one key-value pair, where the key is a column name to be created or replaced and the value is a SQL expression to be applied to one or multiple columns in data. If the key matches any existing column name in data, it replaces that column with transformed values, otherwise a new column is created.
 
 #### `date_column`
 
-This value specifies a date or datetime column to use for aggregating data over time intervals. If not specified, the tool will try to use a column named `date_column`, which can be created with `transformations`.
+This parameter specifies the name of a date or datetime type column to use for aggregating data over time intervals. If not specified, the tool will try to use a column named `date_column`, which can be created using `transformations`.
 
 #### `time_interval`
 
-This value is used to divide the date or datetime range in `date_column` into equal time intervals. The division is implemented with [polars.Expr.dt.truncate](https://docs.pola.rs/api/python/stable/reference/expressions/api/polars.Expr.dt.truncate.html). The default value is `1d`, which corresponds to one day, so any other value required must be stated explicitly.
+This parameter is used to divide the date or datetime range in `date_column` into equal time intervals. The division is implemented with [polars.Expr.dt.truncate](https://docs.pola.rs/api/python/stable/reference/expressions/api/polars.Expr.dt.truncate.html). The default value is `1d`, which corresponds to one day, so any other value required must be specified explicitly.
 
 #### `target_column`
 
-This optional value specifies a column in data to calculate target average, which is the class balance in machine learning binary classification problems. The calculation result will be shown in the `Overview` section of the markdown report.
+This optional parameter specifies a column in data to calculate target average, which is the class balance in machine learning binary classification problems. The result of calculation will be shown in the `Overview` section of the markdown report.
 
-If this value is not stated, a column with the name `target_column` will be used as target column. If there is no `target_column` in the data, it can be created with `transformations`.
+If not specified, the tool will try to use a column named `target_column`, which can be created using `transformations`, and if there is no such column in the data the target average won't be calculated.
 
 #### `columns_to_exclude`
 
-This optional value specifies a list of columns to be excluded from the evaluation process.
+This optional parameter specifies a list of columns to be excluded from the evaluation process.
 
 #### `outliers`
 
-This section specifies parameters to evaluate outliers and highlight outlier areas on charts:
+This section specifies parameters to evaluate outliers and highlight outlier regions on charts:
 
-- `criterion` defines a method for outlier detection: `IQR` or `Z-score`. It is mandatory to specify the value if outlier areas are expected to be shown on charts.
+- `criterion` defines a method for outlier detection: `IQR` or `Z-score`. This parameter must be specified to display outlier regions on charts.
 - `multiplier_iqr` defines the multiplier for the IQR range to determine outlier boundaries (defaults to 1.5).
 - `threshold_z_score` defines the Z-score threshold for identifying outliers (defaults to 3.0).
 
@@ -203,7 +204,7 @@ This section specifies parameters to evaluate outliers and highlight outlier are
 This section specifies parameters related to the markdown report being produced:
 
 - `name` defines the name of the report (defaults to `README.md`).
-- `css_style` defines a path to the file with CSS style for tables, e.g. [style.css](style.css). Specifying style for tables is not mandatory, but it makes them more appealing to view.
+- `css_style` defines a path to the file with CSS style for tables, e.g., [style.css](style.css). Specifying style for tables is not mandatory, but it improves readability and look.
 - `float_precision` defines the number of decimal places to format floats in markdown tables (defaults to 4).
 
 #### `plotly`
@@ -217,15 +218,15 @@ This section specifies Plotly configuration parameters and styles, which can be 
 - `subplots` define extra parameters to adjust spacing in the [subplot grid](https://plotly.com/python-api-reference/generated/plotly.subplots.make_subplots.html).
 - `scale_factor` defines factor to scale a chart, defaults to 1.
 
-If none of the parameters are specified, Plotly will use its default values.
+If none of the parameters are specified, Plotly will use its default parameters.
 
 [Back to table of contents](#table-of-contents)
 
 ## Troubleshooting
 
-This section describes potential hurdles of processing CSV or XLSX file formats, which raise `ComputeError` exception.
+This section describes potential hurdles of processing CSV or XLSX file formats, which raise a `ComputeError` exception.
 
-The first one is caused by the column with mixed alphanumeric values, which might be interpreted as integers during schema inference. The problem is that by default Polars infers schema from the first 100 rows of CSV and XLSX files, which is defined by the `infer_schema_length` parameter in `scan_cvs` or `read_excel` functions.
+The first issue is caused by a column with mixed alphanumeric values, which might be interpreted as an integer type during schema inference. The problem is that by default Polars infers schema from the first 100 rows of CSV and XLSX files, which is defined by the `infer_schema_length` parameter in `scan_cvs` or `read_excel` functions.
 
 The solution is to explicitly define the type of the column as a string at data ingestion:
 
@@ -238,19 +239,19 @@ The solution is to explicitly define the type of the column as a string at data 
     },
 ```
 
-In such cases, column type transformations (e.g. `cast(column as text)` or `column::text`) almost always don't work because of the specifics of Polars’ logical plan optimization and lazy execution: it may still use the originally inferred type.
+In such cases, column type transformations (e.g., `cast(column as text)` or `column::text`) typically do not work because of the specifics of Polars’ lazy execution and logical plan optimization: it may still use the originally inferred type.
 
 ---
 
-Another common issue that causes `ComputeError` is a date or datetime type column being inferred as a string type. In such cases, column type transformation (e.g. `DATE(column, '%Y-%m-%d %H:%M:%S')`) will work if timestamp values are uniform and match ISO 8601 standard supported by Polars.
+Another common issue that causes `ComputeError` is a date or datetime type column being inferred as a string type. In these cases, column type transformation (e.g., `DATE(column, '%Y-%m-%d %H:%M:%S')`) will work if timestamp values are uniform and match ISO 8601 standard supported by Polars.
 
-If the column has mixed format, e.g. with and without fractional seconds, but still consistent with ISO 8601 standard, it is better to handle it by specifying the type of the column as date or datetime in `schema_overrides`.
+If the column has mixed format, e.g., with and without fractional seconds, but still consistent with ISO 8601 standard, it is better to handle it by specifying the type of the column as date or datetime in `schema_overrides`.
 
-In cases of complex mixed time formats raising `ComputeError`, manual data cleaning to standardize the formats remains the best solution, although such cases appear to be rare.
+In cases of complex mixed time formats raising `ComputeError`, manual data cleaning to standardize the formats remains the best solution, although such cases are uncommon.
 
 [Back to table of contents](#table-of-contents)
 
-## Dataset examples
+## Dataset reading examples
 
 Below you can find example configurations for the publicly available datasets tested using the tool:
 
