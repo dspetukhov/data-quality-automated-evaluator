@@ -31,34 +31,42 @@ def read_source(source: Dict[str, str]) -> pl.LazyFrame:
         pl.LazyFrame: Polars lazy data frame.
 
     Raises:
-        SystemExit: If data cannot be loaded.
+        SystemExit: If data cannot be loaded or source specification is invalid.
     """
-    if isinstance(source, dict):
-        if source.get("query") and source.get("uri"):
-            # Read from PostgreSQL database
-            lf = pl.read_database_uri(
-                query=source["query"],
-                uri=handle_environment_variables(source["uri"])
-            ).lazy()
+    if not isinstance(source, dict):
+        raise SystemExit(
+            f"Source specification must be a dictionary, got: {type(source).__name__}")
 
-        elif source.get("file_path"):
-            # Get storage_options to read from cloud providers
-            storage_options = handle_environment_variables(
-                source.get("storage_options")
-            )
-            # Get schema_overrides to alter schema dtypes for csv / xlsx
-            schema_overrides = handle_schema_overrides(
-                source.get("schema_overrides"))
-            # Get file format if specified
-            file_format = source.get("file_format")
-            lf = _read_source(
-                    source["file_path"],
-                    file_format,
-                    storage_options, schema_overrides)
+    lf = None
 
-        return lf
+    if source.get("query") and source.get("uri"):
+        # Read from PostgreSQL database
+        lf = pl.read_database_uri(
+            query=source["query"],
+            uri=handle_environment_variables(source["uri"])
+        ).lazy()
 
-    raise SystemExit(f"Incorrect source specification: {source}")
+    elif source.get("file_path"):
+        # Get storage_options to read from cloud providers
+        storage_options = handle_environment_variables(
+            source.get("storage_options")
+        )
+        # Get schema_overrides to alter schema dtypes for csv / xlsx
+        schema_overrides = handle_schema_overrides(
+            source.get("schema_overrides")
+        )
+
+        lf = _read_source(
+            source["file_path"],
+            source.get("file_format"),
+            storage_options,
+            schema_overrides
+        )
+
+    if lf is None:
+        raise SystemExit(f"The specified source cannot be read: {source}")
+
+    return lf
 
 
 def _read_source(
@@ -96,6 +104,8 @@ def _read_source(
         "iceberg": pl.scan_iceberg,
         "xlsx": pl.read_excel
     }
+    read_func = None
+
     if file_format in read_source_func:
         read_func = read_source_func[file_format]
     else:
@@ -105,14 +115,16 @@ def _read_source(
                 logging.info(f"Identified file format: {ff}")
                 file_format, read_func = ff, rf
 
-    if file_format in ("csv", "xlsx"):
-        lf = read_func(
-            source,
-            storage_options=storage_options,
-            schema_overrides=schema_overrides
-        ).lazy()
-    elif file_format in read_source_func:
-        lf = read_func(source, storage_options=storage_options).lazy()
+    if file_format in read_source_func:
+        read_func = read_source_func[file_format]
+        if file_format in ("csv", "xlsx"):
+            lf = read_source_func[file_format](
+                source,
+                storage_options=storage_options,
+                schema_overrides=schema_overrides
+            ).lazy()
+        else:
+            lf = read_func(source, storage_options=storage_options).lazy()
     else:
         raise SystemExit(f"Unsupported source: {source}")
 
@@ -135,8 +147,14 @@ def handle_schema_overrides(data: Dict[str, str]) -> Dict[str, Any]:
         "Date": pl.Date,
         "Datetime": pl.Datetime
     }
-    if isinstance(data, dict):
-        data = {key: dtypes[value] for key, value in data.items()}
+    if isinstance(data, dict) and data:
+        output = {}
+        for key, value in data.items():
+            if value in dtypes:
+                output[key] = dtypes[value]
+            else:
+                logging.warning(f"Unsupported data type '{value}' for column '{key}'")
+        return output
 
     return data
 
@@ -147,8 +165,9 @@ def handle_environment_variables(
     """
     Replace environment variable placeholders with actual values.
 
-    "$" sign as a first symbol in placeholders is expected
-    to search and replace placeholders with actual values.
+    Any value in `params` starting with "$" sign is considered as
+    environment variable placeholders that will be replaced with
+    the environment variable value.
 
     Args:
         params (Union[str, Dict[str, str]]): Input parameters potentially
@@ -158,16 +177,27 @@ def handle_environment_variables(
         Union[str, Dict[str, str]]: Updated parameters
             with environment variable placeholders replaced by their actual values.
     """
-    if isinstance(params, str) and params.startswith("$"):
-        params = params[1:]
-        if params in os.environ:
-            logging.info(f"Environment variable for {params} is found")
-            params = os.getenv(params)
-    elif isinstance(params, dict):
+    def get_environment_variable(value: str) -> str:
+        if value.startswith("$"):
+            value = value[1:]
+            if value in os.environ:
+                logging.info(f"Environment variable for '{value}' is found")
+                return os.getenv(value)
+            else:
+                logging.warning(f"Environment variable for '{value}' wasn't found")
+        else:
+            return value
+
+    if isinstance(params, str):
+        return get_environment_variable(params)
+
+    if isinstance(params, dict):
+        output = {}
         for key, value in params.items():
-            if value.startswith("$"):
-                value = value[1:]
-                if value in os.environ:
-                    logging.info(f"Environment variable for {value} is found")
-                    params[key] = os.getenv(value)
+            if isinstance(value, str):
+                output[key] = get_environment_variable(value)
+            else:
+                output[key] = value
+        return output
+
     return params
