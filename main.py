@@ -1,11 +1,13 @@
 import os
+import sys
 import json
+from pathlib import Path
 from utility import logging, read_source
 from preprocess import make_preprocessing
 from report import make_report
 
 
-def main() -> None:
+def main(config: dict) -> None:
     """
     Main function to execute the data quality evaluation pipeline.
     Requires `config.json` correct preset.
@@ -22,13 +24,13 @@ def main() -> None:
         SystemExit: If the configuration file is missing or cannot be parsed,
             or if the data source cannot be loaded.
     """
-    config = {}
+
     # Check if the configuration file exists
     if os.path.exists("config.json"):
         with open("config.json") as file:
             config = json.load(file)
     else:
-        logging.warning("Configuration file wasn't found")
+        logging.error("Configuration file wasn't found")
 
     # Proceed if configuration was loaded and contains `source`
     if config.get("source"):
@@ -40,4 +42,22 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+
+    if len(sys.argv) <= 2:
+        config = {}
+        if len(sys.argv) == 2:
+            config_file_path = Path(sys.argv[1])
+            if config_file_path.exists() and config_file_path.is_file():
+                try:
+                    with open(config_file_path) as file:
+                        config = json.load(file)
+                except Exception as e:
+                    logging.error(
+                        f"Error reading provided {config_file_path}: {e}"
+                    )
+
+        main(config)
+
+    else:
+        logging.warning("Usage: python main.py <config_file_path>")
+        sys.exit(1)
