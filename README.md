@@ -55,6 +55,8 @@ plotly>=6.3.0
     python main.py
     ```
 
+    A separate configuration file can be used if specified as an extra command-line argument to the tool. By default, `config.json` in the current directory will be used.
+
 3. **Review generated markdown report**
 
     By default, the report will be:
@@ -73,7 +75,7 @@ plotly>=6.3.0
 - **Flexible & performant data preprocessing**: data filtering and transformation using SQL expressions powered by Polars with lazy evaluation.
 - **Outliers detection**: evaluation and visual representation of anomalous changes based on IQR or Z-score criteria.
 - **Professional markdown reports**: with formatted tables and customized charts embedded.
-- **Configuration in one place**: various preprocessing and reporting options specified in a single, human-readable JSON file.
+- **Configuration in one place**: various preprocessing and reporting parameters specified in a single human-readable JSON file which can be passed as a command line argument.
 
 ### Structure
 
@@ -253,7 +255,7 @@ In cases of complex mixed time formats raising `ComputeError`, manual data clean
 
 ## Dataset reading examples
 
-Below you can find example configurations for the publicly available datasets tested using the tool:
+This tool was tested using publicly available datasets. Full configurations for evaluating these datasets are in **[examples](examples)** directory. Brief examples that require adjusting few parameters in existing **[config.json](config.json)** are listed below:
 
 ### [Kaggle](https://www.kaggle.com/datasets?search=fraud&sort=votes&tags=13302-Classification&minUsabilityRating=9.00+or+higher)
 
