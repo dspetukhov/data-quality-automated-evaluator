@@ -52,7 +52,7 @@ plotly>=6.3.0
 2. **Run evaluation process:**
 
     ```bash
-    python main.py
+    python main.py config.json
     ```
 
     A separate configuration file can be used if specified as an extra command-line argument to the tool. By default, `config.json` in the current directory will be used.
@@ -75,7 +75,7 @@ plotly>=6.3.0
 - **Flexible & performant data preprocessing**: data filtering and transformation using SQL expressions powered by Polars with lazy evaluation.
 - **Outliers detection**: evaluation and visual representation of anomalous changes based on IQR or Z-score criteria.
 - **Professional markdown reports**: with formatted tables and customized charts embedded.
-- **Configuration in one place**: various preprocessing and reporting parameters specified in a single human-readable JSON file which can be passed as a command line argument.
+- **Configuration in one place**: various preprocessing and reporting parameters specified in a single human-readable JSON file passed as a command line argument.
 
 ### Structure
 
@@ -177,7 +177,7 @@ This section specifies a dictionary with at least one key-value pair, where the 
 
 #### `date_column`
 
-This parameter specifies the name of a date or datetime type column to use for aggregating data over time intervals. If not specified, the tool will try to use a column named `date_column`, which can be created using `transformations`.
+This parameter specifies the name of a date or datetime type column to use for aggregating data over time intervals. If not specified, the tool will try to use a column named `date_column`, which can be created using `transformations`. If there is no such column, the tool will print data schema and exit.
 
 #### `time_interval`
 
@@ -255,7 +255,7 @@ In cases of complex mixed time formats raising `ComputeError`, manual data clean
 
 ## Dataset reading examples
 
-This tool was tested using publicly available datasets. Full configurations for evaluating these datasets are in **[examples](examples)** directory. Brief examples that require adjusting few parameters in existing **[config.json](config.json)** are listed below:
+This tool was tested using publicly available datasets. Full configurations for evaluating these datasets are in **[examples](examples)** directory. The only major difference between them is the `source` and `date_column` / `target_column` specification with extra transformations where necessary. Ready-to-use code snippets that require adjusting a few parameters in existing **[config.json](config.json)** are listed below:
 
 ### [Kaggle](https://www.kaggle.com/datasets?search=fraud&sort=votes&tags=13302-Classification&minUsabilityRating=9.00+or+higher)
 
