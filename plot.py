@@ -9,10 +9,10 @@ from utility import exception_handler
 @exception_handler()
 def make_charts(
     data: DataFrame,
-    bounds: List[Tuple[float]],
+    bounds: List[Tuple[float | None, float | None]],
     config: Dict[str, Any],
-    file_path: str,
-) -> Dict[str, float]:
+    file_path: str
+) -> None:
     """
     Make charts from input data using Plotly.
 
@@ -23,7 +23,8 @@ def make_charts(
 
     Args:
         data (DataFrame): Data to plot.
-        bounds (List[Tuple[float]]): List of boundaries to highlight outliers.
+        bounds (List[Tuple[float | None, float | None]]): List of boundaries
+            to highlight outliers.
         config (Dict[str, Any]): Plotly styling settings, including:
             - 'plot': dict of Scatter style settings.
             - 'outliers': dict of outliers highlighting settings.
@@ -63,21 +64,22 @@ def make_charts(
 
     # Save figure as PNG file
     fig.write_image(
-        f"{file_path}.png",
-        scale=config.get("scale_factor", 1))
+        file_path, format="png",
+        scale=config.get("scale_factor", 1)
+    )
 
 
 def create_figure(
     n_subplots: int,
     config: Dict[str, Any],
     titles: List[str]
-) -> Figure:
+) -> Tuple[Figure, int, int]:
     """
     Creates Plotly figure with required number of subplots.
 
     This function creates figure using `plotly.subplots.make_subplots`.
     The size of the subplots grid depends on the total number of subplots.
-    Each subplot may have a title if the titles tuple provided.
+    Each subplot has a title specified in `titles`.
 
     Args:
         n_subplots (int): Total number of subplots in the subplot grid.
@@ -106,7 +108,7 @@ def highlight_outliers(
     s: int,
     x: Sequence[Any],
     data: Sequence[Any],
-    bounds: Tuple[float],
+    bounds: Tuple[float | None, float | None],
     n_cols: int,
     config: Dict[str, Any]
 ) -> Figure:
@@ -121,7 +123,7 @@ def highlight_outliers(
         s (int): Subplot index.
         x (Sequence[Any]): x-axis data.
         data (Sequence[Any]): y-axis data.
-        bounds (Tuple[float]): Tuple with lower and upper boundaries.
+        bounds (Tuple[float | None, float | None]): Tuple with lower and upper boundaries.
         n_cols (int): Number of columns in the subplot grid.
         config (Dict[str, Any]): Plotly styling settings for outliers.
 
