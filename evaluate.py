@@ -1,12 +1,12 @@
-from typing import Sequence, Any, Dict, List, Tuple, Union
-from polars import DataFrame
+from typing import Any, Dict, List, Tuple
+from polars import DataFrame, Series
 from utility import exception_handler
 
 
 @exception_handler()
 def evaluate_data(
         data: DataFrame,
-        config: Dict[str, Union[str, float]]
+        config: Dict[str, str | float]
 ) -> Tuple[List[Dict[str, Any]], List[Tuple[float, float]]]:
     """
     Evaluates descriptive statistic and detects outliers in data.
@@ -16,7 +16,7 @@ def evaluate_data(
 
     Args:
         data (DataFrame): Input data.
-        config (Dict[str, Union[str, float]]): Parameters for detecting outliers:
+        config (Dict[str, str | float]): Parameters for detecting outliers:
             - 'criterion' (str): IQR or Z-score,
             - 'multiplier_iqr' (float): multiplier for IQR criterion (defaults to 1.5).
             - 'threshold_z_score' (float): threshold for Z-score criterion (defaults to 3.0).
@@ -33,6 +33,7 @@ def evaluate_data(
     """
     data_evals, outliers_bounds = [], []
 
+    # Evaluate each column in data, skip first time interval column
     for col in data.columns[1:]:
         # Calculate mean and standard deviation, first and third quartile
         mean, std = data[col].mean(), data[col].std()
@@ -59,11 +60,11 @@ def evaluate_data(
 
 
 def evaluate_data_outliers(
-        data: Sequence[float],
+        data: Series,
         mean: float, std: float,
         q1: float, q3: float,
-        config: Dict[str, Union[int, float]]
-) -> Tuple[int, int, Tuple[Union[float, None], Union[float, None]]]:
+        config: Dict[str, str | float]
+) -> Tuple[int, int, Tuple[float | None, float | None]]:
     """
     Evaluates outliers in data.
 
@@ -72,18 +73,18 @@ def evaluate_data_outliers(
     to highlight outliers on a chart if criterion was specified in configuration.
 
     Args:
-        data (Sequence[float]): Sequence of data as Polars series.
+        data (Series): Input data.
         mean (float): Average of data.
         std (float): Standard deviation.
         q1 (float): First quartile.
         q3 (float): Third quartile.
-        config (Dict[str, Union[str, float]]): Parameters for detecting outliers:
+        config (Dict[str, str | float]): Parameters for detecting outliers:
             - 'criterion' (str): IQR or Z-score,
             - 'multiplier_iqr' (float): multiplier for IQR criterion (defaults to 1.5).
             - 'threshold_z_score' (float): threshold for Z-score criterion (defaults to 3.0).
 
     Returns:
-        Tuple[int, int, Tuple[Union[float, None], Union[float, None]]]:
+        Tuple[int, int, Tuple[float | None, float | None]]:
             - number of outliers based on IQR and Z-score,
             - boundaries to highlight outliers on a chart.
     """
