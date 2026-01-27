@@ -70,7 +70,7 @@ plotly>=6.3.0
 ### Features
 
 - **Comprehensive data evaluation**: a comprehensive set of descriptive statistics to evaluate data changes over custom time intervals.
-- **Custom time intervals**: (e.g., 1h, 13h, 1d, 6d, 1d1h, etc.) to analyze data changes over different time scales.
+- **Custom time intervals**: (e.g., 1h, 13h, 1d, 6d, 1d1h) to analyze data changes over different time scales.
 - **Various data sources**: CSV, XLSX, Parquet, and Iceberg file formats supported as well as reading from cloud providers or PostgreSQL databases.
 - **Flexible & performant data preprocessing**: data filtering and transformation using SQL expressions powered by Polars with lazy evaluation.
 - **Outliers detection**: evaluation and visual representation of anomalous changes based on IQR or Z-score criteria.
