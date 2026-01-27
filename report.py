@@ -1,8 +1,7 @@
-import os
-from typing import Dict, List, Union, Any, Tuple
+from typing import Dict, List, Tuple, Any
 from polars import DataFrame
 from pathlib import Path
-from utility import exception_handler
+from utility import exception_handler, TIME_INTERVAL_COL, OVERVIEW_COL
 from evaluate import evaluate_data
 from plot import make_charts
 from tabulate import tabulate
@@ -11,7 +10,7 @@ from tabulate import tabulate
 @exception_handler()
 def make_report(
         df: DataFrame,
-        metadata: Dict[str, Union[Tuple[str], str]],
+        metadata: Dict[str, str | None],
         config: Dict[str, Any]
 ) -> None:
     """
@@ -23,7 +22,7 @@ def make_report(
 
     Args:
         df (DataFrame): Aggregated data for report assembling.
-        metadata (Dict[str]): Dict of aggregated columns
+        metadata (Dict[str, str | None]): Dict of aggregated columns
             indicating types for numeric columns.
         config (Dict[str, Any]): Configuration dictionary specifying
             data source name, markdown options, and plotting options.
@@ -39,10 +38,10 @@ def make_report(
     # representing general aggregations of source data:
     # number of values and target average
     data = df.select(
-        ["__time_interval"] + [
+        [TIME_INTERVAL_COL] + [
             item for item in df.columns if item.startswith(" __")]
     )
-    col = "__overview"
+    col = OVERVIEW_COL
     # Evaluate data
     evals, bounds = evaluate_data(data, outliers)
     data_evals[col] = {"evals": evals}
@@ -51,14 +50,14 @@ def make_report(
         data,
         bounds=bounds,
         config=plotly,
-        file_path=os.path.join(output, col))
+        file_path=Path(output, col))
 
     # Get evaluations and create charts for columns
     # representing aggregations for a column in source data:
     # number of unique values and proportion of missing values
     for col in metadata:
         data = df.select(
-            ["__time_interval"] + [
+            [TIME_INTERVAL_COL] + [
                 item for item in df.columns
                 if item.startswith(f"__ {col} __")]
         )
@@ -68,14 +67,14 @@ def make_report(
             data,
             bounds=bounds,
             config=plotly,
-            file_path=os.path.join(output, col))
+            file_path=Path(output, col))
 
         # Get evaluations and create charts for columns
         # representing extra aggregations for a numeric column in source data:
         # minimum, maximum, mean, median, and standard deviation
         if metadata.get(col):
             data = df.select(
-                ["__time_interval"] + [
+                [TIME_INTERVAL_COL] + [
                     item for item in df.columns
                     if item.startswith(f"n__ {col} __")]
             )
@@ -86,7 +85,7 @@ def make_report(
                 data,
                 bounds=bounds,
                 config=plotly,
-                file_path=os.path.join(output, f"{col}__numeric"))
+                file_path=Path(output, f"{col}__numeric"))
 
     # Collect markdown content
     content = collect_md_content(
@@ -98,7 +97,9 @@ def make_report(
     write_md_file(content, output, config.get("markdown", {}).get("name"))
 
 
-def get_report_variables(config: Dict[str, Any]):
+def get_report_variables(
+        config: Dict[str, Any]
+) -> Tuple[str, List[str], int | None, Dict, Dict]:
     """
     Get key variables to make the report using the configuration provided.
 
@@ -111,8 +112,9 @@ def get_report_variables(config: Dict[str, Any]):
         config (Dict[str, Any]): Configuration dictionary.
 
     Returns:
-        Tuple(Any):
+        Tuple[str, List[str], int | None, Dict, Dict]:
             - Output directory to store report file and charts.
+            - Content of markdown report.
             - Precision to format floats in markdown tables.
             - Outliers detection parameters.
             - Plotly configration for charts.
@@ -132,9 +134,12 @@ def get_report_variables(config: Dict[str, Any]):
 
     # CSS style for markdown tables
     css_style = config.get("markdown", {}).get("css_style")
-    if os.path.isfile(css_style):
-        md_content = [
-            f"<link rel='stylesheet' href='{os.path.abspath(css_style)}'>\n"]
+    if css_style:
+        css_style = Path(css_style)
+        if css_style.exists() and css_style.is_file():
+            md_content = [
+                f"<link rel='stylesheet' href='{css_style.resolve()}'>\n"
+            ]
 
     # Number of decimal places to format numbers in markdown tables
     precision = config.get("markdown", {}).get("float_precision")
@@ -164,6 +169,7 @@ def collect_md_content(
     Args:
         data (Dict[str, Any]): Data to create a table using `make_md_table`.
         content (List[str]): List with markdown table style string.
+        source (str): Path to the file to read or SQL query to get data.
         precision (int, optional): Number of decimal places to format numbers.
 
     Returns:
@@ -172,11 +178,11 @@ def collect_md_content(
     toc = []
     for col in data:
         # Get section title (`alias`)
-        alias = "Overview" if col == "__overview" else f"`{col}`"
+        alias = "Overview" if col == OVERVIEW_COL else f"`{col}`"
 
         # Add new section to the table-of-contents with anchor
         toc.append(
-            f"- [{alias}](#{'overview' if col == '__overview' else col})")
+            f"- [{alias}](#{'overview' if col == OVERVIEW_COL else col})")
 
         # Add new entry to the content: section with anchor, chart, and table
         content.append((
@@ -211,7 +217,7 @@ def collect_md_content(
     return md_output
 
 
-def make_md_table(data, precision) -> str:
+def make_md_table(data: List[Dict], precision: int | None) -> str:
     """
     Create a markdown table from input data.
 
@@ -221,13 +227,14 @@ def make_md_table(data, precision) -> str:
     to be included as a part of the markdown report.
 
     Args:
-        data (List[dict]): List of dictionaries with calculated statistics.
+        data (List[Dict]): List of dictionaries with calculated statistics.
         precision (int): Number of decimal places to format numbers.
 
     Returns:
         str: Markdown table.
     """
-    # Ensure at least 2 columns due to possible absence of "Target average"
+    # Modifies `data` inplace to ensure at least 2 columns
+    # due to possible absence of "Target average"
     # and match the minimun number of subplots
     while len(data) < 2:
         data.append({})
@@ -276,12 +283,12 @@ def write_md_file(
         file_name += ".md"
     # Write final content string to file
     with open(
-        os.path.join(output, file_name or "README.md"), "w", encoding="utf-8"
+        Path(output, file_name or "README.md"), "w", encoding="utf-8"
     ) as f:
         f.writelines(content)
 
 
-def format_number(value, precision):
+def format_number(value: Any, precision: int = 4) -> str:
     """
     Format float numbers with specified precision.
 
@@ -303,4 +310,4 @@ def format_number(value, precision):
         value = " ± ".join([f"{v:,.{precision}f}" for v in value])
     elif isinstance(value, int):
         value = f"{value:,}"
-    return value
+    return str(value)
