@@ -1,7 +1,7 @@
 import polars as pl
 import polars.selectors as cs
-from typing import Dict, Any, List, Tuple, Optional
-from utility import logging, exception_handler
+from typing import Dict, Any, List, Tuple
+from utility import logging, exception_handler, TIME_INTERVAL_COL
 
 
 @exception_handler(exit_on_error=True)
@@ -27,10 +27,6 @@ def make_preprocessing(
         Tuple[pl.DataFrame, Dict[str, str]]:
             - Aggregated data with descriptive statistics for each column.
             - Dictionary of columns indicating types of numeric columns.
-
-    Raises:
-        SystemExit: In case of failed data aggregation
-            or inconsistencies in date_column.
     """
     # Apply filter for rows and columns
     lf = apply_filter(lf, config.get("filter"))
@@ -42,7 +38,7 @@ def make_preprocessing(
 
     # Prepare date_column for data aggregation
     date_column = config.get("date_column", "date_column")
-    lf, schema = validate_date_column(
+    lf, schema = process_date_column(
         lf, schema,
         date_column, config.get("time_interval", "1d")
     )
@@ -60,14 +56,14 @@ def make_preprocessing(
         config.get("columns_to_exclude", []))
 
     # Aggregate data by time intervals / buckets
-    lf_agg = lf.group_by("__time_interval").agg(aggs).sort("__time_interval")
+    lf_agg = lf.group_by(TIME_INTERVAL_COL).agg(aggs).sort(TIME_INTERVAL_COL)
     # lf_agg.explain()  # uncomment to get the query plan or turn off/on optimizations
     lf_agg = lf_agg.collect(engine=config.get("engine", "auto"))
     return lf_agg, metadata
 
 
 def apply_filter(
-        lf: pl.LazyFrame, filter_str: str
+        lf: pl.LazyFrame, filter_str: str | None
 ) -> pl.LazyFrame:
     """
     Apply filter to Polars LazyFrame.
@@ -77,7 +73,7 @@ def apply_filter(
 
     Args:
         lf (pl.LazyFrame): Input data.
-        filter_str (str): SQL expression to filter data.
+        filter_str (str | None): SQL expression to filter data.
 
     Returns:
         pl.LazyFrame: Filtered LazyFrame.
@@ -89,7 +85,7 @@ def apply_filter(
 
 
 def apply_transformations(
-        lf: pl.LazyFrame, transformations: Optional[Dict[str, str]]
+        lf: pl.LazyFrame, transformations: Dict[str, str] | None
 ) -> pl.LazyFrame:
     """
     Apply transformations to Polars LazyFrame.
@@ -102,7 +98,7 @@ def apply_transformations(
 
     Args:
         lf (pl.LazyFrame): Input data.
-        transformations (Optional[Dict[str, str]]): Dictionary where:
+        transformations (Dict[str, str] | None): Dictionary where:
             each key is column name to be created or replaced,
             each value is SQL expression to transform LazyFrame.
 
@@ -114,35 +110,34 @@ def apply_transformations(
         for alias, expr in transformations.items():
             lf = lf.with_columns(pl.sql_expr(expr).alias(alias))
             logging.info(f"Transformation applied: {expr}")
-    elif transformations is not None:
-        logging.warning(f"Unrecognized transformations: {transformations}")
+
     return lf
 
 
-def validate_date_column(
+def process_date_column(
     lf: pl.LazyFrame,
-    schema: Dict[str, pl.DataType],
+    schema: pl.Schema,
     date_column: str,
     time_interval: str
-) -> Tuple[pl.LazyFrame, Dict[str, pl.DataType]]:
+) -> Tuple[pl.LazyFrame, pl.Schema]:
     """
     Check date_column presence in schema and validate its type.
 
     This function checks date_column type in schema, makes conversion
-    to datetime type if necessary, and renames it as `__time_interval`
-    to ensure consistency in data evaluation pipeline.
+    to datetime type if necessary, and renames it to TIME_INTERVAL_COL
+    (`__time_interval`) to ensure consistency in data evaluation process.
     Division by time intervals implemented with polars.Expr.dt.truncate.
     Raises SystemExit if date_column is not found in schema.
 
     Args:
         lf (pl.LazyFrame): Input data.
-        schema (Dict[str, pl.DataType]): Data schema provided by Polars.
+        schema (pl.Schema): Data schema provided by Polars.
         date_column (str): Name of date column.
         time_interval (str): Time interval to truncate date_column,
             "1d" for one day by default, or "1h" for one hour, etc.
 
     Returns:
-        Tuple[pl.LazyFrame, Dict[str, pl.DataType]]:
+        Tuple[pl.LazyFrame, pl.Schema]:
             - LazyFrame with date column processed.
             - Updated data schema.
 
@@ -151,30 +146,30 @@ def validate_date_column(
     """
     if schema.get(date_column):
         # Check date_column type and convert it to Polars date type
-        if isinstance(schema.get(date_column), pl.String):
+        if schema.get(date_column) == pl.String:
             lf = lf.with_columns(
                 pl.col(date_column).str.to_date(strict=True))
 
         # Divide date or datetime range into time intervals / buckets
         lf = lf.with_columns(pl.col(date_column).dt.truncate(time_interval))
 
-        # Rename date_column as `__time_interval` for consistency
-        lf = lf.rename({date_column: "__time_interval"})
+        # Rename date_column as TIME_INTERVAL_COL for consistency across tool
+        lf = lf.rename({date_column: TIME_INTERVAL_COL})
         logging.info(f"Date column: `{date_column}`")
 
         return lf, lf.collect_schema()
     else:
         schema_str = "\n".join(
             f"{col}: {dtype}" for col, dtype in schema.items())
-        logging.info(f"Data schema:\n{schema_str}")
-        raise SystemExit("There is no date_column for data preprocessing")
+        logging.info(f"Data schema:\n{schema_str}\n")
+        raise SystemExit("Exit: no 'date_column' for data preprocessing")
 
 
 def collect_aggregations(
-    schema: Dict[str, pl.DataType],
-    target_column: str,
-    columns_to_exclude: Optional[List[str]]
-) -> Tuple[List[pl.Expr], Dict[str, str]]:
+    schema: pl.Schema,
+    target_column: str | None,
+    columns_to_exclude: List[str] = []
+) -> Tuple[List[pl.Expr], Dict[str, str | None]]:
     """
     Collect aggregation expressions.
 
@@ -184,15 +179,15 @@ def collect_aggregations(
     Numeric columns marked in metadata dictionary by their types.
 
     Args:
-        schema (Dict[str, pl.DataType]): Data schema provided by Polars.
-        target_column (str): Target column to compute target average.
-        columns_to_exclude (Optional[List[str]]): List of columns
+        schema (pl.Schema): Data schema provided by Polars.
+        target_column (str | None): Target column to compute target average.
+        columns_to_exclude (List[str]): List of columns
             to be excluded from aggregation.
 
     Returns:
         Tuple[List[pl.Expr], Dict[str, str]]:
             - aggs (List[pl.Expr]): Aggregation expressions,
-            - metadata (Dict[str, str]): Dict of aggregated columns
+            - metadata (Dict[str, str | None]): Dict of aggregated columns
                 indicating types for numeric columns.
     """
     # Start with common aggregation expression for the number of values
@@ -207,7 +202,7 @@ def collect_aggregations(
     metadata = {}
 
     for col in schema.names():
-        if col == "__time_interval" or col in columns_to_exclude:
+        if col == TIME_INTERVAL_COL or col in columns_to_exclude:
             continue
         # Add common statistics for the column
         aggs.extend([
