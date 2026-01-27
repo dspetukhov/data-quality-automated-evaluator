@@ -7,7 +7,7 @@ from report import make_report
 
 
 @exception_handler()
-def main(config_file_path: str) -> None:
+def main(config_file_path: Path) -> None:
     """
     Main function to execute the data quality evaluation pipeline.
     Requires correct configuration preset.
@@ -21,18 +21,17 @@ def main(config_file_path: str) -> None:
       4. Generates a report as a markdown file based on the preprocessed data.
 
     Raises:
-        SystemExit: If the configuration file is missing or cannot be parsed,
-            or if the data source cannot be loaded.
+        SystemExit: If the configuration file wasn't found
+            or doesn't have 'source' section.
     """
     # Try to load the configuration file
     config_file_path = Path(config_file_path)
     if config_file_path.exists() and config_file_path.is_file():
-        with open(config_file_path) as file:
+        with open(config_file_path, encoding="utf-8") as file:
             config = json.load(file)
             logging.info(f"Configuration from {config_file_path} was loaded")
     else:
-        config = {}
-        logging.error("Configuration file wasn't found")
+        raise SystemExit("Configuration file wasn't found")
 
     # Proceed if configuration was loaded and contains `source`
     if config.get("source"):
@@ -40,17 +39,16 @@ def main(config_file_path: str) -> None:
         # Preprocess data
         df, metadata = make_preprocessing(source_data, config)
         # Generate a report if preprocessing was successful
-        make_report(df, metadata, config)
+        if df is not None and metadata is not None:
+            make_report(df, metadata, config)
+        else:
+            raise SystemExit("Preprocessing failed; report won't be created")
+    else:
+        raise SystemExit("Configuration is missing required 'source' section")
 
 
 if __name__ == "__main__":
-    if len(sys.argv) <= 2:
-        config_file_path = "config.json"
-        if len(sys.argv) == 2:
-            config_file_path = sys.argv[1]
-
-        main(config_file_path)
-
+    if len(sys.argv) == 2:
+        main(Path(sys.argv[1]))
     else:
-        logging.warning("Usage: python main.py <config_file_path>")
-        sys.exit(1)
+        raise SystemExit("Usage: python main.py <config_file_path>")
