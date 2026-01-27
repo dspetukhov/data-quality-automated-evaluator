@@ -3,7 +3,7 @@ from polars import DataFrame
 from plotly.graph_objs import Scatter
 from plotly.graph_objs._figure import Figure
 from plotly.subplots import make_subplots
-from utility import exception_handler
+from utility import exception_handler, TIME_INTERVAL_COL
 
 
 @exception_handler()
@@ -43,11 +43,12 @@ def make_charts(
         config.get("subplots", {}),
         titles=data.columns[1:]
     )
+    # Make a chart for each column in data, skip first time interval column
     for i, col in enumerate(data.columns[1:]):
         # Add data series as a trace to the subplot
         fig.add_trace(
             Scatter(
-                x=data["__time_interval"],
+                x=data[TIME_INTERVAL_COL],
                 y=data[col],
                 **config.get("plot", {})
             ),
@@ -55,7 +56,7 @@ def make_charts(
         )
         # Highlight outliers regions using Plotly shapes
         fig = highlight_outliers(
-            fig, i, data["__time_interval"], data[col], bounds[i], n_cols,
+            fig, i, data[TIME_INTERVAL_COL], data[col], bounds[i], n_cols,
             config.get("outliers", {}).get("style", {})
         )
 
