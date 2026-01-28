@@ -228,14 +228,13 @@ def make_md_table(data: List[Dict], precision: int | None) -> str:
 
     Args:
         data (List[Dict]): List of dictionaries with calculated statistics.
-        precision (int): Number of decimal places to format numbers.
+        precision (int | None): Number of decimal places to format numbers.
 
     Returns:
         str: Markdown table.
     """
-    # Modifies `data` inplace to ensure at least 2 columns
-    # due to possible absence of "Target average"
-    # and match the minimun number of subplots
+    # Ensure the minimum number of columns is 2
+    data = list(data)
     while len(data) < 2:
         data.append({})
 
