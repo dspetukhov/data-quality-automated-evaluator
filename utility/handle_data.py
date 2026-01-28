@@ -1,12 +1,12 @@
 import os
 import polars as pl
-from typing import Any, Dict, Union
+from typing import Any
 from .handle_exceptions import exception_handler
 from .setup_logging import logging
 
 
 @exception_handler(exit_on_error=True)
-def read_source(source: Dict[str, str]) -> pl.LazyFrame:
+def read_source(source: dict[str, str]) -> pl.LazyFrame:
     """
     Read specified source of data as Polars LazyFrame.
 
@@ -20,7 +20,7 @@ def read_source(source: Dict[str, str]) -> pl.LazyFrame:
     if they are specified with a $ sign at the beginning.
 
     Args:
-        source (Dict[str, str]): Data source specification.
+        source (dict[str, str]): Data source specification.
             Can be a dictionary with `query` and `uri` keys
             to read from a PostgreSQL database,
             or a dictionary with `file_path` key
@@ -72,8 +72,8 @@ def read_source(source: Dict[str, str]) -> pl.LazyFrame:
 def _read_source(
         source: str,
         file_format: str,
-        storage_options: Dict[str, str],
-        schema_overrides: Dict[str, str]
+        storage_options: dict[str, str],
+        schema_overrides: dict[str, str]
 ) -> pl.LazyFrame:
     """
     Read source based on file format specified or based on source name ending.
@@ -87,8 +87,8 @@ def _read_source(
     Args:
         source (str): Data source name.
         file_format (str): File format specified in configuration.
-        storage_options (Dict[str, str]): Credentials to read from cloud providers.
-        schema_overrides (Dict[str, str]): Alters data types for specific columns
+        storage_options (dict[str, str]): Credentials to read from cloud providers.
+        schema_overrides (dict[str, str]): Alters data types for specific columns
             during schema inference.
 
     Returns:
@@ -112,7 +112,7 @@ def _read_source(
         # Try to match source ending with supported file formats
         for ff, rf in read_source_func.items():
             if source.endswith(ff):
-                logging.info(f"Identified file format: {ff}")
+                logging.info(f"Identified file format: {ff.upper()}")
                 file_format, read_func = ff, rf
 
     if file_format in read_source_func:
@@ -131,16 +131,16 @@ def _read_source(
     return lf
 
 
-def handle_schema_overrides(data: Dict[str, str]) -> Dict[str, Any]:
+def handle_schema_overrides(data: dict[str, str]) -> dict[str, Any]:
     """
     Replace string data type representation into Polars data type.
 
     Args:
-        data (Dict[str, str]): Dict of types representation
+        data (dict[str, str]): Dict of types representation
             to be mapped with Polars data types.
 
     Returns:
-        Dict[str, Any]: Mapping of types representation to Polars data types.
+        dict[str, Any]: Mapping of types representation to Polars data types.
     """
     dtypes = {
         "String": pl.String,
@@ -160,8 +160,8 @@ def handle_schema_overrides(data: Dict[str, str]) -> Dict[str, Any]:
 
 
 def handle_environment_variables(
-    params: Union[str, Dict[str, str]]
-) -> Union[str, Dict[str, str]]:
+    params: str | dict[str, str]
+) -> str | dict[str, str]:
     """
     Replace environment variable placeholders with actual values.
 
@@ -170,11 +170,11 @@ def handle_environment_variables(
     the environment variable value.
 
     Args:
-        params (Union[str, Dict[str, str]]): Input parameters potentially
+        params (str | dict[str, str]): Input parameters potentially
             containing environment variable placeholders.
 
     Returns:
-        Union[str, Dict[str, str]]: Updated parameters
+        str | dict[str, str]: Updated parameters
             with environment variable placeholders replaced by their actual values.
     """
     def get_environment_variable(value: str) -> str:

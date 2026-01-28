@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any
 from polars import DataFrame, Series
 from utility import exception_handler
 
@@ -6,8 +6,8 @@ from utility import exception_handler
 @exception_handler()
 def evaluate_data(
         data: DataFrame,
-        config: Dict[str, str | float]
-) -> Tuple[List[Dict[str, Any]], List[Tuple[float | None, float | None]]]:
+        config: dict[str, str | float]
+) -> tuple[list[dict[str, Any]], list[tuple[float | None, float | None]]]:
     """
     Evaluates descriptive statistic and detects outliers in data.
 
@@ -16,13 +16,13 @@ def evaluate_data(
 
     Args:
         data (DataFrame): Input data.
-        config (Dict[str, str | float]): Parameters for detecting outliers:
+        config (dict[str, str | float]): Parameters for detecting outliers:
             - 'criterion' (str): IQR or Z-score,
             - 'multiplier_iqr' (float): multiplier for IQR criterion (defaults to 1.5).
             - 'threshold_z_score' (float): threshold for Z-score criterion (defaults to 3.0).
 
     Returns:
-        Tuple[List[Dict[str, Any]], List[Tuple[float, float]]]:
+        tuple[list[dict[str, Any]], list[tuple[float | None, float | None]]]:
             - List of dictionaries with description of each column in data:
                 - name of the column,
                 - mean and standard deviation,
@@ -63,8 +63,8 @@ def evaluate_data_outliers(
         data: Series,
         mean: float, std: float,
         q1: float, q3: float,
-        config: Dict[str, str | float]
-) -> Tuple[int, int, Tuple[float | None, float | None]]:
+        config: dict[str, str | float]
+) -> tuple[int, int, tuple[float | None, float | None]]:
     """
     Evaluates outliers in data.
 
@@ -78,13 +78,13 @@ def evaluate_data_outliers(
         std (float): Standard deviation.
         q1 (float): First quartile.
         q3 (float): Third quartile.
-        config (Dict[str, str | float]): Parameters for detecting outliers:
+        config (dict[str, str | float]): Parameters for detecting outliers:
             - 'criterion' (str): IQR or Z-score,
             - 'multiplier_iqr' (float): multiplier for IQR criterion (defaults to 1.5).
             - 'threshold_z_score' (float): threshold for Z-score criterion (defaults to 3.0).
 
     Returns:
-        Tuple[int, int, Tuple[float | None, float | None]]:
+        tuple[int, int, tuple[float | None, float | None]]:
             - number of outliers based on IQR and Z-score,
             - boundaries to highlight outliers on a chart.
     """

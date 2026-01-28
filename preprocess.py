@@ -1,14 +1,15 @@
 import polars as pl
 import polars.selectors as cs
-from typing import Dict, Any, List, Tuple
-from utility import logging, exception_handler, TIME_INTERVAL_COL
+from typing import Any
+from utility import logging, exception_handler
+from utility import TIME_INTERVAL_COL, PREFIX_COL, PREFIX_NUM_COL
 
 
 @exception_handler(exit_on_error=True)
 def make_preprocessing(
         lf: pl.LazyFrame,
-        config: Dict[str, Any]
-) -> Tuple[pl.DataFrame, Dict[str, str]]:
+        config: dict[str, Any]
+) -> tuple[pl.DataFrame, dict[str, str]]:
     """
     Preprocess data for evaluation through aggregation by dates.
 
@@ -20,11 +21,11 @@ def make_preprocessing(
 
     Args:
         lf (pl.LazyFrame): Input data.
-        config (Dict[str, Any]): Configuration dictionary specifying
+        config (dict[str, Any]): Configuration dictionary specifying
             extra variables, filter, and transformations.
 
     Returns:
-        Tuple[pl.DataFrame, Dict[str, str]]:
+        tuple[pl.DataFrame, dict[str, str]]:
             - Aggregated data with descriptive statistics for each column.
             - Dictionary of columns indicating types of numeric columns.
     """
@@ -85,7 +86,7 @@ def apply_filter(
 
 
 def apply_transformations(
-        lf: pl.LazyFrame, transformations: Dict[str, str] | None
+        lf: pl.LazyFrame, transformations: dict[str, str] | None
 ) -> pl.LazyFrame:
     """
     Apply transformations to Polars LazyFrame.
@@ -98,7 +99,7 @@ def apply_transformations(
 
     Args:
         lf (pl.LazyFrame): Input data.
-        transformations (Dict[str, str] | None): Dictionary where:
+        transformations (dict[str, str] | None): Dictionary where:
             each key is column name to be created or replaced,
             each value is SQL expression to transform LazyFrame.
 
@@ -119,7 +120,7 @@ def process_date_column(
     schema: pl.Schema,
     date_column: str,
     time_interval: str
-) -> Tuple[pl.LazyFrame, pl.Schema]:
+) -> tuple[pl.LazyFrame, pl.Schema]:
     """
     Check date_column presence in schema and validate its type.
 
@@ -137,12 +138,12 @@ def process_date_column(
             "1d" for one day by default, or "1h" for one hour, etc.
 
     Returns:
-        Tuple[pl.LazyFrame, pl.Schema]:
+        tuple[pl.LazyFrame, pl.Schema]:
             - LazyFrame with date column processed.
             - Updated data schema.
 
     Raises:
-        SystemExit: If data cannot be loaded.
+        SystemExit: If no date column in data.
     """
     if schema.get(date_column):
         # Check date_column type and convert it to Polars date type
@@ -168,8 +169,8 @@ def process_date_column(
 def collect_aggregations(
     schema: pl.Schema,
     target_column: str | None,
-    columns_to_exclude: List[str] = []
-) -> Tuple[List[pl.Expr], Dict[str, str | None]]:
+    columns_to_exclude: list[str]
+) -> tuple[list[pl.Expr], dict[str, str | None]]:
     """
     Collect aggregation expressions.
 
@@ -181,13 +182,13 @@ def collect_aggregations(
     Args:
         schema (pl.Schema): Data schema provided by Polars.
         target_column (str | None): Target column to compute target average.
-        columns_to_exclude (List[str]): List of columns
+        columns_to_exclude (list[str]): List of columns
             to be excluded from aggregation.
 
     Returns:
-        Tuple[List[pl.Expr], Dict[str, str]]:
-            - aggs (List[pl.Expr]): Aggregation expressions,
-            - metadata (Dict[str, str | None]): Dict of aggregated columns
+        tuple[list[pl.Expr], dict[str, str]]:
+            - aggs (list[pl.Expr]): Aggregation expressions,
+            - metadata (dict[str, str | None]): Dict of aggregated columns
                 indicating types for numeric columns.
     """
     # Start with common aggregation expression for the number of values
@@ -207,19 +208,19 @@ def collect_aggregations(
         # Add common statistics for the column
         aggs.extend([
             pl.col(col).n_unique().alias(
-                f"__ {col} __Number of unique values"),
+                f"{PREFIX_COL} {col} __Number of unique values"),
             pl.col(col).is_null().mean().alias(
-                f"__ {col} __Proportion of missing values"),
+                f"{PREFIX_COL} {col} __Proportion of missing values"),
         ])
 
         # Add extra statistics if column is of numeric data type
         if col in cs.expand_selector(schema, cs.numeric()):
             aggs.extend([
-                pl.col(col).min().alias(f"n__ {col} __Min"),
-                pl.col(col).max().alias(f"n__ {col} __Max"),
-                pl.col(col).mean().alias(f"n__ {col} __Mean"),
-                pl.col(col).median().alias(f"n__ {col} __Median"),
-                pl.col(col).std().alias(f"n__ {col} __Standard deviation"),
+                pl.col(col).min().alias(f"{PREFIX_NUM_COL} {col} __Min"),
+                pl.col(col).max().alias(f"{PREFIX_NUM_COL} {col} __Max"),
+                pl.col(col).mean().alias(f"{PREFIX_NUM_COL} {col} __Mean"),
+                pl.col(col).median().alias(f"{PREFIX_NUM_COL} {col} __Median"),
+                pl.col(col).std().alias(f"{PREFIX_NUM_COL} {col} __Standard deviation"),
             ])
             metadata[col] = str(schema[col])
         else:

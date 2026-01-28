@@ -1,5 +1,5 @@
-from typing import Sequence, Any, Dict, Tuple, List
-from polars import DataFrame
+from typing import Any
+from polars import DataFrame, Series
 from plotly.graph_objs import Scatter
 from plotly.graph_objs._figure import Figure
 from plotly.subplots import make_subplots
@@ -9,8 +9,8 @@ from utility import exception_handler, TIME_INTERVAL_COL
 @exception_handler()
 def make_charts(
     data: DataFrame,
-    bounds: List[Tuple[float | None, float | None]],
-    config: Dict[str, Any],
+    bounds: list[tuple[float | None, float | None]],
+    config: dict[str, Any],
     file_path: str
 ) -> None:
     """
@@ -23,9 +23,9 @@ def make_charts(
 
     Args:
         data (DataFrame): Data to plot.
-        bounds (List[Tuple[float | None, float | None]]): List of boundaries
+        bounds (list[tuple[float | None, float | None]]): List of boundaries
             to highlight outliers.
-        config (Dict[str, Any]): Plotly styling settings, including:
+        config (dict[str, Any]): Plotly styling settings, including:
             - 'plot': dict of Scatter style settings.
             - 'outliers': dict of outliers highlighting settings.
             - 'layout', 'grid', and other Plotly configuration parameters.
@@ -72,9 +72,9 @@ def make_charts(
 
 def create_figure(
     n_subplots: int,
-    config: Dict[str, Any],
-    titles: List[str]
-) -> Tuple[Figure, int, int]:
+    config: dict[str, Any],
+    titles: list[str]
+) -> tuple[Figure, int, int]:
     """
     Creates Plotly figure with required number of subplots.
 
@@ -84,11 +84,11 @@ def create_figure(
 
     Args:
         n_subplots (int): Total number of subplots in the subplot grid.
-        config (Dict[str, Any]): Plotly styling settings for subplots.
-        titles (List[str]): Raw titles for each subplot.
+        config (dict[str, Any]): Plotly styling settings for subplots.
+        titles (list[str]): Raw titles for each subplot.
 
     Returns:
-        Tuple[Figure, int, int]: Plotly figure object,
+        tuple[Figure, int, int]: Plotly figure object,
             number of columns in subplot grid, number of rows in subplot grid.
     """
     n_cols = 2  # number of columns in the subplot grid is always equal to 2
@@ -107,11 +107,11 @@ def create_figure(
 def highlight_outliers(
     fig: Figure,
     s: int,
-    x: Sequence[Any],
-    data: Sequence[Any],
-    bounds: Tuple[float | None, float | None],
+    x: Series,
+    data: Series,
+    bounds: tuple[float | None, float | None],
     n_cols: int,
-    config: Dict[str, Any]
+    config: dict[str, Any]
 ) -> Figure:
     """
     Highlight outliers using Plotly shapes.
@@ -122,11 +122,11 @@ def highlight_outliers(
     Args:
         fig (Figure): Plotly figure object.
         s (int): Subplot index.
-        x (Sequence[Any]): x-axis data.
-        data (Sequence[Any]): y-axis data.
-        bounds (Tuple[float | None, float | None]): Tuple with lower and upper boundaries.
+        x (Series): x-axis data.
+        data (Series): y-axis data.
+        bounds (tuple[float | None, float | None]): Tuple with lower and upper boundaries.
         n_cols (int): Number of columns in the subplot grid.
-        config (Dict[str, Any]): Plotly styling settings for outliers.
+        config (dict[str, Any]): Plotly styling settings for outliers.
 
     Returns:
         Figure: Plotly figure with added shapes.
@@ -150,7 +150,7 @@ def adjust_figure(
     fig: Figure,
     n_cols: int,
     n_rows: int,
-    config: Dict[str, Any]
+    config: dict[str, Any]
 ) -> Figure:
     """
     Adjust Plotly figure parameters.
@@ -164,7 +164,7 @@ def adjust_figure(
         fig (Figure): Plotly figure object.
         n_cols (int): Number of columns in the subplot grid.
         n_rows (int): Number of rows in the subplot grid.
-        config (Dict[str, Any]): Plotly figure configation parameters.
+        config (dict[str, Any]): Plotly figure configation parameters.
 
     Returns:
         Figure: Adjusted Plotly figure.

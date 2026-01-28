@@ -1,17 +1,18 @@
-from typing import Dict, List, Tuple, Any
+from typing import Any
 from polars import DataFrame
 from pathlib import Path
-from utility import exception_handler, TIME_INTERVAL_COL, OVERVIEW_COL
+from tabulate import tabulate
 from evaluate import evaluate_data
 from plot import make_charts
-from tabulate import tabulate
+from utility import exception_handler
+from utility import TIME_INTERVAL_COL, OVERVIEW_COL, PREFIX_COL, PREFIX_NUM_COL
 
 
 @exception_handler()
 def make_report(
         df: DataFrame,
-        metadata: Dict[str, str | None],
-        config: Dict[str, Any]
+        metadata: dict[str, str | None],
+        config: dict[str, Any]
 ) -> None:
     """
     Generate markdown report with charts and tables.
@@ -22,9 +23,9 @@ def make_report(
 
     Args:
         df (DataFrame): Aggregated data for report assembling.
-        metadata (Dict[str, str | None]): Dict of aggregated columns
+        metadata (dict[str, str | None]): Dict of aggregated columns
             indicating types for numeric columns.
-        config (Dict[str, Any]): Configuration dictionary specifying
+        config (dict[str, Any]): Configuration dictionary specifying
             data source name, markdown options, and plotting options.
 
     Returns:
@@ -59,7 +60,7 @@ def make_report(
         data = df.select(
             [TIME_INTERVAL_COL] + [
                 item for item in df.columns
-                if item.startswith(f"__ {col} __")]
+                if item.startswith(f"{PREFIX_COL} {col} __")]
         )
         evals, bounds = evaluate_data(data, outliers)
         data_evals[col] = {"evals": evals}
@@ -76,7 +77,7 @@ def make_report(
             data = df.select(
                 [TIME_INTERVAL_COL] + [
                     item for item in df.columns
-                    if item.startswith(f"n__ {col} __")]
+                    if item.startswith(f"{PREFIX_NUM_COL} {col} __")]
             )
             evals, bounds = evaluate_data(data, outliers)
             data_evals[col].update(
@@ -98,8 +99,8 @@ def make_report(
 
 
 def get_report_variables(
-        config: Dict[str, Any]
-) -> Tuple[str, List[str], int | None, Dict, Dict]:
+        config: dict[str, Any]
+) -> tuple[str, list[str], int | None, dict, dict]:
     """
     Get key variables to make the report using the configuration provided.
 
@@ -109,10 +110,10 @@ def get_report_variables(
     outliers detection parameters, Plotly parameters for charts.
 
     Args:
-        config (Dict[str, Any]): Configuration dictionary.
+        config (dict[str, Any]): Configuration dictionary.
 
     Returns:
-        Tuple[str, List[str], int | None, Dict, Dict]:
+        tuple[str, list[str], int | None, dict, dict]:
             - Output directory to store report file and charts.
             - Content of markdown report.
             - Precision to format floats in markdown tables.
@@ -154,11 +155,11 @@ def get_report_variables(
 
 
 def collect_md_content(
-    data: Dict[str, Any],
-    content: List[str],
+    data: dict[str, Any],
+    content: list[str],
     source: str,
     precision: int = 4
-) -> List[str]:
+) -> list[str]:
     """
     Process data to create markdown content
     by updating table-of-contents and content lists.
@@ -167,13 +168,13 @@ def collect_md_content(
     and appends formatted markdown string to the content list.
 
     Args:
-        data (Dict[str, Any]): Data to create a table using `make_md_table`.
-        content (List[str]): List with markdown table style string.
+        data (dict[str, Any]): Data to create a table using `make_md_table`.
+        content (list[str]): List with markdown table style string.
         source (str): Path to the file to read or SQL query to get data.
         precision (int, optional): Number of decimal places to format numbers.
 
     Returns:
-        List[str]: List of strings to be written in file.
+        list[str]: List of strings to be written in file.
     """
     toc = []
     for col in data:
@@ -217,7 +218,7 @@ def collect_md_content(
     return md_output
 
 
-def make_md_table(data: List[Dict], precision: int | None) -> str:
+def make_md_table(data: list[dict], precision: int | None) -> str:
     """
     Create a markdown table from input data.
 
@@ -227,7 +228,7 @@ def make_md_table(data: List[Dict], precision: int | None) -> str:
     to be included as a part of the markdown report.
 
     Args:
-        data (List[Dict]): List of dictionaries with calculated statistics.
+        data (list[dict]): List of dictionaries with calculated statistics.
         precision (int | None): Number of decimal places to format numbers.
 
     Returns:
@@ -255,7 +256,7 @@ def make_md_table(data: List[Dict], precision: int | None) -> str:
 
 @exception_handler(exit_on_error=True)
 def write_md_file(
-        content: List[str],
+        content: list[str],
         output: str,
         file_name: str = None
 ) -> None:
@@ -270,7 +271,7 @@ def write_md_file(
     defaults to README.md.
 
     Args:
-        content (List[str]): List of strings for each markdown section.
+        content (list[str]): List of strings for each markdown section.
         output (str): Output directory path where markdown file will be saved.
         file_name (str): Name of the markdown file.
 
