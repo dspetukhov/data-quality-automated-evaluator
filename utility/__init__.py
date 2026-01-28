@@ -4,3 +4,5 @@ from .handle_data import read_source
 
 TIME_INTERVAL_COL = "__time_interval"
 OVERVIEW_COL = "__overview"
+PREFIX_COL = "__"
+PREFIX_NUM_COL = "n__"
