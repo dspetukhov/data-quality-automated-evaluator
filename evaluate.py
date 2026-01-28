@@ -7,7 +7,7 @@ from utility import exception_handler
 def evaluate_data(
         data: DataFrame,
         config: Dict[str, str | float]
-) -> Tuple[List[Dict[str, Any]], List[Tuple[float, float]]]:
+) -> Tuple[List[Dict[str, Any]], List[Tuple[float | None, float | None]]]:
     """
     Evaluates descriptive statistic and detects outliers in data.
 
