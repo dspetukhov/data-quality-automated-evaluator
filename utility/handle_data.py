@@ -64,16 +64,19 @@ def read_source(source: dict[str, str]) -> pl.LazyFrame:
         )
 
     if lf is None:
-        raise SystemExit(f"The specified source cannot be read: {source}")
+        raise SystemExit(
+            f"Specified source cannot be read: {source}, "
+            "expected 'file_path' or 'query' / 'uri' keys."
+        )
 
     return lf
 
 
 def _read_source(
         source: str,
-        file_format: str,
-        storage_options: dict[str, str],
-        schema_overrides: dict[str, str]
+        file_format: str | None,
+        storage_options: dict[str, str] | None,
+        schema_overrides: dict[str, str] | None
 ) -> pl.LazyFrame:
     """
     Read source based on file format specified or based on source name ending.
@@ -131,7 +134,7 @@ def _read_source(
     return lf
 
 
-def handle_schema_overrides(data: dict[str, str]) -> dict[str, Any]:
+def handle_schema_overrides(data: dict[str, str]) -> dict[str, pl.DataType]:
     """
     Replace string data type representation into Polars data type.
 
@@ -140,23 +143,29 @@ def handle_schema_overrides(data: dict[str, str]) -> dict[str, Any]:
             to be mapped with Polars data types.
 
     Returns:
-        dict[str, Any]: Mapping of types representation to Polars data types.
+        dict[str, pl.DataType]: Mapping of string data type representation
+            to Polars data type.
     """
     dtypes = {
         "String": pl.String,
         "Date": pl.Date,
         "Datetime": pl.Datetime
     }
-    if isinstance(data, dict) and data:
+
+    if isinstance(data, dict):
         output = {}
         for key, value in data.items():
             if value in dtypes:
                 output[key] = dtypes[value]
             else:
-                logging.warning(f"Unsupported data type '{value}' for column '{key}'")
+                logging.warning(
+                    f"Unsupported data type '{value}' for column '{key}'")
         return output
+    else:
+        logging.warning(
+            f"'schema_overrides' expected dict, got {type(data).__name__}")
 
-    return data
+    return None
 
 
 def handle_environment_variables(
@@ -190,14 +199,14 @@ def handle_environment_variables(
 
     if isinstance(params, str):
         return get_environment_variable(params)
-
-    if isinstance(params, dict):
+    elif isinstance(params, dict):
         output = {}
         for key, value in params.items():
-            if isinstance(value, str):
-                output[key] = get_environment_variable(value)
-            else:
-                output[key] = value
+            output[key] = get_environment_variable(value)
         return output
-
-    return params
+    else:
+        logging.warning(
+            "Unsupported input type for 'storage_options' or 'uri': "
+            f"expected dict or str, got {type(params).__name__}"
+        )
+        return params
