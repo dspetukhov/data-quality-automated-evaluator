@@ -25,13 +25,12 @@ def main(config_file_path: Path) -> None:
             or doesn't have 'source' section.
     """
     # Try to load the configuration file
-    config_file_path = Path(config_file_path)
     if config_file_path.exists() and config_file_path.is_file():
         with open(config_file_path, encoding="utf-8") as file:
             config = json.load(file)
             logging.info(f"Configuration from {config_file_path} was loaded")
     else:
-        raise SystemExit("Configuration file wasn't found")
+        raise SystemExit("Exit: configuration file wasn't found")
 
     # Proceed if configuration was loaded and contains `source`
     if config.get("source"):
@@ -39,12 +38,10 @@ def main(config_file_path: Path) -> None:
         # Preprocess data
         df, metadata = make_preprocessing(source_data, config)
         # Generate a report if preprocessing was successful
-        if df is not None and metadata is not None:
-            make_report(df, metadata, config)
-        else:
-            raise SystemExit("Preprocessing failed; report won't be created")
+        make_report(df, metadata, config)
     else:
-        raise SystemExit("Configuration is missing required 'source' section")
+        raise SystemExit(
+            "Exit: configuration is missing required 'source' section")
 
 
 if __name__ == "__main__":
