@@ -29,7 +29,7 @@ def make_charts(
             - 'plot': dict of Scatter style settings.
             - 'outliers': dict of outliers highlighting settings.
             - 'layout', 'grid', and other Plotly configuration parameters.
-        file_path (str): Path to the directory where the image will be saved.
+        file_path (str): Full path (including filename) where the image will be saved.
 
     Returns:
         None: Figure is saved to disk.
