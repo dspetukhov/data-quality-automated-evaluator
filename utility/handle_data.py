@@ -1,6 +1,5 @@
 import os
 import polars as pl
-from typing import Any
 from .handle_exceptions import exception_handler
 from .setup_logging import logging
 
@@ -88,11 +87,10 @@ def _read_source(
     it reads source as Lazy data frame, otherwise SystemExit raised.
 
     Args:
-        source (str): Data source name.
-        file_format (str): File format specified in configuration.
-        storage_options (dict[str, str]): Credentials to read from cloud providers.
-        schema_overrides (dict[str, str]): Alters data types for specific columns
-            during schema inference.
+        source (str): Path to the file to read.
+        file_format (str | None): File format to read.
+        storage_options (dict[str, str] | None): Credentials to read from cloud providers.
+        schema_overrides (dict[str, str] | None): Mapping to change types of certain columns.
 
     Returns:
         pl.LazyFrame: Polars lazy data frame.
@@ -102,34 +100,38 @@ def _read_source(
     """
     # {file format: read function} mapping
     read_source_func = {
+        "xlsx": pl.read_excel,
         "csv": pl.scan_csv,
         "parquet": pl.scan_parquet,
         "iceberg": pl.scan_iceberg,
-        "xlsx": pl.read_excel
     }
     read_func = None
 
-    if file_format in read_source_func:
-        read_func = read_source_func[file_format]
+    if isinstance(file_format, str):
+        if file_format.lower() in read_source_func:
+            read_func = read_source_func[file_format]
     else:
         # Try to match source ending with supported file formats
         for ff, rf in read_source_func.items():
-            if source.endswith(ff):
+            if source.lower().endswith(f".{ff}"):
                 logging.info(f"Identified file format: {ff.upper()}")
                 file_format, read_func = ff, rf
 
-    if file_format in read_source_func:
-        read_func = read_source_func[file_format]
-        if file_format in ("csv", "xlsx"):
-            lf = read_source_func[file_format](
-                source,
-                storage_options=storage_options,
-                schema_overrides=schema_overrides
-            ).lazy()
-        else:
-            lf = read_func(source, storage_options=storage_options).lazy()
+        if read_func is None:
+            raise SystemExit(
+                f"Unable to determine file format for: {source}, "
+                f"supported formats: csv, xlsx, parquet, iceberg"
+            )
+
+    if file_format == "xlsx":
+        lf = read_func(source, schema_overrides=schema_overrides).lazy()
+    elif file_format == "csv":
+        lf = read_func(
+            source,
+            schema_overrides=schema_overrides,
+            storage_options=storage_options)
     else:
-        raise SystemExit(f"Unsupported source: {source}")
+        lf = read_func(source, storage_options=storage_options)
 
     return lf
 
@@ -190,10 +192,11 @@ def handle_environment_variables(
         if value.startswith("$"):
             value = value[1:]
             if value in os.environ:
-                logging.info(f"Environment variable for '{value}' is found")
+                logging.info(f"Environment variable for '{value}' found")
                 return os.getenv(value)
             else:
-                logging.warning(f"Environment variable for '{value}' wasn't found")
+                logging.warning(f"Environment variable for '{value}' not found")
+                return value
         else:
             return value
 
@@ -202,7 +205,10 @@ def handle_environment_variables(
     elif isinstance(params, dict):
         output = {}
         for key, value in params.items():
-            output[key] = get_environment_variable(value)
+            if isinstance(value, str):
+                output[key] = get_environment_variable(value)
+            else:
+                output[key] = value
         return output
     else:
         logging.warning(

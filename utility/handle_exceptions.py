@@ -34,7 +34,7 @@ def exception_handler(exit_on_error: bool = False):
             exc_type, exc_obj, tb_obj = exc_info
             extract_tb = traceback.extract_tb(tb_obj)
             if extract_tb:
-                summary = extract_tb[min(1, len(extract_tb))]
+                summary = extract_tb[min(1, len(extract_tb) - 1)]
                 return "{0}: {1}#{2}: {3}: {4}".format(
                     exc_type.__name__,
                     summary.filename,
