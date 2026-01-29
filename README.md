@@ -1,12 +1,18 @@
 # Data Quality Automated Evaluation - `DQ-AE`
 
-A configurable Python tool for evaluating the quality of temporal data.
+A configurable Python tool for automated evaluation of temporal data quality.
 
-This tool evaluates data quality by calculating descriptive statistics (e.g., number of unique values) for each column in data over custom time intervals. The tool generates a structured markdown report with charts and tables that represent the changes of these statistics over time.
+This tool evaluates data quality by calculating descriptive statistics (e.g., number of unique values) for each column in your dataset across custom time intervals. It generates structured markdown reports with charts and tables that visualize changes in these statistics over time.
+
+This tool is particularly useful for:
+
+- Validating consistency and finding faults in data,
+- Identifying temporal anomalies and detecting data drift,
+- Monitoring data quality in production pipelines.
 
 The final assessment of data consistency, validity, and overall quality is the responsibility of an individual reviewing the markdown report.
 
-Built with **[Polars](https://docs.pola.rs/)** and **[Plotly](https://docs.plotly.com/)**.
+Powered by [**Polars**](https://docs.pola.rs/) and [**Plotly**](https://docs.plotly.com/).
 
 ## Table of contents
 
@@ -31,9 +37,9 @@ plotly>=6.3.0
 
 ## Quick start
 
-1. **Specify source of data and date column name:**
+1. **Specify your source of data and date column name:**
 
-    Edit **[config.json](config.json)**:
+    Edit [**config.json**](config.json):
 
     ```json
     {
@@ -45,9 +51,9 @@ plotly>=6.3.0
     ```
 
     Supported file formats: CSV, XLSX, Parquet, and Iceberg. Cloud storage and PostgreSQL databases are also supported.
-    Details of the `source` definition are in the **[source](#source)** section of the configuration description.
+    Details about the `source` definition can be found in the [**source**](#source) section of the configuration description.
 
-    `date_column` is expected to be a name of the date or datetime type column. Various examples of defining this parameter are in **[Dataset reading examples](#dataset-reading-examples)**.
+    The `date_column` parameter is expected to be a name of the date or datetime type column. Various examples of defining this parameter can be found in [**Dataset reading examples**](#dataset-reading-examples).
 
 2. **Run evaluation process:**
 
@@ -55,13 +61,13 @@ plotly>=6.3.0
     python main.py config.json
     ```
 
-    A separate configuration file can be used if specified as an extra command-line argument to the tool. By default, `config.json` in the current directory will be used.
+    A configuration file is expected as a command-line argument.
 
 3. **Review generated markdown report**
 
     By default, the report will be:
-    - named README.md, which can be changed by the parameter `name` in the **[markdown](#markdown)** section of the configuration description,
-    - saved into the directory with name that will match the file name. This can be altered according to the **[output](#output)** section of the configuration description.
+    - named README.md, which can be changed by the parameter `name` in the [**markdown**](#markdown) section of the configuration description,
+    - saved into a directory whose name matches the input filename. This can be altered according to the [**output**](#output) section of the configuration description.
 
 [Back to table of contents](#table-of-contents)
 
@@ -69,12 +75,12 @@ plotly>=6.3.0
 
 ### Features
 
-- **Comprehensive data evaluation**: a comprehensive set of descriptive statistics to evaluate data changes over custom time intervals.
-- **Custom time intervals**: (e.g., 1h, 13h, 1d, 6d, 1d1h) to analyze data changes over different time scales.
-- **Various data sources**: CSV, XLSX, Parquet, and Iceberg file formats supported as well as reading from cloud providers or PostgreSQL databases.
-- **Flexible & performant data preprocessing**: data filtering and transformation using SQL expressions powered by Polars with lazy evaluation.
-- **Outliers detection**: evaluation and visual representation of anomalous changes based on IQR or Z-score criteria.
-- **Professional markdown reports**: with formatted tables and customized charts embedded.
+- **Comprehensive data evaluation**: descriptive statistics to evaluate data changes over custom time intervals,
+- **Custom time intervals**: (e.g., 1h, 13h, 1d, 6d, 1d1h) to analyze data changes over different time scales,
+- **Various data sources**: CSV, XLSX, Parquet, and Iceberg file formats supported as well as reading from cloud providers or PostgreSQL databases,
+- **Flexible & performant data preprocessing**: data filtering and transformation using SQL expressions powered by Polars with lazy evaluation,
+- **Outliers detection**: evaluation and visual representation of anomalous changes based on IQR or Z-score criteria,
+- **Professional markdown reports**: with formatted tables and customized charts embedded,
 - **Configuration in one place**: various preprocessing and reporting parameters specified in a single human-readable JSON file passed as a command line argument.
 
 ### Structure
@@ -84,8 +90,8 @@ plotly>=6.3.0
 | `main.py`                      | Entry point: loads configuration, reads, preprocesses, and evaluates data, generates report              |
 | `preprocess.py`                | Preprocesses data by applying a filter and transformations, aggregates data by date                      |
 | `evaluate.py`                  | Calculates descriptive statistics for aggregated data, detects outliers based on IQR or Z-score criteria |
-| `plot.py`                      | Produces charts with outliers highlighted                                                                |
-| `report.py`                    | Produces a structured markdown report with tables and charts embedded                                    |
+| `plot.py`                      | Generates charts with outliers highlighted                                                               |
+| `report.py`                    | Generates structured markdown reports with tables and charts embedded                                    |
 | `style.css`                    | Report and table styling                                                                                 |
 | `config.json`                  | Configuration                                                                                            |
 | `utility/__init__.py`          | Default Plotly template, utility imports                                                                 |
@@ -97,7 +103,7 @@ plotly>=6.3.0
 
 Data evaluation configuration is defined in a single JSON file ([config.json](config.json)) by the following sections:
 
-| Section              | Description                                                     | Expected keys                                                     |
+| Section / Parameter  | Description                                                     | Expected parameters                                               |
 |----------------------|-----------------------------------------------------------------|-------------------------------------------------------------------|
 | `source`             | Configuration to read data (Required)                           | `file_path`, `file_format`, `storage_options`, `schema_overrides` |
 | `engine`             | Polars engine used to process the data (Optional)               |                                                                   |
@@ -105,10 +111,10 @@ Data evaluation configuration is defined in a single JSON file ([config.json](co
 | `filter`             | SQL expression to filter data by rows and by columns (Optional) |                                                                   |
 | `transformations`    | Dict of SQL expressions to transform data by columns (Optional) |                                                                   |
 | `date_column`        | Column to aggregate data by time intervals (Required)           |                                                                   |
-| `time_interval`      | Time inteval to aggregate data (Optional)                       |                                                                   |
+| `time_interval`      | Time interval to aggregate data (Optional)                      |                                                                   |
 | `target_column`      | Column to calculate target average (Optional)                   |                                                                   |
 | `columns_to_exclude` | List of columns to be excluded from evaluation (Optional)       |                                                                   |
-| `outliers`           | Outlier detection settings (Optional)                           | `criterion`, `multiplier`, `threshold`                            |
+| `outliers`           | Outlier detection settings (Optional)                           | `criterion`, `multiplier_iqr`, `threshold_z_score`                |
 | `markdown`           | Markdown report settings (Optional)                             | `name`, `css_style`, `float_precision`                            |
 | `plotly`             | Plotly styling settings (Optional)                              | `plot`, `outliers`, `layout`, `grid`, `subplots`, `scale_factor`  |
 
@@ -118,28 +124,29 @@ Each of these sections is described below in detail:
 
 This section specifies parameters to read the source of data using Polars:
 
-- `file_path` is the mandatory parameter defining the path to the file(s) to read.
-- `file_format` is required in cases when file to read is missing an extension at the end of the name or when reading from a directory with partitioned files.
+- `file_path` is the mandatory parameter defining the path to the file to read,
+- `file_format` is required in cases when the file to read is missing an extension at the end of the name or when reading from a directory with partitioned files,
 - `storage_options` is required for reading from cloud providers. However, if not explicitly specified, Polars will implicitly try to get relevant credentials from environment variables, so explicit specification of the variables is recommended:
 
 ```python
 storage_options = {
-    # definition with `$` sign as a first symbol will be interpreted as an environment variable to be used
-    # definition without `$` sign as a first symbol will be interpreted as a string
+    # definition with `$` sign as the first symbol will be interpreted as an environment variable to be used
+    # definition without `$` sign as the first symbol will be interpreted as a string
     "aws_access_key_id": "$S3_KEY_ID",
     ...
 }
 ```
 
 - `schema_overrides` may be required for CSV or XLSX files to alter column data types during schema inference:
+
   - when a date or datetime column does not match ISO 8601 standard,
   - when a categorical string column is inferred as a numerical one.
 
-Supported types for `schema_overrides` are `String`, `Date` and `Datetime`.
+Supported types for `schema_overrides` include `String`, `Date` and `Datetime`.
 
-More details of how `schema_overrides` can be useful when reading data can be found in the [Troubleshooting](#troubleshooting) section.
+More details of how `schema_overrides` can be useful when reading data can be found in the [Troubleshooting](#troubleshooting).
 
-When reading from a PostgreSQL database, all parameters above are replaced by `uri` and `query`:
+When reading from a PostgreSQL database, use `uri` and `query` instead of the file-related parameters above:
 
 ```python
 {
@@ -151,9 +158,10 @@ When reading from a PostgreSQL database, all parameters above are replaced by `u
 
 #### `engine`
 
-This parameter specifies the engine used to process the data. By default it equals to `auto`. Possible values include:
+This parameter specifies the engine used to process the data. Possible values include:
 
-- `gpu` for data processing using GPU
+- `auto` (default),
+- `gpu` for data processing using GPU,
 - `streaming` for processing datasets that do not fit entirely in memory.
 
 If the data cannot be processed using the specified engine, Polars will use its in-memory engine.
@@ -163,7 +171,7 @@ If the data cannot be processed using the specified engine, Polars will use its 
 This parameter specifies the directory where the report and charts will be saved. By default, the output directory:
 
 - will be created in the current directory,
-- its name matches the input filename when reading from a file or `postgresql` when reading from a PostgreSQL database.
+- its name will match the input filename when reading from a file or be named `postgresql` when reading from a database.
 
 It is recommended to define this parameter explicitly.
 
@@ -173,21 +181,21 @@ This parameter specifies a SQL expression to filter data by rows and/or by colum
 
 #### `transformations`
 
-This section specifies a dictionary with at least one key-value pair, where the key is a column name to be created or replaced and the value is a SQL expression to be applied to one or multiple columns in data. If the key matches any existing column name in data, it replaces that column with transformed values, otherwise a new column is created.
+This parameter specifies a dictionary with at least one key-value pair, where the key is a column name to be created or replaced and the value is a SQL expression to be applied to one or multiple columns in the data. If the key matches any existing column name in the data, it replaces that column with transformed values, otherwise a new column is created.
 
 #### `date_column`
 
-This parameter specifies the name of a date or datetime type column to use for aggregating data over time intervals. If not specified, the tool will try to use a column named `date_column`, which can be created using `transformations`. If there is no such column, the tool will print data schema and exit.
+This parameter specifies the name of a date or datetime type column to use for aggregating data over time intervals. If not specified, the tool will try to use a column literally named `date_column`, which can be created using `transformations`. If there is no such column, the tool will print the data schema and exit.
 
 #### `time_interval`
 
-This parameter is used to divide the date or datetime range in `date_column` into equal time intervals. The division is implemented with [polars.Expr.dt.truncate](https://docs.pola.rs/api/python/stable/reference/expressions/api/polars.Expr.dt.truncate.html). The default value is `1d`, which corresponds to one day, so any other value required must be specified explicitly.
+This parameter is used to divide the date or datetime range in `date_column` into equal time intervals. The division is implemented with [polars.Expr.dt.truncate](https://docs.pola.rs/api/python/stable/reference/expressions/api/polars.Expr.dt.truncate.html). The default value is `1d`, which corresponds to one day, so any other required value must be specified explicitly.
 
 #### `target_column`
 
-This optional parameter specifies a column in data to calculate target average, which is the class balance in machine learning binary classification problems. The result of calculation will be shown in the `Overview` section of the markdown report.
+This optional parameter specifies a column in the data to calculate the target average, which is the class balance in machine learning binary classification problems. The result of calculation will be shown in the `Overview` section of the markdown report.
 
-If not specified, the tool will try to use a column named `target_column`, which can be created using `transformations`, and if there is no such column in the data the target average won't be calculated.
+If not specified, the tool will try to use a column literally named `target_column`, which can be created using `transformations`, and if there is no such column in the data, the target average won't be calculated.
 
 #### `columns_to_exclude`
 
@@ -197,27 +205,27 @@ This optional parameter specifies a list of columns to be excluded from the eval
 
 This section specifies parameters to evaluate outliers and highlight outlier regions on charts:
 
-- `criterion` defines a method for outlier detection: `IQR` or `Z-score`. This parameter must be specified to display outlier regions on charts.
-- `multiplier_iqr` defines the multiplier for the IQR range to determine outlier boundaries (defaults to 1.5).
+- `criterion` defines a method for outlier detection: `IQR` or `Z-score`. This parameter must be specified to display outlier regions on charts,
+- `multiplier_iqr` defines the multiplier for the IQR range to determine outlier boundaries (defaults to 1.5),
 - `threshold_z_score` defines the Z-score threshold for identifying outliers (defaults to 3.0).
 
 #### `markdown`
 
 This section specifies parameters related to the markdown report being produced:
 
-- `name` defines the name of the report (defaults to `README.md`).
-- `css_style` defines a path to the file with CSS style for tables, e.g., [style.css](style.css). Specifying style for tables is not mandatory, but it improves readability and look.
+- `name` defines the name of the report (defaults to `README.md`),
+- `css_style` defines a path to the file with CSS style for tables, e.g., [style.css](style.css). Specifying style for tables is not mandatory, but it improves readability and appearance,
 - `float_precision` defines the number of decimal places to format floats in markdown tables (defaults to 4).
 
 #### `plotly`
 
 This section specifies Plotly configuration parameters and styles, which can be adjusted to match your preferences.
 
-- `plot` defines style for [plotly.graph_objs.Scatter](https://plotly.com/python-api-reference/generated/plotly.graph_objects.Scatter.html#plotly.graph_objects.Scatter), which renders evaluated descriptive statistics over time intervals.
-- `outliers` defines style for Plotly shapes to highlight outliers.
-- `grid` defines style for grid lines.
-- `layout` defines extra parameters to adjust [layout](https://plotly.com/python/reference/layout/). The default chart height equals 512 pixels, default template is `plotly_white`.
-- `subplots` define extra parameters to adjust spacing in the [subplot grid](https://plotly.com/python-api-reference/generated/plotly.subplots.make_subplots.html).
+- `plot` defines style for [plotly.graph_objs.Scatter](https://plotly.com/python-api-reference/generated/plotly.graph_objects.Scatter.html#plotly.graph_objects.Scatter), which renders evaluated descriptive statistics over time intervals,
+- `outliers` defines style for Plotly shapes to highlight outliers,
+- `grid` defines style for grid lines,
+- `layout` defines extra parameters to adjust [layout](https://plotly.com/python/reference/layout/). The default chart height equals 512 pixels, default template is `plotly_white`,
+- `subplots` define extra parameters to adjust spacing in the [subplot grid](https://plotly.com/python-api-reference/generated/plotly.subplots.make_subplots.html),
 - `scale_factor` defines factor to scale a chart, defaults to 1.
 
 If none of the parameters are specified, Plotly will use its default parameters.
@@ -228,7 +236,7 @@ If none of the parameters are specified, Plotly will use its default parameters.
 
 This section describes potential hurdles of processing CSV or XLSX file formats, which raise a `ComputeError` exception.
 
-The first issue is caused by a column with mixed alphanumeric values, which might be interpreted as an integer type during schema inference. The problem is that by default Polars infers schema from the first 100 rows of CSV and XLSX files, which is defined by the `infer_schema_length` parameter in `scan_cvs` or `read_excel` functions.
+The first issue is caused by a column with mixed alphanumeric values, which might be interpreted as an integer type during schema inference. The problem is that by default Polars infers schema from the first 100 rows of CSV and XLSX files, which is defined by the `infer_schema_length` parameter in `scan_csv` or `read_excel` functions.
 
 The solution is to explicitly define the type of the column as a string at data ingestion:
 
@@ -241,13 +249,13 @@ The solution is to explicitly define the type of the column as a string at data 
     },
 ```
 
-In such cases, column type transformations (e.g., `cast(column as text)` or `column::text`) typically do not work because of the specifics of Polars’ lazy execution and logical plan optimization: it may still use the originally inferred type.
+In such cases, column type transformations (e.g., `cast(column as text)` or `column::text`) typically do not work because of the specifics of Polars' lazy execution and logical plan optimization: it may still use the originally inferred type.
 
 ---
 
-Another common issue that causes `ComputeError` is a date or datetime type column being inferred as a string type. In these cases, column type transformation (e.g., `DATE(column, '%Y-%m-%d %H:%M:%S')`) will work if timestamp values are uniform and match ISO 8601 standard supported by Polars.
+Another common issue that causes `ComputeError` is a date or datetime type column being inferred as a string type. In these cases, column type transformation (e.g., `DATE(column, '%Y-%m-%d %H:%M:%S')`) will work if timestamp values are uniform and match the ISO 8601 standard supported by Polars.
 
-If the column has mixed format, e.g., with and without fractional seconds, but still consistent with ISO 8601 standard, it is better to handle it by specifying the type of the column as date or datetime in `schema_overrides`.
+If the column has mixed format, e.g., with and without fractional seconds, but still consistent with the ISO 8601 standard, it is better to handle it by specifying the type of the column as date or datetime in `schema_overrides`.
 
 In cases of complex mixed time formats raising `ComputeError`, manual data cleaning to standardize the formats remains the best solution, although such cases are uncommon.
 
@@ -255,7 +263,7 @@ In cases of complex mixed time formats raising `ComputeError`, manual data clean
 
 ## Dataset reading examples
 
-This tool was tested using publicly available datasets. Full configurations for evaluating these datasets are in **[examples](examples)** directory. The only major difference between them is the `source` and `date_column` / `target_column` specification with extra transformations where necessary. Ready-to-use code snippets that require adjusting a few parameters in existing **[config.json](config.json)** are listed below:
+This tool was tested using publicly available datasets. Full configurations for evaluating these datasets are in [**examples**](examples) directory. The only major difference between them is the `source` and `date_column` / `target_column` specification with extra transformations where necessary. Ready-to-use code snippets that require adjusting a few parameters in existing [**config.json**](config.json) are listed below:
 
 ### [Kaggle](https://www.kaggle.com/datasets?search=fraud&sort=votes&tags=13302-Classification&minUsabilityRating=9.00+or+higher)
 
