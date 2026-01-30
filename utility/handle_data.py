@@ -48,7 +48,7 @@ def read_source(source: dict[str, str]) -> pl.LazyFrame:
     elif source.get("file_path"):
         # Get storage_options to read from cloud providers
         storage_options = handle_environment_variables(
-            source.get("storage_options")
+            source.get("storage_options", {})
         )
         # Get schema_overrides to alter schema dtypes for csv / xlsx
         schema_overrides = handle_schema_overrides(
@@ -105,7 +105,7 @@ def _read_source(
         "parquet": pl.scan_parquet,
         "iceberg": pl.scan_iceberg,
     }
-    read_func = None
+    lf, read_func = None, None
 
     if isinstance(file_format, str):
         if file_format.lower() in read_source_func:
@@ -163,11 +163,12 @@ def handle_schema_overrides(data: dict[str, str]) -> dict[str, pl.DataType]:
                 logging.warning(
                     f"Unsupported data type '{value}' for column '{key}'")
         return output
+    elif data is None:
+        return None
     else:
         logging.warning(
             f"'schema_overrides' expected dict, got {type(data).__name__}")
-
-    return None
+        return None
 
 
 def handle_environment_variables(

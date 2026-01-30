@@ -46,9 +46,11 @@ def make_preprocessing(
 
     # Get target_column
     target_column = config.get("target_column", "target_column")
-    if not schema.get(target_column):
+    if schema.get(target_column):
+        logging.info(f"Target column: `{target_column}`")
+    else:
         target_column = None
-        logging.warning("Target column wasn't found")
+        logging.warning("Target column not found")
 
     # Collect aggregation expressions for each column except excluded ones
     aggs, metadata = collect_aggregations(
@@ -194,7 +196,7 @@ def collect_aggregations(
     # Start with common aggregation expression for the number of values
     aggs = [pl.count().alias(" __Number of values")]
 
-    # If target column was found in schema,
+    # If target column is found in schema,
     # calculate its mean (i.e. class balance in binary classification problems)
     if target_column:
         aggs.append(
