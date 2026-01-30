@@ -271,37 +271,42 @@ This tool was tested using publicly available datasets. Full configurations for 
 
 ```json
     "source": {
-        "file_path": "metaverse_transactions_dataset.csv",
+        "file_path": "/datasets/metaverse_transactions_dataset.csv",
         "schema_overrides": {
             "timestamp": "Datetime"
         }
     },
-    "date_column": "timestamp",
+    "output": "metaverse-financial-transactions-dataset",
     "transformations": {
         "target_column": "(anomaly = 'high_risk')::int"
     },
+    "date_column": "timestamp",
 ```
 
 - [Credit Card Fraud Prediction](https://www.kaggle.com/datasets/kelvinkelue/credit-card-fraud-prediction)
 
 ```json
     "source": {
-        "file_path": "fraud test.csv",
+        "file_path": "/datasets/fraud test.csv",
         "schema_overrides": {
-            "trans_date_trans_time": "Datetime"
+            "trans_date_trans_time": "Datetime",
+            "cc_num": "String",
+            "zip": "String"
         }
     },
+    "output": "credit-card-fraud-prediction",
     "date_column": "trans_date_trans_time",
     "target_column": "is_fraud",
-    "columns_to_exclude": [""],
+    "columns_to_exclude": ["", "unix_time"],
 ```
 
 - [Is this a bad transaction?](https://www.kaggle.com/datasets/podsyp/fraud-transactions-detection)
 
 ```json
     "source": {
-        "file_path": "fraud.csv"
+        "file_path": "/datasets/fraud.csv"
     },
+    "output": "fraud-transactions-detection",
     "date_column": "rep_loan_date",
     "target_column": "bad_flag",
 ```
@@ -310,8 +315,9 @@ This tool was tested using publicly available datasets. Full configurations for 
 
 ```json
     "source": {
-        "file_path": "_counterfeit_transactions.csv"
+        "file_path": "/datasets/_counterfeit_transactions.csv"
     },
+    "output": "counterfeit-product-detection-dataset",
     "date_column": "transaction_date",
     "target_column": "involves_counterfeit",
     "transformations": {
@@ -324,7 +330,7 @@ It is also possible to replace `"transaction_date": "DATE(transaction_date, '%Y-
 
 ```json
     "source": {
-        "file_path": "_counterfeit_transactions.csv",
+        "file_path": "/datasets/_counterfeit_transactions.csv",
         "schema_overrides": {
             "transaction_date": "Datetime"
         }
@@ -335,11 +341,12 @@ It is also possible to replace `"transaction_date": "DATE(transaction_date, '%Y-
 
 ```json
     "source": {
-        "file_path": "financial_fraud_detection_dataset.csv",
+        "file_path": "/datasets/financial_fraud_detection_dataset.csv",
         "schema_overrides": {
             "timestamp": "Datetime"
         }
     },
+    "output": "financial-transactions-dataset-for-fraud-detection",
     "filter": "select * from self where timestamp::date > '2023-01-01' and timestamp::date < '2024-01-01'",
     "date_column": "timestamp",
     "target_column": "is_fraud",
@@ -355,18 +362,23 @@ It is also possible to replace `"transaction_date": "DATE(transaction_date, '%Y-
     "source": {
         "file_path": "hf://datasets/Tichies/card-fraud/saske.csv",
         "schema_overrides": {
-            "Transaction_Date": "Datetime"
+            "Transaction_Date": "Datetime",
+            "User_ID": "String",
+            "Device_ID": "String",
+            "Merchant_ID": "String"
         }
     },
+    "output": "hf-card-fraud",
     "date_column": "Transaction_Date",
     "target_column": "isFraud",
+    "columns_to_exclude": ["Transaction_ID"],
 ```
 
 - [saifhmb/FraudPaymentData](https://huggingface.co/datasets/saifhmb/FraudPaymentData)
 
 ```json
     "source": {
-        "file_path": "FraudPaymentData.parquet"
+        "file_path": "/datasets/FraudPaymentData.parquet"
     },
     "date_column": "Time_step",
     "target_column": "Label",
@@ -383,6 +395,7 @@ It is also possible to replace `"transaction_date": "DATE(transaction_date, '%Y-
     "source": {
         "file_path": "hf://datasets/Ransaka/fraud_prediction_300K/data_50K.parquet"
     },
+    "output": "fraud-prediction-300K",
     "date_column": "S_2",
     "target_column": "target",
     "columns_to_exclude": ["customer_ID"],
@@ -397,6 +410,7 @@ It is also possible to replace `"transaction_date": "DATE(transaction_date, '%Y-
             "timestamp": "Datetime"
         }
     },
+    "output": "mock-fraud-detection-dataset",
     "date_column": "timestamp",
     "target_column": "is_fraud",
     "columns_to_exclude": ["transaction_id"],
@@ -406,10 +420,14 @@ It is also possible to replace `"transaction_date": "DATE(transaction_date, '%Y-
 
 ```json
     "source": {
-        "file_path": "cc_fraud_detection_dataset.parquet"
+        "file_path": "/datasets/cc_fraud_detection_dataset.parquet"
     },
+    "output": "hf-cc-fraud_detection_dataset",
     "date_column": "trans_date",
     "target_column": "is_fraud",
+    "transformations": {
+        "acct_num": "acct_num::text"
+    },
     "columns_to_exclude": ["trans_time", "unix_time"],
 ```
 
