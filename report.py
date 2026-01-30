@@ -188,7 +188,7 @@ def collect_md_content(
         # Add new entry to the content: section with anchor, chart, and table
         content.append((
             "## {alias}\n\n"
-            "![{col}]({col}.png)\n\n"
+            "![{col}]({col})\n\n"
             "{table}"
         ).format(
             col=col, alias=alias,
@@ -198,7 +198,7 @@ def collect_md_content(
         if data[col].get("dtype"):
             content.append((
                 "### `{alias}`\n\n"
-                "![{col}]({col}__numeric.png)\n\n"
+                "![{col}]({col}__numeric)\n\n"
                 "{table}"
             ).format(
                 col=col, alias=data[col]["dtype"],
