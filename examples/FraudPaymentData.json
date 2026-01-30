@@ -1,6 +1,6 @@
 {
     "source": {
-        "file_path": "FraudPaymentData.parquet"
+        "file_path": "/datasets/FraudPaymentData.parquet"
     },
     "date_column": "Time_step",
     "target_column": "Label",

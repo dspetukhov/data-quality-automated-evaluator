@@ -2,11 +2,16 @@
     "source": {
         "file_path": "hf://datasets/Tichies/card-fraud/saske.csv",
         "schema_overrides": {
-            "Transaction_Date": "Datetime"
+            "Transaction_Date": "Datetime",
+            "User_ID": "String",
+            "Device_ID": "String",
+            "Merchant_ID": "String"
         }
     },
+    "output": "hf-card-fraud",
     "date_column": "Transaction_Date",
     "target_column": "isFraud",
+    "columns_to_exclude": ["Transaction_ID"],
     "outliers": {
         "criterion": "IQR",
         "multiplier_iqr": 1.5,

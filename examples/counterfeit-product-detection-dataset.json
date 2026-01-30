@@ -1,7 +1,8 @@
 {
     "source": {
-        "file_path": "_counterfeit_transactions.csv"
+        "file_path": "/datasets/_counterfeit_transactions.csv"
     },
+    "output": "counterfeit-product-detection-dataset",
     "date_column": "transaction_date",
     "target_column": "involves_counterfeit",
     "transformations": {

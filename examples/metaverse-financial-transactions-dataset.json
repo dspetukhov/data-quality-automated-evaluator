@@ -1,14 +1,15 @@
 {
     "source": {
-        "file_path": "metaverse_transactions_dataset.csv",
+        "file_path": "/datasets/metaverse_transactions_dataset.csv",
         "schema_overrides": {
             "timestamp": "Datetime"
         }
     },
-    "date_column": "timestamp",
+    "output": "metaverse-financial-transactions-dataset",
     "transformations": {
         "target_column": "(anomaly = 'high_risk')::int"
     },
+    "date_column": "timestamp",
     "outliers": {
         "criterion": "IQR",
         "multiplier_iqr": 1.5,

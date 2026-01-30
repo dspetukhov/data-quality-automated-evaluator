@@ -1,13 +1,16 @@
 {
     "source": {
-        "file_path": "fraud test.csv",
+        "file_path": "/datasets/fraud test.csv",
         "schema_overrides": {
-            "trans_date_trans_time": "Datetime"
+            "trans_date_trans_time": "Datetime",
+            "cc_num": "String",
+            "zip": "String"
         }
     },
+    "output": "credit-card-fraud-prediction",
     "date_column": "trans_date_trans_time",
     "target_column": "is_fraud",
-    "columns_to_exclude": [""],
+    "columns_to_exclude": ["", "unix_time"],
     "outliers": {
         "criterion": "IQR",
         "multiplier_iqr": 1.5,
