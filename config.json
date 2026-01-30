@@ -1,10 +1,12 @@
 {
     "source": {
-        "file_path": "../datasets/metaverse_transactions_dataset.csv"
+        "file_path": "/datasets/metaverse_transactions_dataset.csv"
     },
+    "output": "metaverse-financial-transactions-dataset",
     "engine": "streaming",
     "transformations": {
-        "timestamp": "DATE(timestamp, '%Y-%m-%d %H:%M:%S')"
+        "timestamp": "DATE(timestamp, '%Y-%m-%d %H:%M:%S')",
+        "target_column": "(anomaly = 'high_risk')::int"
     },
     "date_column": "timestamp",
     "outliers": {
