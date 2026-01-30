@@ -4,13 +4,13 @@ A configurable Python tool for automated evaluation of temporal data quality.
 
 This tool evaluates data quality by calculating descriptive statistics (e.g., number of unique values) for each column in your dataset across custom time intervals. It generates structured markdown reports with charts and tables that visualize changes in these statistics over time.
 
+The final assessment of data consistency, validity, and overall quality is the responsibility of an individual reviewing the markdown report.
+
 This tool is particularly useful for:
 
 - Validating consistency and finding faults in data,
 - Identifying temporal anomalies and detecting data drift,
 - Monitoring data quality in production pipelines.
-
-The final assessment of data consistency, validity, and overall quality is the responsibility of an individual reviewing the markdown report.
 
 Powered by [**Polars**](https://docs.pola.rs/) and [**Plotly**](https://docs.plotly.com/).
 
