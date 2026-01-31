@@ -103,20 +103,20 @@ plotly>=6.3.0
 
 Data evaluation configuration is defined in a single JSON file ([config.json](config.json)) by the following sections:
 
-| Section / Parameter  | Description                                                     | Expected parameters                                               |
-|----------------------|-----------------------------------------------------------------|-------------------------------------------------------------------|
-| `source`             | Configuration to read data (Required)                           | `file_path`, `file_format`, `storage_options`, `schema_overrides` |
-| `engine`             | Polars engine used to process the data (Optional)               |                                                                   |
-| `output`             | Directory to save report and charts (Optional)                  |                                                                   |
-| `filter`             | SQL expression to filter data by rows and by columns (Optional) |                                                                   |
-| `transformations`    | Dict of SQL expressions to transform data by columns (Optional) |                                                                   |
-| `date_column`        | Column to aggregate data by time intervals (Required)           |                                                                   |
-| `time_interval`      | Time interval to aggregate data (Optional)                      |                                                                   |
-| `target_column`      | Column to calculate target average (Optional)                   |                                                                   |
-| `columns_to_exclude` | List of columns to be excluded from evaluation (Optional)       |                                                                   |
-| `outliers`           | Outlier detection settings (Optional)                           | `criterion`, `multiplier_iqr`, `threshold_z_score`                |
-| `markdown`           | Markdown report settings (Optional)                             | `name`, `css_style`, `float_precision`                            |
-| `plotly`             | Plotly styling settings (Optional)                              | `plot`, `outliers`, `layout`, `grid`, `subplots`, `scale_factor`  |
+| Section / Parameter  | Description                                                     | Expected parameters                                                        |
+|----------------------|-----------------------------------------------------------------|----------------------------------------------------------------------------|
+| `source`             | Configuration to read data (Required)                           | `file_path`, `file_format`, `storage_options`, `schema_overrides`          |
+| `engine`             | Polars engine used to process the data (Optional)               |                                                                            |
+| `output`             | Directory to save report and charts (Optional)                  |                                                                            |
+| `filter`             | SQL expression to filter data by rows and by columns (Optional) |                                                                            |
+| `transformations`    | Dict of SQL expressions to transform data by columns (Optional) |                                                                            |
+| `date_column`        | Column to aggregate data by time intervals (Required)           |                                                                            |
+| `time_interval`      | Time interval to aggregate data (Optional)                      |                                                                            |
+| `target_column`      | Column to calculate target average (Optional)                   |                                                                            |
+| `columns_to_exclude` | List of columns to be excluded from evaluation (Optional)       |                                                                            |
+| `outliers`           | Outlier detection settings (Optional)                           | `criterion`, `multiplier_iqr`, `threshold_z_score`                         |
+| `markdown`           | Markdown report settings (Optional)                             | `name`, `css_style`, `float_precision`                                     |
+| `plotly`             | Plotly styling settings (Optional)                              | `plot`, `outliers`, `layout`, `grid`, `subplots`, `format`, `scale_factor` |
 
 Each of these sections is described below in detail:
 
@@ -225,8 +225,9 @@ This section specifies Plotly configuration parameters and styles, which can be 
 - `outliers` defines style for Plotly shapes to highlight outliers,
 - `grid` defines style for grid lines,
 - `layout` defines extra parameters to adjust [layout](https://plotly.com/python/reference/layout/). The default chart height equals 512 pixels, default template is `plotly_white`,
-- `subplots` define extra parameters to adjust spacing in the [subplot grid](https://plotly.com/python-api-reference/generated/plotly.subplots.make_subplots.html),
-- `scale_factor` defines factor to scale a chart, defaults to 1.
+- `subplots` defines extra parameters to adjust spacing in the [subplot grid](https://plotly.com/python-api-reference/generated/plotly.subplots.make_subplots.html),
+- `format` defines file saving format, supports PNG (default), JPEG, WebP, SVG, and PDF.
+- `scale_factor` defines factor to scale the chart, defaults to 1.
 
 If none of the parameters are specified, Plotly will use its default parameters.
 

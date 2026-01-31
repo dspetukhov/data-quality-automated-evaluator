@@ -65,7 +65,8 @@ def make_charts(
 
     # Save figure as PNG file
     fig.write_image(
-        file_path, format="png",
+        file_path,
+        format=config.get("format", "png"),
         scale=config.get("scale_factor", 1)
     )
 
