@@ -58,6 +58,10 @@ def make_preprocessing(
         target_column,
         config.get("columns_to_exclude", []))
 
+    # Set chunk size used in streaming engine
+    if isinstance(config.get("streaming_chunk_size"), int):
+        pl.Config.set_streaming_chunk_size(config["streaming_chunk_size"])
+
     # Aggregate data by time intervals / buckets
     lf_agg = lf.group_by(TIME_INTERVAL_COL).agg(aggs).sort(TIME_INTERVAL_COL)
     # lf_agg.explain()  # uncomment to get the query plan or turn off/on optimizations

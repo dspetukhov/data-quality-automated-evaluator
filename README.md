@@ -1,4 +1,4 @@
-# Data Quality Automated Evaluation - `DQ-AE`
+# Data Quality Automated Evaluator - `DQ-AE`
 
 A configurable Python tool for automated evaluation of temporal data quality.
 
@@ -11,6 +11,8 @@ This tool is particularly useful for:
 - Validating consistency and finding faults in data,
 - Identifying temporal anomalies and detecting data drift,
 - Monitoring data quality in production pipelines.
+
+<!-- Detailed reasoning about why it was done and explanation of how to work with this tool are in my article (https://medium.com/@dspetukhov/...) -->
 
 Powered by [**Polars**](https://docs.pola.rs/) and [**Plotly**](https://docs.plotly.com/).
 
@@ -264,7 +266,7 @@ In cases of complex mixed time formats raising `ComputeError`, manual data clean
 
 ## Dataset reading examples
 
-This tool was tested using publicly available datasets. Full configurations for evaluating these datasets are in [**examples**](examples) directory. The only major difference between them is the `source` and `date_column` / `target_column` specification with extra transformations where necessary. Ready-to-use code snippets that require adjusting a few parameters in existing [**config.json**](config.json) are listed below:
+This tool was tested using publicly available datasets. Full configurations for evaluating these datasets are in [**examples**](examples) directory. Ready-to-use code extracts from these configurations, which require adjusting a few parameters in existing [**config.json**](config.json), are listed below:
 
 ### [Kaggle](https://www.kaggle.com/datasets?search=fraud&sort=votes&tags=13302-Classification&minUsabilityRating=9.00+or+higher)
 
@@ -353,9 +355,53 @@ It is also possible to replace `"transaction_date": "DATE(transaction_date, '%Y-
     "target_column": "is_fraud",
 ```
 
+- [IBM Transactions for Anti Money Laundering](https://www.kaggle.com/datasets/ealtman2019/ibm-transactions-for-anti-money-laundering-aml)
+
+```json
+    "source": {
+        "file_path": "../datasets/LI-Large_Trans.csv",
+        "schema_overrides": {
+            "Timestamp": "Datetime",
+            "From Bank": "Categorical",
+            "Account": "Categorical",
+            "To Bank": "Categorical",
+            "Account_duplicated_0": "Categorical",
+            "Receiving Currency": "Categorical",
+            "Payment Currency": "Categorical",
+            "Payment Format": "Categorical"
+        }
+    },
+    "output": "ibm-transactions-for-anti-money-laundering",
+    "engine": "streaming",
+    "streaming_chunk_size": 2026,
+    "date_column": "Timestamp",
+    "target_column": "Is Laundering",
+        "transformations": {
+        "sender_account": "Account",
+        "receiver_account": "Account_duplicated_0"
+    },
+    "columns_to_exclude": ["Account", "Account_duplicated_0"],
+```
+
 [Back to table of contents](#table-of-contents)
 
 ### [Hugging Face](https://huggingface.co/datasets?size_categories=or:%28size_categories:10K%3Cn%3C100K,size_categories:100K%3Cn%3C1M,size_categories:1M%3Cn%3C10M,size_categories:10M%3Cn%3C100M,size_categories:100M%3Cn%3C1B,size_categories:1B%3Cn%3C10B,size_categories:10B%3Cn%3C100B,size_categories:100B%3Cn%3C1T,size_categories:n%3E1T%29&sort=trending&search=fraud)
+
+- [CiferAI/Cifer-Fraud-Detection-Dataset-AF](https://huggingface.co/datasets/CiferAI/Cifer-Fraud-Detection-Dataset-AF)
+
+```json
+    "source": {
+        "file_path": "hf://datasets/CiferAI/Cifer-Fraud-Detection-Dataset-AF/**/*.csv"
+    },
+    "output": "cifer-fraud-detection-dataset",
+    "engine": "streaming",
+    "filter": "select * from self where step < 743",
+    "transformations": {
+        "date_column": "CAST(step AS DATE)"
+    },
+    "target_column": "isFraud",
+    "columns_to_exclude": ["isFlaggedFraud", "step"],
+```
 
 - [Tichies/card-fraud](https://huggingface.co/datasets/Tichies/card-fraud)
 

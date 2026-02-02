@@ -151,7 +151,8 @@ def handle_schema_overrides(data: dict[str, str]) -> dict[str, pl.DataType]:
     dtypes = {
         "String": pl.String,
         "Date": pl.Date,
-        "Datetime": pl.Datetime
+        "Datetime": pl.Datetime,
+        "Categorical": pl.Categorical
     }
 
     if isinstance(data, dict):
@@ -168,7 +169,6 @@ def handle_schema_overrides(data: dict[str, str]) -> dict[str, pl.DataType]:
     else:
         logging.warning(
             f"'schema_overrides' expected dict, got {type(data).__name__}")
-        return None
 
 
 def handle_environment_variables(

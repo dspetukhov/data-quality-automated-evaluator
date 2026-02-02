@@ -57,6 +57,10 @@ def make_report(
     # representing aggregations for a column in source data:
     # number of unique values and proportion of missing values
     for col in metadata:
+        # Replace whitespaces in column name with a hyphen
+        # to ensure proper reference to charts in Markdown
+        col_ = col.replace(" ", "-")
+
         data = df.select(
             [TIME_INTERVAL_COL] + [
                 item for item in df.columns
@@ -68,7 +72,7 @@ def make_report(
             data,
             bounds=bounds,
             config=plotly,
-            file_path=Path(output, col))
+            file_path=Path(output, col_))
 
         # Get evaluations and create charts for columns
         # representing extra aggregations for a numeric column in source data:
@@ -86,7 +90,7 @@ def make_report(
                 data,
                 bounds=bounds,
                 config=plotly,
-                file_path=Path(output, f"{col}__numeric"))
+                file_path=Path(output, f"{col_}__numeric"))
 
     # Collect markdown content
     content = collect_md_content(
@@ -178,12 +182,15 @@ def collect_md_content(
     """
     toc = []
     for col in data:
+        # Replace whitespaces in column name with a hyphen
+        # to ensure proper reference links in Markdown
+        col_ = col.replace(" ", "-")
         # Get section title (`alias`)
         alias = "Overview" if col == OVERVIEW_COL else f"`{col}`"
 
         # Add new section to the table-of-contents with anchor
         toc.append(
-            f"- [{alias}](#{'overview' if col == OVERVIEW_COL else col})")
+            f"- [{alias}](#{'overview' if col == OVERVIEW_COL else col_.lower()})")
 
         # Add new entry to the content: section with anchor, chart, and table
         content.append((
@@ -191,7 +198,7 @@ def collect_md_content(
             "![{col}]({col})\n\n"
             "{table}"
         ).format(
-            col=col, alias=alias,
+            col=col_, alias=alias,
             table=make_md_table(data[col]["evals"], precision))
         )
         # Add extra section for numeric columns
@@ -201,7 +208,7 @@ def collect_md_content(
                 "![{col}]({col}__numeric)\n\n"
                 "{table}"
             ).format(
-                col=col, alias=data[col]["dtype"],
+                col=col_, alias=data[col]["dtype"],
                 table=make_md_table(data[col]["evals_numeric"], precision))
             )
         # Add backlink to the Table-of-contents at the end of each section
@@ -240,11 +247,12 @@ def make_md_table(data: list[dict], precision: int | None) -> str:
         data.append({})
 
     # Compose formatted table content
-    rows = [
-        [" " if key == "title" else f"**{key}**"] +
-        [format_number(el.get(key, ""), precision) for el in data]
-        for key in data[0]
-    ]
+    rows = []
+    for key in data[0].keys():
+        col_index = [" " if key == "title" else f"**{key}**"]
+        col_values = [format_number(item.get(key), precision) for item in data]
+        rows.append(col_index + col_values)
+
     # Create markdown table using `tabulate`
     return tabulate(
         rows,
@@ -304,8 +312,10 @@ def format_number(value: Any, precision: int = 4) -> str:
         str: Formatted number(s) as a string.
     """
     if isinstance(value, float):
-        if len(str(value).split(".")[1]) > precision:
+        if "." in str(value):
             value = f"{value:,.{precision}f}"
+        else:
+            value = f"{value:.{precision}e}"
     elif isinstance(value, tuple):
         value = " ± ".join([f"{v:,.{precision}f}" for v in value])
     elif isinstance(value, int):
