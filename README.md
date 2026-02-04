@@ -12,7 +12,7 @@ This tool is particularly useful for:
 - Identifying temporal anomalies and detecting data drift,
 - Monitoring data quality in production pipelines.
 
-<!-- Detailed reasoning about why it was done and explanation of how to work with this tool are in my article (https://medium.com/@dspetukhov/...) -->
+A detailed explanation of why it was done and how to work with the tool is in (https://medium.com/@dspetukhov/<coming soon>)
 
 Powered by [**Polars**](https://docs.pola.rs/) and [**Plotly**](https://docs.plotly.com/).
 
@@ -34,7 +34,9 @@ Powered by [**Polars**](https://docs.pola.rs/) and [**Plotly**](https://docs.plo
 # Python 3.10 or higher
 
 polars>=1.37.0
-plotly>=6.3.0
+plotly==6.3.0
+kaleido==0.2.1
+tabulate==0.9.0
 ```
 
 ## Quick start
@@ -83,7 +85,7 @@ plotly>=6.3.0
 - **Flexible & performant data preprocessing**: data filtering and transformation using SQL expressions powered by Polars with lazy evaluation,
 - **Outliers detection**: evaluation and visual representation of anomalous changes based on IQR or Z-score criteria,
 - **Professional markdown reports**: with formatted tables and customized charts embedded,
-- **Configuration in one place**: various preprocessing and reporting parameters specified in a single human-readable JSON file passed as a command line argument.
+- **Configuration in one place**: various preprocessing and reporting parameters specified in a human-readable JSON file passed as a command line argument.
 
 ### Structure
 
@@ -105,20 +107,21 @@ plotly>=6.3.0
 
 Data evaluation configuration is defined in a single JSON file ([config.json](config.json)) by the following sections:
 
-| Section / Parameter  | Description                                                     | Expected parameters                                                        |
-|----------------------|-----------------------------------------------------------------|----------------------------------------------------------------------------|
-| `source`             | Configuration to read data (Required)                           | `file_path`, `file_format`, `storage_options`, `schema_overrides`          |
-| `engine`             | Polars engine used to process the data (Optional)               |                                                                            |
-| `output`             | Directory to save report and charts (Optional)                  |                                                                            |
-| `filter`             | SQL expression to filter data by rows and by columns (Optional) |                                                                            |
-| `transformations`    | Dict of SQL expressions to transform data by columns (Optional) |                                                                            |
-| `date_column`        | Column to aggregate data by time intervals (Required)           |                                                                            |
-| `time_interval`      | Time interval to aggregate data (Optional)                      |                                                                            |
-| `target_column`      | Column to calculate target average (Optional)                   |                                                                            |
-| `columns_to_exclude` | List of columns to be excluded from evaluation (Optional)       |                                                                            |
-| `outliers`           | Outlier detection settings (Optional)                           | `criterion`, `multiplier_iqr`, `threshold_z_score`                         |
-| `markdown`           | Markdown report settings (Optional)                             | `name`, `css_style`, `float_precision`                                     |
-| `plotly`             | Plotly styling settings (Optional)                              | `plot`, `outliers`, `layout`, `grid`, `subplots`, `format`, `scale_factor` |
+| Section / Parameter    | Description                                                              | Expected parameters                                                        |
+|------------------------|--------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| `source`               | Configuration to read data (Required)                                    | `file_path`, `file_format`, `storage_options`, `schema_overrides`          |
+| `engine`               | Polars engine used to process the data (Optional)                        |                                                                            |
+| `streaming_chunk_size` | Chunk size for streaming engine to avoid Out of Memory errors (Optional) |                                                                            |
+| `output`               | Directory to save report and charts (Optional)                           |                                                                            |
+| `filter`               | SQL expression to filter data by rows and by columns (Optional)          |                                                                            |
+| `transformations`      | Dictionary of SQL expressions to transform data by columns (Optional)    |                                                                            |
+| `date_column`          | Column to aggregate data by time intervals (Required)                    |                                                                            |
+| `time_interval`        | Time interval to aggregate data (Optional)                               |                                                                            |
+| `target_column`        | Column to calculate target average (Optional)                            |                                                                            |
+| `columns_to_exclude`   | List of columns to be excluded from evaluation (Optional)                |                                                                            |
+| `outliers`             | Outlier detection settings (Optional)                                    | `criterion`, `multiplier_iqr`, `threshold_z_score`                         |
+| `markdown`             | Markdown report settings (Optional)                                      | `name`, `css_style`, `float_precision`                                     |
+| `plotly`               | Plotly styling settings (Optional)                                       | `plot`, `outliers`, `layout`, `grid`, `subplots`, `format`, `scale_factor` |
 
 Each of these sections is described below in detail:
 
@@ -126,14 +129,14 @@ Each of these sections is described below in detail:
 
 This section specifies parameters to read the source of data using Polars:
 
-- `file_path` is the mandatory parameter defining the path to the file to read,
-- `file_format` is required in cases when the file to read is missing an extension at the end of the name or when reading from a directory with partitioned files,
-- `storage_options` is required for reading from cloud providers. However, if not explicitly specified, Polars will implicitly try to get relevant credentials from environment variables, so explicit specification of the variables is recommended:
+- `file_path` is the mandatory parameter that defines the path to the file to read,
+- `file_format` is required when the file being read is missing an extension at the end of its name or when reading from a directory with partitioned files,
+- `storage_options` is typically required for reading from cloud providers. If not explicitly specified, Polars will try to get credentials from environment variables. Explicit specification is recommended:
 
 ```python
 storage_options = {
-    # definition with `$` sign as the first symbol will be interpreted as an environment variable to be used
-    # definition without `$` sign as the first symbol will be interpreted as a string
+    # Definitions with a `$` sign as the first symbol will be interpreted as environment variables
+    # Definitions without a `$` sign will be interpreted as string literals
     "aws_access_key_id": "$S3_KEY_ID",
     ...
 }
@@ -144,7 +147,7 @@ storage_options = {
   - when a date or datetime column does not match ISO 8601 standard,
   - when a categorical string column is inferred as a numerical one.
 
-Supported types for `schema_overrides` include `String`, `Date` and `Datetime`.
+Supported types for `schema_overrides` include `String`, `Date`, and `Datetime`.
 
 More details of how `schema_overrides` can be useful when reading data can be found in the [Troubleshooting](#troubleshooting).
 
@@ -163,10 +166,14 @@ When reading from a PostgreSQL database, use `uri` and `query` instead of the fi
 This parameter specifies the engine used to process the data. Possible values include:
 
 - `auto` (default),
-- `gpu` for data processing using GPU,
+- `gpu` for data processing on the GPU,
 - `streaming` for processing datasets that do not fit entirely in memory.
 
 If the data cannot be processed using the specified engine, Polars will use its in-memory engine.
+
+#### `streaming_chunk_size`
+
+This parameter specifies the chunk size used in the streaming engine to avoid Out of Memory errors. Applicable only when the `engine` parameter is set to `streaming`.
 
 #### `output`
 
@@ -183,7 +190,7 @@ This parameter specifies a SQL expression to filter data by rows and/or by colum
 
 #### `transformations`
 
-This parameter specifies a dictionary with at least one key-value pair, where the key is a column name to be created or replaced and the value is a SQL expression to be applied to one or multiple columns in the data. If the key matches any existing column name in the data, it replaces that column with transformed values, otherwise a new column is created.
+This parameter specifies a dictionary with at least one key-value pair, where the key is a column name to be created or replaced and the value is a SQL expression to be applied to one or multiple columns in the data. If the key matches any existing column name in the data, it replaces that column with transformed values; otherwise, a new column is created.
 
 #### `date_column`
 
@@ -191,13 +198,13 @@ This parameter specifies the name of a date or datetime type column to use for a
 
 #### `time_interval`
 
-This parameter is used to divide the date or datetime range in `date_column` into equal time intervals. The division is implemented with [polars.Expr.dt.truncate](https://docs.pola.rs/api/python/stable/reference/expressions/api/polars.Expr.dt.truncate.html). The default value is `1d`, which corresponds to one day, so any other required value must be specified explicitly.
+This parameter is used to divide the date or datetime range in `date_column` into equal time intervals. The division is implemented with [polars.Expr.dt.truncate](https://docs.pola.rs/api/python/stable/reference/expressions/api/polars.Expr.dt.truncate.html). The default value is `1d` (one day), so any other value must be specified explicitly.
 
 #### `target_column`
 
-This optional parameter specifies a column in the data to calculate the target average, which is the class balance in machine learning binary classification problems. The result of calculation will be shown in the `Overview` section of the markdown report.
+This optional parameter specifies a column in the data to calculate the target average, which is the class balance in machine learning binary classification problems. The calculation result will be shown in the `Overview` section of the markdown report.
 
-If not specified, the tool will try to use a column literally named `target_column`, which can be created using `transformations`, and if there is no such column in the data, the target average won't be calculated.
+If not specified, the tool will try to use a column literally named `target_column`, which can be created using `transformations`, and if there is no such column in the data, the target average will not be calculated.
 
 #### `columns_to_exclude`
 
@@ -215,8 +222,8 @@ This section specifies parameters to evaluate outliers and highlight outlier reg
 
 This section specifies parameters related to the markdown report being produced:
 
-- `name` defines the name of the report (defaults to `README.md`),
-- `css_style` defines a path to the file with CSS style for tables, e.g., [style.css](style.css). Specifying style for tables is not mandatory, but it improves readability and appearance,
+- `name` defines the report filename (defaults to `README.md`),
+- `css_style` defines the path to a CSS file for table styling, e.g., [style.css](style.css). Specifying table styles is not mandatory, but it improves readability and appearance,
 - `float_precision` defines the number of decimal places to format floats in markdown tables (defaults to 4).
 
 #### `plotly`
@@ -228,8 +235,8 @@ This section specifies Plotly configuration parameters and styles, which can be 
 - `grid` defines style for grid lines,
 - `layout` defines extra parameters to adjust [layout](https://plotly.com/python/reference/layout/). The default chart height equals 512 pixels, default template is `plotly_white`,
 - `subplots` defines extra parameters to adjust spacing in the [subplot grid](https://plotly.com/python-api-reference/generated/plotly.subplots.make_subplots.html),
-- `format` defines file saving format, supports PNG (default), JPEG, WebP, SVG, and PDF.
-- `scale_factor` defines factor to scale the chart, defaults to 1.
+- `format` defines the file format for saving charts; supports PNG (default), JPEG, WebP, SVG, and PDF.
+- `scale_factor` defines the scaling factor for charts (defaults to 1).
 
 If none of the parameters are specified, Plotly will use its default parameters.
 
@@ -237,11 +244,11 @@ If none of the parameters are specified, Plotly will use its default parameters.
 
 ## Troubleshooting
 
-This section describes potential hurdles of processing CSV or XLSX file formats, which raise a `ComputeError` exception.
+This section describes potential issues when processing CSV or XLSX file formats that may cause the tool to fail.
 
-The first issue is caused by a column with mixed alphanumeric values, which might be interpreted as an integer type during schema inference. The problem is that by default Polars infers schema from the first 100 rows of CSV and XLSX files, which is defined by the `infer_schema_length` parameter in `scan_csv` or `read_excel` functions.
+The first issue is caused by a column with mixed alphanumeric values, which may be interpreted as an integer type during schema inference. The problem is that, by default, Polars infers schema from the first 100 rows of CSV and XLSX files, which is defined by the `infer_schema_length` parameter in `scan_csv` or `read_excel` functions.
 
-The solution is to explicitly define the type of the column as a string at data ingestion:
+The solution is to explicitly define the column type as a string during data ingestion:
 
 ```python
    "source": {
@@ -258,15 +265,22 @@ In such cases, column type transformations (e.g., `cast(column as text)` or `col
 
 Another common issue that causes `ComputeError` is a date or datetime type column being inferred as a string type. In these cases, column type transformation (e.g., `DATE(column, '%Y-%m-%d %H:%M:%S')`) will work if timestamp values are uniform and match the ISO 8601 standard supported by Polars.
 
-If the column has mixed format, e.g., with and without fractional seconds, but still consistent with the ISO 8601 standard, it is better to handle it by specifying the type of the column as date or datetime in `schema_overrides`.
+If the column has a mixed format, e.g., with and without fractional seconds, but is still consistent with the ISO 8601 standard, it is better to handle it by specifying the column type as date or datetime in `schema_overrides`.
 
 In cases of complex mixed time formats raising `ComputeError`, manual data cleaning to standardize the formats remains the best solution, although such cases are uncommon.
+
+---
+
+The last identified issue relates to processing large CSV files exceeding available RAM. In such cases, the following helps:
+
+- Convert string columns to Polars' categorical type by assigning the `Categorical` value in `schema_overrides`,
+- In the configuration, assign the `streaming` value to `engine` and start with a value of approximately 50000 for `streaming_chunk_size` (readjust based on observed memory usage if necessary).
 
 [Back to table of contents](#table-of-contents)
 
 ## Dataset reading examples
 
-This tool was tested using publicly available datasets. Full configurations for evaluating these datasets are in [**examples**](examples) directory. Ready-to-use code extracts from these configurations, which require adjusting a few parameters in existing [**config.json**](config.json), are listed below:
+This tool was tested using publicly available datasets. Full configurations for evaluating these datasets are in the [**examples**](examples) directory. Ready-to-use configuration extracts that require adjusting only a few parameters in the existing [**config.json**](config.json) are listed below:
 
 ### [Kaggle](https://www.kaggle.com/datasets?search=fraud&sort=votes&tags=13302-Classification&minUsabilityRating=9.00+or+higher)
 
@@ -359,7 +373,7 @@ It is also possible to replace `"transaction_date": "DATE(transaction_date, '%Y-
 
 ```json
     "source": {
-        "file_path": "../datasets/LI-Large_Trans.csv",
+        "file_path": "/datasets/LI-Large_Trans.csv",
         "schema_overrides": {
             "Timestamp": "Datetime",
             "From Bank": "Categorical",
@@ -376,12 +390,19 @@ It is also possible to replace `"transaction_date": "DATE(transaction_date, '%Y-
     "streaming_chunk_size": 2026,
     "date_column": "Timestamp",
     "target_column": "Is Laundering",
-        "transformations": {
+    "transformations": {
         "sender_account": "Account",
         "receiver_account": "Account_duplicated_0"
     },
     "columns_to_exclude": ["Account", "Account_duplicated_0"],
 ```
+
+**Note:**
+
+- Extracted by `unzip ibm-transactions-for-anti-money-laundering-aml.zip LI-Large_Trans.csv`,
+- CSV file weighs 16GB and has 176M rows,
+- `schema_overrides` specifications convert string columns to categorical to reduce memory usage during aggregation,
+- `engine` and `streaming_chunk_size` values ensure processing on a machine with small RAM; specified values allow processing on a laptop with 8GB RAM (any value of `streaming_chunk_size` below 50000 worked).
 
 [Back to table of contents](#table-of-contents)
 
@@ -402,6 +423,8 @@ It is also possible to replace `"transaction_date": "DATE(transaction_date, '%Y-
     "target_column": "isFraud",
     "columns_to_exclude": ["isFlaggedFraud", "step"],
 ```
+
+**Note:** The specified `transformations` convert integer type column `step`, which is a unit of time (1 step = 1 hour), into a date type column with values starting from 1970-01-01.
 
 - [Tichies/card-fraud](https://huggingface.co/datasets/Tichies/card-fraud)
 
@@ -434,7 +457,7 @@ It is also possible to replace `"transaction_date": "DATE(transaction_date, '%Y-
     },
 ```
 
-**Note:** downloaded by `ds = load_dataset("saifhmb/FraudPaymentData")`, then saved `ds["train"].to_parquet("FraudPaymentData.parquet")`
+**Note:** Downloaded by `ds = load_dataset("saifhmb/FraudPaymentData")`, then saved `ds["train"].to_parquet("FraudPaymentData.parquet")`.
 
 - [Ransaka/fraud_prediction_300K](https://huggingface.co/datasets/Ransaka/fraud_prediction_300K)
 
@@ -478,6 +501,6 @@ It is also possible to replace `"transaction_date": "DATE(transaction_date, '%Y-
     "columns_to_exclude": ["trans_time", "unix_time"],
 ```
 
-**Note:** downloaded by `ds = load_dataset("Nooha/cc_fraud_detection_dataset")`, then saved `ds["train"].to_parquet("cc_fraud_detection_dataset.parquet")`
+**Note:** Downloaded by `ds = load_dataset("Nooha/cc_fraud_detection_dataset")`, then saved `ds["train"].to_parquet("cc_fraud_detection_dataset.parquet")`.
 
 [Back to table of contents](#table-of-contents)
