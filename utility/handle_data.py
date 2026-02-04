@@ -38,14 +38,17 @@ def read_source(source: dict[str, str]) -> pl.LazyFrame:
 
     lf = None
 
+    # Read from PostgreSQL database
     if source.get("query") and source.get("uri"):
-        # Read from PostgreSQL database
+        logging.info(f"Data to read: {source['query']}")
         lf = pl.read_database_uri(
             query=source["query"],
             uri=handle_environment_variables(source["uri"])
         ).lazy()
 
     elif source.get("file_path"):
+        logging.info(f"Data to read: {source['file_path']}")
+
         # Get storage_options to read from cloud providers
         storage_options = handle_environment_variables(
             source.get("storage_options", {})
@@ -114,7 +117,7 @@ def _read_source(
         # Try to match source ending with supported file formats
         for ff, rf in read_source_func.items():
             if source.lower().endswith(f".{ff}"):
-                logging.info(f"Identified file format: {ff.upper()}")
+                logging.info(f"Identified file format: {ff}")
                 file_format, read_func = ff, rf
 
         if read_func is None:
