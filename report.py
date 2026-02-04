@@ -95,7 +95,7 @@ def make_report(
     # Collect markdown content
     content = collect_md_content(
         data_evals, content,
-        config["source"].get("file_path", config["source"].get("sql")),
+        config["source"].get("file_path", config["source"].get("query")),
         precision)
 
     # Write content as a markdown file

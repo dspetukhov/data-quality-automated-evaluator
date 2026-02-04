@@ -28,7 +28,7 @@ def main(config_file_path: Path) -> None:
     if config_file_path.exists() and config_file_path.is_file():
         with open(config_file_path, encoding="utf-8") as file:
             config = json.load(file)
-            logging.info(f"Configuration from {config_file_path} was loaded")
+            logging.info(f"Configuration loaded: {config_file_path}")
     else:
         raise SystemExit("Exit: configuration file wasn't found")
 
