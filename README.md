@@ -2,7 +2,7 @@
 
 A configurable Python tool for automated quality evaluation of temporal data.
 
-This tool evaluates data quality by calculating descriptive statistics (e.g., number of unique values) for each column in your dataset across custom time intervals. It generates structured markdown reports with charts and tables that visualize changes in these statistics over time.
+This tool evaluates data quality by calculating descriptive statistics (e.g., number of unique values) for each column in your dataset across configurable time intervals. It generates structured markdown reports with charts and tables that visualize changes in these statistics over time.
 
 The final assessment of data consistency, validity, and overall quality is the responsibility of an individual reviewing the markdown report.
 
@@ -79,8 +79,8 @@ tabulate==0.9.0
 
 ### Features
 
-- **Comprehensive data evaluation**: descriptive statistics to evaluate data changes over custom time intervals,
-- **Custom time intervals**: (e.g., 1h, 13h, 1d, 6d, 1d1h) to analyze data changes over different time scales,
+- **Comprehensive data evaluation**: descriptive statistics to evaluate data changes over configurable time intervals,
+- **Configurable time intervals**: (e.g., 1h, 13h, 1d, 6d, 1d1h) to analyze data changes over different time scales,
 - **Various data sources**: CSV, XLSX, Parquet, and Iceberg file formats supported as well as reading from cloud providers or PostgreSQL databases,
 - **Flexible & performant data preprocessing**: data filtering and transformation using SQL expressions powered by Polars with lazy evaluation,
 - **Outliers detection**: evaluation and visual representation of anomalous changes based on IQR or Z-score criteria,
