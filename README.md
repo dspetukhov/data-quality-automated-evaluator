@@ -1,6 +1,6 @@
-# Data Quality Automated Evaluator - `DQ-AE`
+# Automated Temporal Data Quality Evaluator
 
-A configurable Python tool for automated evaluation of temporal data quality.
+A configurable Python tool for automated quality evaluation of temporal data.
 
 This tool evaluates data quality by calculating descriptive statistics (e.g., number of unique values) for each column in your dataset across custom time intervals. It generates structured markdown reports with charts and tables that visualize changes in these statistics over time.
 
@@ -8,11 +8,11 @@ The final assessment of data consistency, validity, and overall quality is the r
 
 This tool is particularly useful for:
 
-- Validating consistency and finding faults in data,
+- Validating consistency and finding faults in temporal data,
 - Identifying temporal anomalies and detecting data drift,
 - Monitoring data quality in production pipelines.
 
-A detailed explanation of why it was done and how to work with the tool is in (https://medium.com/@dspetukhov/<coming soon>)
+A detailed explanation of why it was done and how it works is in (https://medium.com/@dspetukhov/<coming soon>)
 
 Powered by [**Polars**](https://docs.pola.rs/) and [**Plotly**](https://docs.plotly.com/).
 
@@ -131,7 +131,7 @@ This section specifies parameters to read the source of data using Polars:
 
 - `file_path` is the mandatory parameter that defines the path to the file to read,
 - `file_format` is required when the file being read is missing an extension at the end of its name or when reading from a directory with partitioned files,
-- `storage_options` is typically required for reading from cloud providers. If not explicitly specified, Polars will try to get credentials from environment variables. Explicit specification is recommended:
+- `storage_options` is required for reading from cloud providers. If not explicitly specified, Polars will try to get credentials from environment variables. Explicit specification is recommended:
 
 ```python
 storage_options = {
