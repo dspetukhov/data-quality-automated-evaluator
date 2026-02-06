@@ -1,3 +1,4 @@
+import time
 from typing import Any
 from polars import DataFrame
 from pathlib import Path
@@ -32,7 +33,7 @@ def make_report(
         None: Function writes the report to disk.
     """
     # Get key variables to make the report
-    output, content, precision, outliers, plotly = get_report_variables(config)
+    output, source, content, precision, outliers, plotly = get_report_variables(config)
 
     data_evals = {}
     # Get evaluations and create overview chart for columns
@@ -95,7 +96,7 @@ def make_report(
     # Collect markdown content
     content = collect_md_content(
         data_evals, content,
-        config["source"].get("file_path", config["source"].get("query")),
+        output, source,
         precision)
 
     # Write content as a markdown file
@@ -104,12 +105,13 @@ def make_report(
 
 def get_report_variables(
         config: dict[str, Any]
-) -> tuple[str, list[str], int | None, dict, dict]:
+) -> tuple[str, str, list[str], int | None, dict, dict]:
     """
     Get key variables to make the report using the configuration provided.
 
     This function creates variables necessary for making markdown report
-    based on the specified configuration. They include: output directory name,
+    based on the specified configuration. They include:
+    output directory to store report data, path to the data source,
     style for markdown tables, precision to format floats in markdown tables,
     outliers detection parameters, Plotly parameters for charts.
 
@@ -117,15 +119,16 @@ def get_report_variables(
         config (dict[str, Any]): Configuration dictionary.
 
     Returns:
-        tuple[str, list[str], int | None, dict, dict]:
-            - Output directory to store report file and charts.
+        tuple[str, str, list[str], int | None, dict, dict]:
+            - Directory name to store report file and charts.
+            - Formatted path to the file to read or SQL query to get data.
             - Content of markdown report.
             - Precision to format floats in markdown tables.
             - Outliers detection parameters.
             - Plotly configration for charts.
     """
     # Determine the name of the output directory using `output` parameter
-    # in configuration or using the name of the source without extension
+    # in configuration or based on the source specification
     output_dir = config.get(
         "output",
         Path(config["source"]["file_path"]).name.split(".")[0]
@@ -133,6 +136,12 @@ def get_report_variables(
     )
     # Create output directory
     Path(output_dir).mkdir(exist_ok=True)
+
+    # Determine and format source of data for markdown report
+    if config["source"].get("file_path"):
+        source = "**{}**".format(config["source"]["file_path"])
+    else:
+        source = "\n```sql\n{}\n```\n".format(config["source"]["query"])
 
     # Initialize markdown content list
     md_content = []
@@ -155,12 +164,20 @@ def get_report_variables(
     # Plotly configuration
     plotly_config = config.get("plotly", {})
 
-    return output_dir, md_content, precision, outliers_config, plotly_config
+    return (
+        output_dir,
+        source,
+        md_content,
+        precision,
+        outliers_config,
+        plotly_config
+    )
 
 
 def collect_md_content(
     data: dict[str, Any],
     content: list[str],
+    output: str,
     source: str,
     precision: int = 4
 ) -> list[str]:
@@ -174,6 +191,7 @@ def collect_md_content(
     Args:
         data (dict[str, Any]): Data to create a table using `make_md_table`.
         content (list[str]): List with markdown table style string.
+        output (str): Directory name to store report file.
         source (str): Path to the file to read or SQL query to get data.
         precision (int, optional): Number of decimal places to format numbers.
 
@@ -216,9 +234,11 @@ def collect_md_content(
 
     toc = "\n".join(toc)
     content = "\n".join(content)
+    timestamp = time.strftime("%Y-%m-%d %H:%M", time.localtime())
 
     md_output = [
-        f"# **{source}**\n\n",
+        f"# {output} | {timestamp}\n\n",
+        f"Source: {source}\n\n",
         f"## Table of contents\n\n{toc}\n\n",
         content
     ]
