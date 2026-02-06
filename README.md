@@ -1,6 +1,6 @@
-# Automated Temporal Data Quality Evaluator
+# Automated Quality Evaluation of Temporal Data
 
-A configurable Python tool for automated quality evaluation of temporal data.
+An automated configurable Python tool for evaluating the quality of temporal data.
 
 This tool evaluates data quality by calculating descriptive statistics (e.g., number of unique values) for each column in your dataset across configurable time intervals. It generates structured markdown reports with charts and tables that visualize changes in these statistics over time.
 
@@ -12,9 +12,9 @@ This tool is particularly useful for:
 - Identifying temporal anomalies and detecting data drift,
 - Monitoring data quality in production pipelines.
 
-A detailed explanation of why it was done and how it works is in (https://medium.com/@dspetukhov/<coming soon>)
+A detailed explanation of why it was done and how it works is available on [medium.com/@dspetukhov](https://medium.com/@dspetukhov/automated-quality-evaluation-of-temporal-data-75f2a6f89627).
 
-Powered by [**Polars**](https://docs.pola.rs/) and [**Plotly**](https://docs.plotly.com/).
+Powered by [Polars](https://docs.pola.rs/) and [Plotly](https://docs.plotly.com/).
 
 ## Table of contents
 

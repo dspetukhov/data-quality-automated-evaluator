@@ -238,7 +238,7 @@ def collect_md_content(
 
     md_output = [
         f"# {output} | {timestamp}\n\n",
-        f"Source: {source}\n\n",
+        f"Data source: {source}\n\n",
         f"## Table of contents\n\n{toc}\n\n",
         content
     ]
