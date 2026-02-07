@@ -107,21 +107,21 @@ tabulate==0.9.0
 
 Data evaluation configuration is defined in a single JSON file ([config.json](config.json)) by the following sections:
 
-| Section / Parameter    | Description                                                              | Expected parameters                                                        |
-|------------------------|--------------------------------------------------------------------------|----------------------------------------------------------------------------|
-| `source`               | Configuration to read data (Required)                                    | `file_path`, `file_format`, `storage_options`, `schema_overrides`          |
-| `engine`               | Polars engine used to process the data (Optional)                        |                                                                            |
-| `streaming_chunk_size` | Chunk size for streaming engine to avoid Out of Memory errors (Optional) |                                                                            |
-| `output`               | Directory to save report and charts (Optional)                           |                                                                            |
-| `filter`               | SQL expression to filter data by rows and by columns (Optional)          |                                                                            |
-| `transformations`      | Dictionary of SQL expressions to transform data by columns (Optional)    |                                                                            |
-| `date_column`          | Column to aggregate data by time intervals (Required)                    |                                                                            |
-| `time_interval`        | Time interval to aggregate data (Optional)                               |                                                                            |
-| `target_column`        | Column to calculate target average (Optional)                            |                                                                            |
-| `columns_to_exclude`   | List of columns to be excluded from evaluation (Optional)                |                                                                            |
-| `outliers`             | Outlier detection settings (Optional)                                    | `criterion`, `multiplier_iqr`, `threshold_z_score`                         |
-| `markdown`             | Markdown report settings (Optional)                                      | `name`, `css_style`, `float_precision`                                     |
-| `plotly`               | Plotly styling settings (Optional)                                       | `plot`, `outliers`, `layout`, `grid`, `subplots`, `format`, `scale_factor` |
+| Section / Parameter    | Description                                                              | Expected parameters                                                                       |
+|------------------------|--------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| `source`               | Configuration to read data (Required)                                    | `file_path`, `file_format`, `storage_options`, `schema_overrides`                         |
+| `engine`               | Polars engine used to process the data (Optional)                        |                                                                                           |
+| `streaming_chunk_size` | Chunk size for streaming engine to avoid Out of Memory errors (Optional) |                                                                                           |
+| `output`               | Directory to save report and charts (Optional)                           |                                                                                           |
+| `filter`               | SQL expression to filter data by rows and by columns (Optional)          |                                                                                           |
+| `transformations`      | Dictionary of SQL expressions to transform data by columns (Optional)    |                                                                                           |
+| `date_column`          | Column to aggregate data by time intervals (Required)                    |                                                                                           |
+| `time_interval`        | Time interval to aggregate data (Optional)                               |                                                                                           |
+| `target_column`        | Column to calculate target average (Optional)                            |                                                                                           |
+| `columns_to_exclude`   | List of columns to be excluded from evaluation (Optional)                |                                                                                           |
+| `outliers`             | Outlier detection settings (Optional)                                    | `criterion`, `multiplier_iqr`, `threshold_z_score`                                        |
+| `markdown`             | Markdown report settings (Optional)                                      | `name`, `css_style`, `float_precision`                                                    |
+| `plotly`               | Plotly styling settings (Optional)                                       | `plot`, `outliers`, `layout`, `annotations`, `grid`, `subplots`, `format`, `scale_factor` |
 
 Each of these sections is described below in detail:
 
@@ -232,8 +232,9 @@ This section specifies Plotly configuration parameters and styles, which can be 
 
 - `plot` defines style for [plotly.graph_objs.Scatter](https://plotly.com/python-api-reference/generated/plotly.graph_objects.Scatter.html#plotly.graph_objects.Scatter), which renders evaluated descriptive statistics over time intervals,
 - `outliers` defines style for Plotly shapes to highlight outliers,
+- `layout` defines parameters to adjust [layout](https://plotly.com/python/reference/layout/). The default chart height equals 512 pixels, default template is `plotly_white`,
+- `annotations` defines parameters to adjust [annotations](https://plotly.com/python/reference/layout/annotations/), used to modify font in subplot titles.
 - `grid` defines style for grid lines,
-- `layout` defines extra parameters to adjust [layout](https://plotly.com/python/reference/layout/). The default chart height equals 512 pixels, default template is `plotly_white`,
 - `subplots` defines extra parameters to adjust spacing in the [subplot grid](https://plotly.com/python-api-reference/generated/plotly.subplots.make_subplots.html),
 - `format` defines the file format for saving charts; supports PNG (default), JPEG, WebP, SVG, and PDF.
 - `scale_factor` defines the scaling factor for charts (defaults to 1).
@@ -412,11 +413,16 @@ It is also possible to replace `"transaction_date": "DATE(transaction_date, '%Y-
 
 ```json
     "source": {
-        "file_path": "hf://datasets/CiferAI/Cifer-Fraud-Detection-Dataset-AF/**/*.csv"
+        "file_path": "hf://datasets/CiferAI/Cifer-Fraud-Detection-Dataset-AF/**/*.csv",
+        "schema_overrides": {
+            "type": "Categorical",
+            "nameOrig": "Categorical",
+            "nameDest": "Categorical"
+        }
     },
     "output": "cifer-fraud-detection-dataset",
     "engine": "streaming",
-    "filter": "select * from self where step < 743",
+    "filter": "select * from self where step > 1 and step < 743",
     "transformations": {
         "date_column": "CAST(step AS DATE)"
     },

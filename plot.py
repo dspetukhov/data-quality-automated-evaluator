@@ -171,6 +171,7 @@ def adjust_figure(
         Figure: Adjusted Plotly figure.
     """
     layout = config.get("layout", {}).copy()
+    annotations = config.get("annotations", {})
     template = layout.get("template", "plotly_white")
     height = layout.get("height", 512)
     width_scale_factor = layout.pop("width_scale_factor", 1)
@@ -195,5 +196,5 @@ def adjust_figure(
         annotation.update(
             x=annotation.x + (1 / n_cols) / 2.005,
             y=annotation.y + 0.005,
-            xanchor="right", yanchor="bottom", font={"weight": "normal"})
+            xanchor="right", yanchor="bottom", **annotations)
     return fig
