@@ -34,8 +34,11 @@ def make_preprocessing(
     # Apply transformations for columns
     lf = apply_transformations(lf, config.get("transformations"))
 
-    # Get LazyFrame schema
+    # Get and print LazyFrame schema
     schema = lf.collect_schema()
+    schema_str = "\n".join(
+        f"{col}: {dtype}" for col, dtype in schema.items())
+    logging.info(f"Data schema:\n{schema_str}")
 
     # Prepare date_column for data aggregation
     date_column = config.get("date_column", "date_column")
@@ -47,7 +50,7 @@ def make_preprocessing(
     # Get target_column
     target_column = config.get("target_column", "target_column")
     if schema.get(target_column):
-        logging.info(f"Target column: `{target_column}`")
+        logging.info(f"Target column: {target_column}")
     else:
         target_column = None
         logging.warning("Target column not found")
@@ -132,7 +135,7 @@ def process_date_column(
 
     This function checks date_column type in schema, makes conversion
     to datetime type if necessary, and renames it to TIME_INTERVAL_COL
-    (`__time_interval`) to ensure consistency in data evaluation process.
+    ('__time_interval') to ensure consistency in data evaluation process.
     Division by time intervals implemented with polars.Expr.dt.truncate.
     Raises SystemExit if date_column is not found in schema.
 
@@ -162,13 +165,10 @@ def process_date_column(
 
         # Rename date_column as TIME_INTERVAL_COL for consistency across tool
         lf = lf.rename({date_column: TIME_INTERVAL_COL})
-        logging.info(f"Date column: `{date_column}`")
+        logging.info(f"Date column: {date_column}")
 
         return lf, lf.collect_schema()
     else:
-        schema_str = "\n".join(
-            f"{col}: {dtype}" for col, dtype in schema.items())
-        logging.info(f"Data schema:\n{schema_str}\n")
         raise SystemExit("Exit: no 'date_column' for data preprocessing")
 
 

@@ -1,10 +1,15 @@
 {
     "source": {
-        "file_path": "hf://datasets/CiferAI/Cifer-Fraud-Detection-Dataset-AF/**/*.csv"
+        "file_path": "hf://datasets/CiferAI/Cifer-Fraud-Detection-Dataset-AF/**/*.csv",
+        "schema_overrides": {
+            "type": "Categorical",
+            "nameOrig": "Categorical",
+            "nameDest": "Categorical"
+        }
     },
     "output": "cifer-fraud-detection-dataset",
     "engine": "streaming",
-    "filter": "select * from self where step < 743",
+    "filter": "select * from self where step > 1 and step < 743",
     "transformations": {
         "date_column": "CAST(step AS DATE)"
     },

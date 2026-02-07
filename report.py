@@ -139,7 +139,10 @@ def get_report_variables(
 
     # Determine and format source of data for markdown report
     if config["source"].get("file_path"):
-        source = "**{}**".format(config["source"]["file_path"])
+        # Replace "*" to ensure correct representation in Markdown
+        source = "**{}**".format(
+            config["source"]["file_path"].replace("*", "\*")
+        )
     else:
         source = "\n```sql\n{}\n```\n".format(config["source"]["query"])
 
